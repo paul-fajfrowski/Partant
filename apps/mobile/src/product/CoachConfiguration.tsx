@@ -86,14 +86,8 @@ export type FlowProps = {
   choose: (coach: Coach, day: string, time: string, offer: Offer) => void;
 };
 const sectionFields: Record<string, (keyof CoachSettings)[]> = {
-  schedule: [
-    "week",
-    "weeklyConfigured",
-    "exceptions",
-    "buffer",
-    "departureStep",
-  ],
-  rules: ["buffer", "notice", "horizon", "cancelHours"],
+  schedule: ["week", "weeklyConfigured", "exceptions"],
+  rules: ["notice", "horizon", "cancelHours"],
   places: ["locations", "studio", "studioAddress", "radius", "travelFee"],
   documents: ["dossier", "published"],
   payout: ["business", "payoutReady"],
@@ -613,40 +607,6 @@ function ConfigurationEditor({
     return (
       <>
         {feedback}
-        <Field
-          label="Pause entre deux séances (minutes)"
-          numeric
-          value={String(cfg.buffer)}
-          onChange={(v) => setCfg({ ...cfg, buffer: Number(v) })}
-        />
-        <Select
-          label="Espacement des départs"
-          value={cfg.departureStep == null ? "duration" : "custom"}
-          items={[
-            ["duration", "Selon mes séances et mes pauses"],
-            ["custom", "Intervalle de mon choix"],
-          ]}
-          onChange={(v) =>
-            setCfg({
-              ...cfg,
-              departureStep:
-                v === "duration" ? null : (cfg.departureStep ?? 30),
-            })
-          }
-        />
-        {cfg.departureStep != null && (
-          <Field
-            label="Minutes entre deux départs"
-            numeric
-            value={String(cfg.departureStep)}
-            onChange={(v) => setCfg({ ...cfg, departureStep: Number(v) })}
-          />
-        )}
-        <P small muted style={{ marginBottom: 16 }}>
-          Le premier départ correspond au début de votre plage. Les suivants
-          respectent la durée de chaque séance et votre pause, ou l’intervalle
-          que vous choisissez. Le client réserve parmi ces possibilités.
-        </P>
         {[
           "Lundi",
           "Mardi",
@@ -885,7 +845,6 @@ function ConfigurationEditor({
         <Eyebrow style={{ marginBottom: 20 }}>VOS RÉGLAGES</Eyebrow>
         {(
           [
-            ["buffer", "Temps entre deux séances", [0, 15, 30, 60], "minutes"],
             [
               "notice",
               "Délai minimum avant réservation",
@@ -905,25 +864,15 @@ function ConfigurationEditor({
               "heures avant",
             ],
           ] as const
-        ).map(([key, label, values, suffix]) =>
-          key === "buffer" ? (
-            <Field
-              key={key}
-              label="Temps entre deux séances (minutes)"
-              numeric
-              value={String(cfg.buffer)}
-              onChange={(v) => setCfg({ ...cfg, buffer: Number(v) })}
-            />
-          ) : (
-            <Select
-              key={key}
-              label={label}
-              value={String(cfg[key])}
-              items={values.map((v) => [String(v), `${v} ${suffix}`])}
-              onChange={(v) => setCfg({ ...cfg, [key]: Number(v) })}
-            />
-          ),
-        )}
+        ).map(([key, label, values, suffix]) => (
+          <Select
+            key={key}
+            label={label}
+            value={String(cfg[key])}
+            items={values.map((v) => [String(v), `${v} ${suffix}`])}
+            onChange={(v) => setCfg({ ...cfg, [key]: Number(v) })}
+          />
+        ))}
         <Note>
           <P bold>Réservation automatique</P>
           <P small>

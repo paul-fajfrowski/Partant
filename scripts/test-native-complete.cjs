@@ -411,7 +411,7 @@ check(
   "ICS contains UTC Paris time",
 );
 
-// A configured turnaround applies before/after a group, even without participants.
+// Legacy pauses no longer prevent adjacent sessions.
 let buffered = W.saveSettings(base(), "0", {
   ...M.configFor(base(), "0"),
   weeklyConfigured: true,
@@ -427,33 +427,32 @@ buffered = M.openGroup(buffered, {
   address: "Parc",
 });
 check(
-  !M.slotsFor(
+  M.slotsFor(
     M.seedCoaches[0],
     "2026-09-18",
     buffered,
     buffered.offers[0],
   ).includes("17:00"),
-  "Group reserves turnaround before class",
+  "Adjacent slot before group remains available",
 );
 check(
-  !M.slotsFor(
+  M.slotsFor(
     M.seedCoaches[0],
     "2026-09-18",
     buffered,
     buffered.offers[0],
   ).includes("19:00"),
-  "Group reserves turnaround after class",
+  "Adjacent slot after group remains available",
 );
-throws(
-  () =>
-    M.openGroup(buffered, {
-      id: "adjacent",
-      offer,
-      day: "2026-09-18",
-      time: "19:00",
-      address: "Parc",
-    }),
-  /occupé/,
+check(
+  M.openGroup(buffered, {
+    id: "adjacent",
+    offer,
+    day: "2026-09-18",
+    time: "19:00",
+    address: "Parc",
+  }).groups.some((g) => g.id === "adjacent"),
+  "Coach can schedule a group directly after another",
 );
 let proposed = M.switchAccount(
   { ...solo, bookings: [{ ...sd, status: "confirmed" }] },

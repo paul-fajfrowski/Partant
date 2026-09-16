@@ -261,7 +261,7 @@ export function AgendaTools({
       <H1>Un rendez-vous{"\n"}pris directement.</H1>
       <P muted style={{ marginVertical: 20 }}>
         Ajoutez un client qui a réservé auprès de vous. Le rendez-vous bloque
-        votre agenda, y compris votre pause entre séances.
+        votre agenda, pendant toute la durée de la prestation.
       </P>
       <Field label="Nom du client" value={name} onChange={setName} />
       <Select

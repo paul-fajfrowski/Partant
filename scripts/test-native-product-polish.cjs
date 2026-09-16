@@ -76,14 +76,14 @@ ok(
   "Direct booking blocks public availability",
 );
 ok(
-  M.slotsFor(c, ext.day, s, solo).includes("10:25"),
-  "Availability resumes after configured pause",
+  M.slotsFor(c, ext.day, s, solo).includes("10:10"),
+  "Availability resumes when the session ends",
 );
 ok(
   s.bookings.length === 0 && !s.refunds?.length,
   "Direct booking creates no payment or marketplace booking",
 );
-fail(() => A.addExternalSession(s, { ...ext, time: "10:10" }), /occupé/);
+fail(() => A.addExternalSession(s, { ...ext, time: "09:40" }), /occupé/);
 fail(() => A.addExternalSession(s, { ...ext, time: "25:10" }), /HH:mm/);
 fail(() => A.addExternalSession(s, { ...ext, format: "Visio" }), /lieu/);
 ok(
@@ -93,7 +93,7 @@ ok(
   "Diagnostic explains direct appointment conflict",
 );
 ok(
-  A.availabilityReasons(s, c, solo, ext.day, "10:25").length === 0,
+  A.availabilityReasons(s, c, solo, ext.day, "10:10").length === 0,
   "Diagnostic detects open hour",
 );
 s = A.cancelExternalSession(s, extId);

@@ -70,7 +70,7 @@ export function AvailabilityIntervals({
           {!!a && !!b && (
             <View style={{ marginTop: 12, gap: 6 }}>
               <P small bold>
-                Aperçu des départs selon vos réglages
+                Séances possibles dans cette plage
               </P>
               {offers
                 .filter(

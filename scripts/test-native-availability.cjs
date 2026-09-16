@@ -271,19 +271,19 @@ const controlled = {
 };
 ok(
   M.generatedTimes(controlled, day, 60, long.id).join(",") ===
-    "09:10,10:25,11:40",
-  "Coach start time and pause determine departures",
+    "09:10,10:10,11:10,12:10",
+  "Legacy pause is ignored; coach start and duration determine departures",
 );
 ok(
   M.generatedTimes({ ...controlled, departureStep: 20 }, day, 60, long.id)
     .slice(0, 3)
-    .join(",") === "09:10,09:30,09:50",
-  "Coach can choose departure spacing without snapping to a grid",
+    .join(",") === "09:10,10:10,11:10",
+  "Legacy custom cadence cannot change departures",
 );
 ok(
   M.generatedTimes({ ...controlled, departureStep: 0 }, day, 60, long.id)
-    .length === 0,
-  "Invalid stored cadence cannot freeze generation",
+    .length === 4,
+  "Invalid legacy cadence does not affect generation",
 );
 ok(
   M.generatedTimes(
@@ -298,17 +298,34 @@ let timingOwner = M.switchAccount(
   added,
   W.identities(added).find((a) => a.id === "coach-0"),
 );
-fail(
-  () => W.saveSettings(timingOwner, "0", { ...controlled, departureStep: 0 }),
-  /délais/,
+ok(
+  W.saveSettings(timingOwner, "0", { ...controlled, departureStep: 0 })
+    .settings["0"].departureStep === null,
+  "Legacy cadence is cleared on save",
 );
-fail(
-  () => W.saveSettings(timingOwner, "0", { ...controlled, departureStep: NaN }),
-  /délais/,
+ok(
+  W.saveSettings(timingOwner, "0", { ...controlled, departureStep: NaN })
+    .settings["0"].departureStep === null,
+  "Invalid legacy cadence is cleared",
 );
-fail(
-  () => W.saveSettings(timingOwner, "0", { ...controlled, buffer: NaN }),
-  /délais/,
+ok(
+  W.saveSettings(timingOwner, "0", { ...controlled, buffer: NaN }).settings["0"]
+    .buffer === 0,
+  "Invalid legacy pause is cleared",
+);
+const migrated = M.configFor(
+  {
+    ...timingOwner,
+    settings: {
+      ...timingOwner.settings,
+      0: { ...controlled, buffer: 30, departureStep: 20 },
+    },
+  },
+  "0",
+);
+ok(
+  migrated.buffer === 0 && migrated.departureStep === null,
+  "Persisted legacy settings neutralized without requiring coach to save",
 );
 let timingSaved = W.saveSettings(timingOwner, "0", controlled);
 timingSaved = M.switchAccount(timingSaved, alex);
@@ -320,8 +337,8 @@ timingSaved = M.reserve(timingSaved, {
 });
 ok(
   !M.slotsFor(c, day, timingSaved, long).includes("09:10") &&
-    M.slotsFor(c, day, timingSaved, long).includes("10:25"),
-  "Availability keeps exact starts after a booking and respects the pause",
+    M.slotsFor(c, day, timingSaved, long).includes("10:10"),
+  "Availability keeps exact starts without adding a gap",
 );
 const newcomer = W.loginDemo(
     M.initialStore,

@@ -610,7 +610,7 @@ export function allCoaches(store: Store): Coach[] {
 }
 export function configFor(store: Store, id: string): CoachSettings {
   const existing = store.settings?.[id];
-  if (existing) return existing;
+  if (existing) return { ...existing, buffer: 0, departureStep: null };
   const c = allCoaches(store).find((c) => c.id === id) ?? seedCoaches[0];
   return {
     published: id === "0" ? store.published : true,
@@ -691,7 +691,7 @@ export function generatedTimes(
   offerId?: string,
 ) {
   const times: string[] = [];
-  const step = cfg.departureStep ?? duration + cfg.buffer;
+  const step = duration;
   if (
     !Number.isFinite(step) ||
     step < 1 ||

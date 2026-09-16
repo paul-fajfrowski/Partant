@@ -128,7 +128,9 @@ export function addExternalSession(
       return c === id && conflict({ day: d, time: t, duration: 30 });
     })
   )
-    throw Error("Votre agenda est déjà occupé à ce moment, pause comprise.");
+    throw Error(
+      "Votre agenda est déjà occupé à ce moment, durée complète comprise.",
+    );
   return {
     ...s,
     externalSessions: [
@@ -212,7 +214,7 @@ export function availabilityReasons(
       );
     else
       reasons.push(
-        "Cette heure ne correspond pas au rythme de départ que vous avez choisi.",
+        "Cette heure ne correspond pas aux départs calculés depuis le début de la plage et la durée de la séance.",
       );
   }
   const occupied = (d: string, t: string, duration: number) =>
@@ -227,7 +229,7 @@ export function availabilityReasons(
         !(o.kind === "Groupe" && b.offerId === o.id && b.time === time),
     )
   )
-    reasons.push("Une réservation et sa pause occupent ce moment.");
+    reasons.push("Une réservation occupent ce moment.");
   if (
     (s.groups ?? []).some(
       (g) =>
@@ -237,14 +239,14 @@ export function availabilityReasons(
         !(g.offer.id === o.id && g.time === time),
     )
   )
-    reasons.push("Un cours collectif et sa pause occupent ce moment.");
+    reasons.push("Un cours collectif occupent ce moment.");
   if (
     (s.externalSessions ?? []).some(
       (b) =>
         b.coach === c.id && !b.cancelled && occupied(b.day, b.time, b.duration),
     )
   )
-    reasons.push("Un rendez-vous hors Partant et sa pause occupent ce moment.");
+    reasons.push("Un rendez-vous hors Partant occupent ce moment.");
   if (
     cfg.blocks.some(
       (b) =>

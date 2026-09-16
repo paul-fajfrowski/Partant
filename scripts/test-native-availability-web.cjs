@@ -51,7 +51,7 @@ async function field(label, value) {
   await click("Disponibilités");
   ok(
     !d.body.textContent.includes("À votre rythme.") &&
-      d.body.textContent.includes("Pause entre deux séances"),
+      d.body.textContent.includes("Lundi"),
     "Availability opens directly on useful controls",
   );
   await field("Début de plage 1", "09:00");
@@ -86,23 +86,23 @@ async function field(label, value) {
   await click("Ajouter une plage");
   await field("Début de plage 4", "20:00");
   await field("Fin de plage 4", "21:00");
-  await field("Pause entre deux séances (minutes)", "15");
   ok(
-    d.body.textContent.includes("10:15"),
-    "Preview follows session duration and the coach pause",
+    !d.body.textContent.includes("Espacement des départs") &&
+      !d.querySelector(
+        'input[aria-label="Pause entre deux séances (minutes)"]',
+      ),
+    "No pause or spacing settings",
   );
-  await click("Espacement des départs : Selon mes séances et mes pauses");
-  await click("Intervalle de mon choix");
-  await field("Minutes entre deux départs", "20");
   ok(
-    d.body.textContent.includes("14:20"),
-    "Preview follows coach-defined spacing",
+    d.body.textContent.includes("10:00") &&
+      d.body.textContent.includes("14:30"),
+    "Departures follow the duration of each assigned offer",
   );
   await click("Enregistrer la semaine");
   ok(
-    stored().settings["0"].departureStep === 20 &&
-      stored().settings["0"].buffer === 15,
-    "Coach timing settings persist",
+    stored().settings["0"].departureStep === null &&
+      stored().settings["0"].buffer === 0,
+    "No hidden timing preferences saved",
   );
   const monday = stored().settings["0"].week[0];
   ok(monday.length === 4, "Coach can save a fourth range");

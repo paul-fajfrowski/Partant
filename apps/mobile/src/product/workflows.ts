@@ -202,6 +202,8 @@ function future(b: Booking) {
     throw Error("Cette séance n’est plus modifiable.");
 }
 export function saveSettings(s: Store, id: string, cfg: CoachSettings): Store {
+  // Legacy timing preferences no longer influence public availability.
+  cfg = { ...cfg, buffer: 0, departureStep: null };
   if (s.account?.role !== "coach" || coachAccountId(s) !== id)
     throw Error("Connectez-vous à ce compte coach.");
   if (cfg.locations) validateLocations(cfg.locations);

@@ -94,3 +94,13 @@ Lieux & déplacements permet d’enregistrer plusieurs lieux du même type, avec
 Chaque prestation peut autoriser une sélection précise de lieux. Profils, choix de réservation, filtres, cours collectifs et rendez-vous directs utilisent leurs noms et adresses. Les nouvelles réservations et les cours conservent une copie du nom, de l’adresse et des consignes, indépendante des modifications ultérieures. Le contrôle géographique du rayon et la persistance serveur des lieux restent à raccorder ; les données demeurent locales dans cette simulation.
 
 Tests ajoutés : `test-native-locations.cjs` et `test-native-locations-web.cjs`. Tester notamment deux salles différentes, une prestation limitée à une seule salle, les conditions d’accès visibles avant paiement et le supplément à domicile.
+
+## Version 8 — horaires sans pause ni espacement
+
+À la demande de l’utilisateur, les contrôles Pause et Espacement sont retirés, y compris leur doublon dans les règles de réservation. Les jours et plages constituent l’entrée du planning. Les départs suivent le début exact de la plage et la durée de la prestation ; un temps libre se définit en laissant un intervalle entre deux plages. Les anciennes valeurs sont neutralisées à la lecture et à l’enregistrement, même pour un compte ayant déjà utilisé ces options. Les séances confirmées restent conservées et les conflits de durée restent bloqués.
+
+Les champs historiques restent compatibles avec le stockage existant mais n’affectent plus les horaires locaux. Cette modification ne change pas le moteur serveur de développement.
+
+### Suite du MVP après cette simplification
+
+La couverture client/coach est déjà large. Le prochain complément produit prioritaire est l’affectation d’un lieu à une plage (actuellement les plages autorisent des prestations et les prestations autorisent des lieux, sans restriction du lieu par plage). Puis étendre la persistance serveur et ses contrôles aux nouveaux parcours locaux ; terminer authentification, carte multi-coachs et agendas ; raccorder paiements/commissions/versements/remboursements puis communications externes aux étapes convenues ; effectuer une recette réelle à deux comptes et sur téléphones, y compris les outils équipe. Les packs, abonnements, programme de fidélité et liste d’attente ordonnée sont des évolutions ultérieures, non nécessaires à ce premier périmètre.

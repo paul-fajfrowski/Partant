@@ -36,8 +36,8 @@ export type CoachSettings = {
     end: string;
     title: string;
   }[];
-  buffer: number;
-  departureStep?: number | null; // null: session duration + the coach’s pause
+  buffer: number; // Legacy storage field; normalized to zero.
+  departureStep?: number | null; // Legacy storage field; normalized to null.
   notice: number;
   horizon: number;
   cancelHours: number;

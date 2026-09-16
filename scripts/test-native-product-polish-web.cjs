@@ -89,7 +89,7 @@ async function toggle(label) {
   );
   await click("Retour");
   ok(
-    d.body.textContent.includes("Pause entre deux séances"),
+    d.body.textContent.includes("Lundi"),
     "Back restores correct settings section",
   );
   ok(
