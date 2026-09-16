@@ -25,7 +25,7 @@ Ouvrez ensuite http://localhost:8765/partant.html.
 - Réserver à nouveau, transfert de cours collectif et annulation partielle de places.
 - Assistance et modération de démonstration.
 
-Les priorités 1 et 2 sont incluses. La finalisation A1–A9 et le MVP connecté B1–B8 restent à réaliser : voir **[l’état des lieux MVP](outputs/MVP-etat-des-lieux.md)**. Ce dépôt sauvegarde l’état existant avant la reprise de ces travaux.
+Les priorités 1 et 2 sont incluses. La finalisation A1–A9 est intégrée à cette version ; le MVP connecté B1–B8 reste à réaliser : voir **[l’état des lieux MVP](outputs/MVP-etat-des-lieux.md)**. Voir [la finalisation du prototype](outputs/finalisation-prototype.md). Le point de sauvegarde GitHub antérieur est le commit 992eb4b.
 
 ## Tester les parcours
 
@@ -33,7 +33,7 @@ L’accueil propose des comptes de démonstration. Exemples : **alex@example.tes
 
 Les données d’essai restent dans le stockage local du navigateur. Utilisez un seul onglet pour tester les échanges entre comptes ; le fichier local et l’aperçu HTTP ont des stockages distincts.
 
-Le calendrier de cette version est fixé au **14 septembre 2026 à 08:00**, sur 14 jours. Paiements, vérifications, versements, connexions et messages externes sont simulés. Aucun backend ni service de production n’est connecté.
+Le calendrier suit l’heure réelle de Paris et propose 90 jours de navigation, dans l’horizon configuré par le coach. Paiements, vérifications, versements, connexions et messages externes sont simulés. Aucun backend ni service de production n’est connecté.
 
 ## Organisation
 
@@ -75,9 +75,10 @@ node work/test-priority1.cjs
 node work/test-notifications.cjs
 node work/test-priority2.cjs
 node work/test-regression-p1.cjs
+node work/test-finalization.cjs
 ```
 
-**337 vérifications réussies le 16 septembre 2026** : 79 + 26 + 64 + 168. Ces suites vérifient la logique et le rendu dans un environnement DOM simulé ; elles ne constituent pas un audit complet d’accessibilité ou une validation de services réels.
+**478 vérifications réussies le 16 septembre 2026** : 337 existantes + 117 de finalisation + 24 dans jsdom. Ces suites vérifient la logique et le rendu dans un environnement DOM simulé ; elles ne constituent pas un audit complet d’accessibilité ou une validation de services réels.
 
 ## Documentation produit
 
@@ -90,3 +91,5 @@ node work/test-regression-p1.cjs
 - [Vérification](outputs/verification.md)
 
 Le dépôt Project-H-iOS a uniquement servi de référence visuelle en lecture seule ; il n’est pas modifié par ce projet.
+
+Pour les tests DOM optionnels : `npm ci --prefix work/qa-runtime`, puis `node work/test-finalization-dom.cjs`. La revue visuelle mobile a été validée par le porteur du projet le 16 septembre 2026. L’audit d’accessibilité reste à réaliser.

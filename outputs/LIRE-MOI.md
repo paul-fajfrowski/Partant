@@ -1,4 +1,7 @@
-# Partant — prototype, priorité 2
+# Partant — prototype finalisé (parcours locaux)
+
+Voir **finalisation-prototype.md** pour la version actuelle et ses scénarios de test.
+
 
 Ouvrez **partant.html** dans un navigateur. Photos, police, CSS, JavaScript et données sont intégrés au fichier ; aucune installation n’est nécessaire.
 
@@ -24,7 +27,7 @@ Vos préférences sont modifiables dans Mon espace. « Explorer d’abord » per
 
 ## Cadre de la démo
 
-Horloge fixe : **14 septembre 2026, 08:00, Paris**, avec 14 jours de planning. Données locales dans ce navigateur. Aucun compte réel, débit, message externe, virement ou contrôle de document. La carte, les distances et le rayon de déplacement sont schématiques.
+Calendrier glissant sur 90 jours, heure de Paris. Chaque coach choisit son horizon de réservation. Une horloge de test peut être avancée dans « À propos de la simulation ». Données locales dans ce navigateur. Aucun compte réel, débit, message externe, virement ou contrôle de document. La carte, les distances et le rayon de déplacement sont schématiques.
 
 L’export calendrier `.ics` et le relevé CSV sont de vrais fichiers téléchargeables contenant les données fictives de la démo.
 
@@ -58,7 +61,7 @@ La priorisation complète est dans **feuille-de-route-produit.md**.
 
 ## Comptes, messages et avis
 
-À l’accueil, « Essayer les comptes de démonstration » permet de choisir Alex, Nina ou un des six coachs. Le bouton Changer de compte est aussi disponible une fois connecté. Chaque coach conserve sa configuration. Les places disponibles sont communes aux comptes, tandis que les dossiers clients restent séparés dans les parcours.
+Activez « À propos de la simulation → Test ». « Essayer les comptes de démonstration » permet de choisir Alex, Nina ou un des six coachs. Le bouton Changer de compte est aussi disponible une fois connecté. Chaque coach conserve sa configuration. Les places disponibles sont communes aux comptes, tandis que les dossiers clients restent séparés dans les parcours.
 
 Les conversations sont liées aux réservations et partagées entre les deux interlocuteurs de la démo, avec suivi de lecture. Les avis apparaissent sur le profil après une séance terminée ; le coach peut répondre. Les signalements se traitent dans l’espace équipe de démonstration.
 

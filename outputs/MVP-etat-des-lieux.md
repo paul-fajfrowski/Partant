@@ -1,6 +1,6 @@
 # Partant — périmètre du MVP et reste à faire
 
-État au **16 septembre 2026**, après les priorités 1 et 2 et le correctif notifications. Inventaire établi à partir du HTML et des documents de livraison, sans modification de l’application.
+État au **16 septembre 2026**, après les priorités 1 et 2, le correctif notifications et la finalisation A1–A9. Voir `finalisation-prototype.md` pour les parcours ajoutés et les limites de validation.
 
 ## Où nous en sommes
 
@@ -26,12 +26,12 @@ Même une fonctionnalité « testable » devra être reliée à des services per
 | Fonctionnalité | État | Ce qui fonctionne / limite principale |
 |---|---|---|
 | Accueil particulier / coach | Testable | Entrées distinctes et exploration sans inscription. |
-| Inscription et connexion | Simulé | Comptes fictifs distincts, code fixe 123456 ; aucun e-mail de connexion envoyé. |
+| Inscription et connexion | Simulé | Comptes fictifs distincts, code fixe 123456 ; reprise de la sélection avant paiement, aucun e-mail envoyé. |
 | Mini-onboarding | Testable | Sport, objectifs adaptés à la pratique, niveau, budget, secteur, distance et moment préféré. Étapes contournables. |
 | Préférences modifiables | Testable | Réutilisées dans la recherche et l’objectif de séance. |
 | Secteurs d’Île-de-France | Partiel | Communes, départements, arrondissements et recherche par code postal ; l’offre fictive demeure parisienne. |
 | Recherche coach / sport / quartier | Testable | Résultats filtrés, tri et récupération après une recherche sans résultat. |
-| Recherche par disponibilité | Testable | Aujourd’hui, soir, lendemain, date et heure ; calendrier fixe de démonstration. |
+| Recherche par disponibilité | Testable | Aujourd’hui, soir, lendemain, date et heure ; calendrier glissant et heure de Paris. |
 | Budget, distance, lieu, format | Testable | Individuel / duo / groupe, extérieur / studio / domicile / visio. Distance schématique. |
 | Carte | Simulé | Vue de découverte utilisable, positions et distances fictives ; aucun itinéraire ou géocodage réel. |
 | Cartes coachs avec créneaux | Testable | Prix, discipline, avis, lieu et disponibilité directement visibles. |
@@ -41,7 +41,7 @@ Même une fonctionnalité « testable » devra être reliée à des services per
 | Favoris | Testable | Conservés par compte fictif. |
 | Réservation individuel / duo | Testable | Offre, durée, date, heure, lieu, objectif et prix final. |
 | Réservation de groupe | Testable | Prix par personne, maximum, places restantes, achat de plusieurs places. |
-| Paiement | Simulé | Carte de démonstration / Apple Pay ; aucun débit ou authentification bancaire. |
+| Paiement | Simulé | Attente, validation, refus, interruption, expiration et nouvelle tentative ; aucun débit ni authentification bancaire. |
 | Confirmation et détail | Testable | Date, lieu, prix, consignes et actions après réservation. |
 | Export calendrier | Testable | Fichier .ics téléchargeable ; les changements ultérieurs ne mettent pas automatiquement à jour l’événement importé. |
 | Séances futures / passées | Testable | Historique propre à chaque compte, états confirmée / terminée / annulée / absence. |
@@ -53,7 +53,7 @@ Même une fonctionnalité « testable » devra être reliée à des services per
 | Préparation de la séance | Testable | Matériel, accès, consignes, météo prévue par le coach et mémo personnel. |
 | Messagerie | Testable | Conversation par réservation, réponses partagées, lus / non lus ; échanges limités au navigateur. |
 | Notifications internes | Testable | Réservations, reports, annulations, changements de places et transferts ; historique et compteurs. |
-| Alertes de disponibilité | Partiel | Recherche enregistrée et correspondances recalculées à l’ouverture ; pas d’envoi automatique ni de file d’attente ordonnée. |
+| Alertes de disponibilité | Partiel | Recherche enregistrée et correspondances recalculées à l’ouverture, notifications internes et places souhaitées prises en compte ; aucun envoi externe ni file d’attente ordonnée. |
 | Avis et réponses | Testable | Avis après séance terminée, note recalculée, réponse du coach, signalement. |
 | Assistance | Testable | Dossier lié à une séance, motif, réponse et décision de remboursement simulée. |
 
@@ -69,9 +69,9 @@ Même une fonctionnalité « testable » devra être reliée à des services per
 | Planification des cours | Testable | Cours datés, prix et conditions conservés ; durée bloquée dans l’agenda. |
 | Gestion des inscrits | Testable | Compte réservant et nombre de places ; pas d’identité séparée de chaque accompagnant. |
 | Lieux et déplacements | Partiel | Parc, studio, domicile, visio, rayon et supplément ; pas de contrôle géographique effectif. |
-| Semaine type | Partiel | Jours travaillés, heures de début/fin et une pause commune ; pas de plages différentes pour chaque jour. |
+| Semaine type | Testable | Jusqu’à trois plages par jour, journées fermées et exceptions datées. Réservations existantes conservées. |
 | Absences et indisponibilités | Testable | Fermeture/réouverture et événement occupé, sans écraser une réservation existante. |
-| Délais de réservation | Testable | Temps tampon, délai minimum, horizon de 7 ou 14 jours et conditions d’annulation. |
+| Délais de réservation | Testable | Temps tampon, délai minimum, horizon de 7, 14, 30, 60 ou 90 jours et conditions d’annulation. |
 | Agenda | Testable | Séances, groupes, créneaux ouverts et plages occupées. |
 | Annulation coach | Testable | Motif, annulation et remboursement intégral simulé du solde, client prévenu. |
 | Annulation de tout un cours | Testable | Toutes les réservations concernées sont clôturées et remboursées dans la démo. |
@@ -81,7 +81,7 @@ Même une fonctionnalité « testable » devra être reliée à des services per
 | Activité et commission | Testable | Paiements cumulés, remboursements, net prévisionnel et commission fictive de 15 %. |
 | Export d’activité | Testable | CSV utilisable ; ce n’est pas une facture ni un relevé bancaire. |
 | Versements | Simulé | Activation d’un compte de test et aperçu des montants ; aucun virement. |
-| Vérification du coach | Simulé | Étapes et blocage de publication, puis validation de démonstration ; pas de pièces réellement examinées. |
+| Vérification du coach | Simulé | Dossier fictif, examen équipe, correction/refus, validation et expiration ; pas de pièces réellement examinées. |
 | Connexion d’agendas externes | Simulé | Google / Apple / Outlook présentés, événement occupé de test ; aucune synchronisation. |
 | Publication / pause | Testable | Nouvelles ventes suspendues sans supprimer les réservations confirmées. |
 
@@ -100,23 +100,23 @@ Même une fonctionnalité « testable » devra être reliée à des services per
 | Administration opérationnelle complète | Absent | Pas de gestion complète des droits équipe, dossiers documentaires, versements, incidents et recherches transversales. |
 | Hébergement applicatif / supervision | Absent | Fichier HTML et aperçu local ; pas de service de production exploité. |
 
-## 4. Ce qui manque dans le prototype : prochain lot conseillé
+## 4. Finalisation du prototype A1–A9 : livrée localement
 
-Les numéros ci-dessous sont un ordre proposé pour la suite. Ils ne désignent pas des fonctionnalités déjà livrées.
+Les neuf lots précédemment proposés disposent maintenant d’un parcours testable. Le détail, les scénarios et les limites sont dans **finalisation-prototype.md**.
 
-| Ordre | À réaliser | Pourquoi | Critère de validation |
-|---|---|---|---|
-| A1 | Terminer le parcours invité → connexion avant réservation | Explorer librement doit rester possible ; la réservation doit ensuite appartenir à un compte identifié. | Après connexion ou inscription, le coach, l’offre, les places et le créneau choisis sont repris ; la disponibilité est revérifiée. |
-| A2 | Séparer clairement mode démo et expérience normale | Le changement arbitraire de compte ne fait pas partie de l’application finale. | Un mode présentation masque les outils de test ; un rôle ne peut pas ouvrir les comptes d’autrui dans le parcours normal. Cela ne remplace pas une autorisation serveur. |
-| A3 | Calendrier glissant et états temporels | Les dates restent figées au 14 septembre 2026 sur 14 jours ; les fins de séance sont déclenchées par des outils de test. | Navigation sur plusieurs semaines, dates passées non réservables, limites de modification cohérentes avec l’heure affichée, états de séance explicites. |
-| A4 | Horaires différents selon le jour | Une vraie activité peut fonctionner lundi matin, mardi soir et samedi en continu. | Plusieurs plages par jour, pauses propres au jour, exceptions datées ; aucun changement ne détruit un rendez-vous confirmé. |
-| A5 | Compléter les états de paiement | Le refus est simulable lors d’un transfert, mais le parcours initial n’a pas un ensemble complet d’états bancaires. | Réservation en attente, paiement refusé ou interrompu, nouvelle tentative, créneau perdu, remboursement en attente puis confirmé ; aucune double réservation. |
-| A6 | Parcours de compte complet | Le profil particulier est encore minimal. | Modification des coordonnées prévues, reprise de connexion, déconnexion et parcours explicites de suppression/export des données. Les effets réels viendront avec le serveur. |
-| A7 | Dossier coach examiné par l’équipe | Le bouton « Simuler un dossier vérifié » ne montre pas tout le fonctionnement métier. | Dépôt fictif, attente, demande de correction, refus motivé, nouvelle soumission et expiration ; badge lié à une décision. |
-| A8 | Changement demandé par le coach | Le client peut reporter une séance ; le coach dispose surtout de l’annulation. | Proposition de nouvel horaire ou lieu, choix du client, conservation de l’engagement initial en attendant et traitement du refus. |
-| A9 | Rappels et alertes mieux représentés | Les notifications d’événement existent ; les rappels et alertes automatiques ne fonctionnent pas encore. | Scénarios de rappel avant séance et d’ouverture de créneau ; pour un groupe, alerte compatible avec le nombre de places souhaité ; préférences respectées. |
+| Lot | Livré dans le prototype | Raccordement restant pour le MVP |
+|---|---|---|
+| A1 | Connexion avant paiement et reprise de la sélection | Authentification réelle, panier rattaché à une session serveur. |
+| A2 | Modes Présentation / Test | Autorisations serveur client, coach et équipe. |
+| A3 | Calendrier glissant, heure de Paris, états temporels et ICS | Source de temps serveur et traitements planifiés. |
+| A4 | Plusieurs plages par jour et exceptions | Stockage partagé, contrôle serveur et éventuelle synchronisation externe. |
+| A5 | Attente, refus, interruption, expiration, reprise, perte de disponibilité, suivi des remboursements | Prestataire de paiement, transactions, expiration des réservations temporaires et événements bancaires. |
+| A6 | Coordonnées, aide connexion, déconnexion, export et suppression locale | Vérification des coordonnées, authentification, conservation et suppression côté serveur. |
+| A7 | Dossier fictif examiné par l’équipe, correction/refus, validation et expiration | Téléversement protégé, personnel habilité et contrôles réels. |
+| A8 | Proposition coach et accord/refus client, y compris transfert d’une réservation de groupe | Notification réelle et acceptation transactionnelle. |
+| A9 | Rappels et alertes internes tenant compte des places et préférences | Exécution en arrière-plan, canaux externes et suivi des échecs. |
 
-**Je commencerais par A1 à A4**, puis A5. Cela rendrait le prototype plus proche d’un usage quotidien avant d’ajouter de nouvelles offres commerciales. A6 à A9 ferment ensuite les parcours d’exploitation.
+**478 vérifications passent** : 337 contrôles existants, 117 nouveaux contrôles de logique et 24 contrôles de formulaires/navigation dans jsdom. La revue visuelle mobile a été validée par le porteur du projet le 16 septembre 2026 ; l’audit d’accessibilité et les services externes restent à vérifier. Une fonctionnalité testable localement ne devient pas pour autant prête pour la production.
 
 ## 5. Ce qui manque pour un MVP avec de vrais utilisateurs
 
@@ -172,4 +172,4 @@ Le pilote peut être limité à quelques disciplines et secteurs, avec une explo
 - **verification.md** : tests et limites de validation.
 - **feuille-de-route-produit.md** : décisions produit et évolutions envisagées.
 
-Les lots A et B sont une proposition de reste à faire, pas une estimation de durée ni une nouvelle implémentation. Les règles commerciales et le périmètre opérationnel doivent être arrêtés avant la mise en service.
+Les lots A sont désormais implémentés dans le prototype local. Les lots B restent le chantier du MVP réel, sans estimation de durée. Les règles commerciales et le périmètre opérationnel doivent être arrêtés avant la mise en service.

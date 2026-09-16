@@ -142,3 +142,17 @@ Les contrôles passent sur la version livrée. Ils complètent les interactions 
 Le navigateur intégré a bloqué l’accès direct à une URL `file://` par sa politique de sécurité. Le parcours visuel a donc été vérifié via un serveur HTTP local. L’autonomie du fichier a été contrôlée dans le code : aucun script, stylesheet, image ou police externe ; aucune requête réseau nécessaire au fonctionnement. L’ouverture directe du fichier dans Safari, Chrome, Firefox ou Edge reste un contrôle à effectuer par le destinataire.
 
 Pas d’audit exhaustif WCAG, de test de lecteur d’écran, de paiement réel, d’intégration d’agenda, de géolocalisation, de validation des justificatifs ou de concurrence multiutilisateur. Le stockage local et la carte simulée ne représentent pas une infrastructure de marketplace en production.
+
+
+## Finalisation A1–A9 — 16 septembre 2026
+
+337 vérifications existantes restent vertes. 117 nouveaux contrôles passent dans `work/test-finalization.cjs`, et 24 contrôles de formulaires/navigation passent dans `work/test-finalization-dom.cjs` avec jsdom, soit **478 au total**. Les suites historiques figent explicitement l’horloge au 14 septembre 2026 afin de conserver leurs scénarios. Deux scénarios de l’ancienne régression ont été adaptés pour connecter un client avant d’acheter, conformément au nouveau parcours.
+
+Cas couverts : reprise invité en individuel et groupe, compte créé pendant la réservation, contrôle des rôles de présentation, calendrier inter-mois et changement d’heure à Paris, plages par jour, exceptions, refus/interruption/expiration du paiement, nouvelle tentative, validation répétée, perte de disponibilité, unicité des coordonnées, export limité au compte, suppression locale, examen/correction/expiration documentaire, accord/refus/retrait/expiration des propositions, capacité après transfert collectif, rappels et alertes par nombre de places.
+
+Un serveur local sur 127.0.0.1:8766 sert le HTML autonome. L’ouverture du navigateur a été demandée à Codex. Le lancement de Chrome automatisé est bloqué par l’environnement ; aucun contrôle visuel par capture ni audit complet d’accessibilité n’est revendiqué pour cette livraison.
+
+
+## Validation utilisateur avant publication A1–A9
+
+Le 16 septembre 2026, le porteur du projet a confirmé la revue visuelle mobile du prototype et autorisé son ajout au dépôt GitHub. Cette validation ne constitue pas un audit d’accessibilité, un test automatisé multi-navigateurs ou une validation des services de production.

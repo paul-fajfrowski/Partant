@@ -14,4 +14,6 @@ Les scripts `install-*`, `prepare-*`, `finish-*`, `adapt-*`, `refine-*`, `extend
 
 Les suites `test-model.cjs` et `test-v2.cjs` sont historiques. Utiliser les quatre suites listées ci-dessus pour la version actuelle.
 
-`install-finalization.py` est un **brouillon inachevé, non appliqué**. Il fait référence à `finalization.js`, qui n’a pas encore été créé. Il est conservé comme trace du travail interrompu pour effectuer la sauvegarde GitHub. Les fonctionnalités A1–A9 ne sont pas livrées dans cette version.
+`install-finalization.py`, `refine-finalization.py` et `polish-finalization.py` sont également des scripts de migration déjà appliqués. Ne pas les rejouer. Le module `finalization.js` est conservé pour lecture ; sa version active est intégrée dans `partant.template.html`. Modifier la source HTML puis lancer `build.py`.
+
+Nouveaux tests : `test-finalization.cjs` (117 contrôles) et `test-finalization-dom.cjs` (24 parcours/assertions DOM). Ce dernier utilise jsdom : `npm ci --prefix work/qa-runtime`, puis `node work/test-finalization-dom.cjs`. Le HTML livré reste sans dépendance d’exécution.

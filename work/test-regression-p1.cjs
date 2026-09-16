@@ -2,8 +2,8 @@ const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const html=fs.readFileSync('outputs/partant.html','utf8'),script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
 const nodes=new Map(),listeners={};const node=id=>{if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',value:'',open:false,classList:{add(){},remove(){},toggle(){}},addEventListener(){},focus(){},showModal(){this.open=true},close(){this.open=false},scrollTop:0,scrollIntoView(){}});return nodes.get(id)};
 class TestData{constructor(f){this.data=f.fields||{}}get(k){return this.data[k]??null}getAll(k){let v=this.get(k);return v===null?[]:Array.isArray(v)?v:[v]}has(k){return this.get(k)!==null}entries(){return Object.entries(this.data)[Symbol.iterator]()}}
-let memory={};const ctx=vm.createContext({document:{getElementById:node,addEventListener(t,fn){(listeners[t]??=[]).push(fn)},querySelectorAll(){return []}},localStorage:{getItem(k){return memory[k]||null},setItem(k,v){memory[k]=v},removeItem(k){delete memory[k]}},setTimeout(){},clearTimeout(){},console,Date,Blob,URL,FormData:TestData});
-vm.runInContext(script,ctx);let count=0;const run=x=>vm.runInContext(x,ctx);const equal=(a,b,n)=>{assert.deepEqual(a,b,n);count++};const submit=(id,fields,dataset={})=>listeners.submit.forEach(fn=>fn({target:{id,fields,dataset},preventDefault(){}}));
+let memory={"partant-runtime":JSON.stringify({mode:"demo",clock:"2026-09-14T06:00:00Z"})};const ctx=vm.createContext({document:{getElementById:node,addEventListener(t,fn){(listeners[t]??=[]).push(fn)},querySelectorAll(){return []}},localStorage:{getItem(k){return memory[k]||null},setItem(k,v){memory[k]=v},removeItem(k){delete memory[k]}},setTimeout(){},clearTimeout(){},console,Date,Blob,URL,FormData:TestData});
+vm.runInContext(script,ctx);let count=0;const run=x=>vm.runInContext(x,ctx);const equal=(a,b,n)=>{assert.deepEqual(a,b,n||'regression');count++};const submit=(id,fields,dataset={})=>listeners.submit.forEach(fn=>fn({target:{id,fields,dataset},preventDefault(){}}));
 equal(run('state.screen'),'welcome');equal(run('results().length'),6);
 run("act('entry-role',{id:'client'});act('entry-next',{})");equal(run('state.screen'),'login');submit('entry-form',{email:'alex@example.test'});equal(run('state.screen'),'code');submit('code-form',{code:'000000'});equal(run('state.screen'),'code');submit('code-form',{code:'123456'});equal(run('state.screen'),'onboarding');
 submit('onboard-form',{sport:'Pilates',goal:'Améliorer ma mobilité',level:'Je reprends'});equal(run('state.onboardStep'),1);run("act('back',{})");equal(run('state.onboardStep'),0);submit('onboard-form',{sport:'Pilates',goal:'Améliorer ma mobilité',level:'Je reprends'});submit('onboard-form',{city:'Paris 11e',budget:'50',distance:'10'});submit('onboard-form',{format:'Visio',moment:'Libre'});equal(run('state.screen'),'explore');equal(run('results()[0].name'),'Sarah Dubois');equal(run('results().length'),1);
@@ -57,7 +57,7 @@ run("customer.format='Tous';customer.sport='Tout';applyPreferences();state.scree
 equal(run("explore().includes('Pas encore de coach dans ce secteur')"),true);
 run("act('search-visio',{})");equal(run('results().length>0'),true);
 // Priority journeys: saved availability, preparation snapshots and support decisions.
-run("act('confirm-reset',{});state.screen='explore';resetFilters();state.day=1;newAlert(null)");
+run("act('confirm-reset',{});activateAccount('client-alex');state.screen='explore';resetFilters();state.day=1;newAlert(null)");
 submit('alert-form',{day:'1',from:'20:00',to:'18:00'});equal(run('operations.alerts.length'),0,'Invalid interval refused');
 submit('alert-form',{day:'1',from:'19:00',to:'19:00'});equal(run('operations.alerts.length'),1);
 equal(run('alertCandidates(operations.alerts[0]).some(m=>m.coach===0)'),true);
@@ -81,7 +81,7 @@ run("issueForm('past-sarah')");submit('issue-form',{reason:'Séance contestée',
 for(const screen of ['alerts','support','operations','preparation-settings']){run(`state.screen='${screen}';render()`);assert.ok(node('view').innerHTML.length>100);count++}
 run("act('confirm-reset',{})");equal(run('operations.alerts.length'),0);equal(run('operations.tickets.length'),0);equal(run('pastBooking.status'),'completed');equal(run('pastBooking.refund'),undefined);
 // Group inventory: a dated class blocks the coach, seats remain independent.
-run("act('confirm-reset',{});state.screen='config';state.configSection='offers'");
+run("act('confirm-reset',{});activateAccount('client-alex');state.screen='config';state.configSection='offers'");
 submit('service-form',{name:'Renforcement en petit groupe',kind:'Groupe',duration:'60',price:'20',capacity:'6',groupFormat:'Parc',level:'Tous niveaux'},{id:'new'});
 equal(run("cfg.services.at(-1).capacity"),6);equal(run("servicesFor(0).some(s=>s.kind==='Groupe')"),false,'Group not sold as a private session');
 let groupOfferId=run('cfg.services.at(-1).id');submit('schedule-group-form',{serviceId:groupOfferId,day:'2',time:'18:00'});
