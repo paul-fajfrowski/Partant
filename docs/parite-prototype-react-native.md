@@ -64,3 +64,11 @@ La reprise fonctionnelle permet de poursuivre le produit dans React Native. Le M
 Messages et Notifications sont rétablis dans chaque onglet coach, avec compteurs et accès permanents à zéro non-lu. Le compte client regroupe échanges, préférences et aide, sans doubler les accès Séances/Favoris de la navigation. Les réponses d’onboarding restent des préférences : elles ordonnent le tri « Pour vous », sans imposer les filtres d’Explorer. Le secteur choisi reste conservé.
 
 Vérification complémentaire : 28 assertions DOM dans `test-native-navigation-web.cjs` (création de compte, fin/passage d’onboarding, filtres explicites, accès et lecture coach, organisation client, isolation des conversations). Les suites de réservation et de configuration passent également (33 + 14 assertions). TypeScript et exports web/iOS/Android réussis. Il ne s’agit pas d’une validation visuelle sur appareil.
+
+## Disponibilités reliées aux offres
+
+La limite de trois plages par jour est supprimée. Chaque plage hebdomadaire ou exception datée autorise toutes les offres du coach, ou une sélection de leurs identifiants. Les anciens réglages sans sélection restent compatibles. La durée et le tarif sont définis dans Séances & tarifs ; ils ne sont pas dupliqués dans le planning. Les créneaux proposés respectent la durée entière, les pauses et les occupations communes à toutes les offres.
+
+Le client peut découvrir un coach sur sa deuxième offre disponible même si sa première offre est fermée à cette heure. La carte et le tri par prix utilisent la formule présentée. L’Agenda coach comporte un sélecteur d’offre. Les groupes restent des cours datés, programmables dans les plages autorisées. Les changements d’horaires conservent les réservations et cours déjà confirmés.
+
+Validation : 26 assertions métier ciblées, 10 assertions DOM de configuration puis réservation au tarif de l’offre, suites existantes de réservation et réglages réussies. TypeScript et exports web/iOS/Android vérifiés. Les affectations par plage sont pour l’instant locales ; leur contrôle et persistance serveur restent à raccorder.

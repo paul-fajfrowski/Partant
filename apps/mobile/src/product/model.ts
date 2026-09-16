@@ -233,9 +233,9 @@ export function slotsFor(
     offer?.kind === "Groupe"
       ? groups.filter((g) => g.offer.id === offer.id).map((g) => g.time)
       : cfg.weeklyConfigured || cfg.exceptions[day]
-        ? generatedTimes(cfg, day, offer?.duration ?? 60)
+        ? generatedTimes(cfg, day, offer?.duration ?? 60, offer?.id)
         : (reference.availability[Number(c.id)]?.[((offset % 7) + 7) % 7] ??
-          generatedTimes(cfg, day, offer?.duration ?? 60));
+          generatedTimes(cfg, day, offer?.duration ?? 60, offer?.id));
   return base.filter(
     (time) =>
       instant(day, time) > now() + cfg.notice * 3600000 &&
@@ -439,7 +439,7 @@ export function openGroup(store: Store, group: GroupSession): Store {
   const cfg = configFor(store, o.coach);
   if (
     group.day >= addDays(today(), cfg.horizon) ||
-    !intervalFits(cfg, group.day, group.time, o.duration) ||
+    !intervalFits(cfg, group.day, group.time, o.duration, o.id) ||
     cfg.blocks.some(
       (b) =>
         b.day === group.day &&
@@ -587,27 +587,42 @@ export function intervalFits(
   day: string,
   time: string,
   duration: number,
+  offerId?: string,
 ) {
   return intervalsFor(cfg, day).some(
-    ([a, b]) => mins(time) >= mins(a) && mins(time) + duration <= mins(b),
+    ([a, b, ids]) =>
+      (offerId === undefined || ids == null || ids.includes(offerId)) &&
+      mins(time) >= mins(a) &&
+      mins(time) + duration <= mins(b),
   );
 }
 export function generatedTimes(
   cfg: CoachSettings,
   day: string,
   duration: number,
+  offerId?: string,
 ) {
   const times: string[] = [];
-  for (const [a, b] of intervalsFor(cfg, day))
+  for (const [a, b, ids] of intervalsFor(cfg, day)) {
+    if (offerId !== undefined && ids != null && !ids.includes(offerId))
+      continue;
     for (let t = mins(a); t + duration <= mins(b); t += 30)
       times.push(endTime("00:00", t));
-  return times;
+  }
+  return [...new Set(times)].sort();
 }
 export function validateIntervals(list: Interval[]) {
-  if (list.length > 3) throw Error("Trois plages maximum par jour.");
   const sorted = [...list].sort((a, b) => mins(a[0]) - mins(b[0]));
   for (let i = 0; i < sorted.length; i++) {
-    const [a, b] = sorted[i];
+    const [a, b, ids] = sorted[i];
+    if (
+      ids != null &&
+      (!Array.isArray(ids) ||
+        !ids.length ||
+        ids.some((id) => typeof id !== "string") ||
+        new Set(ids).size !== ids.length)
+    )
+      throw Error("Choisissez au moins une séance pour chaque plage.");
     if (
       !/^([01]\d|2[0-3]):[0-5]\d$/.test(a) ||
       !/^([01]\d|2[0-3]):[0-5]\d$/.test(b) ||

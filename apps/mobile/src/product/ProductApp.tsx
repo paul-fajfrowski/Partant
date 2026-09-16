@@ -165,6 +165,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const [department, setDepartment] = useState("");
   const [sectorLimit, setSectorLimit] = useState(15);
   const [coachTab, setCoachTab] = useState("agenda");
+  const [agendaOfferId, setAgendaOfferId] = useState("");
   const [config, setConfig] = useState("profile");
   const [message, setMessage] = useState("");
   const [configName, setConfigName] = useState("Thomas Martin");
@@ -334,16 +335,31 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     go("profile");
   }
   function primary(c: Coach) {
-    return store.offers.find(
+    const candidates = store.offers.filter(
       (o) =>
         o.coach === c.id &&
         o.active &&
         (sessionKind === "Tous" || o.kind === sessionKind),
     );
+    return (
+      candidates.find(
+        (o) =>
+          o.price <= budget &&
+          market
+            .times(c, day, o)
+            .some(
+              (time) =>
+                (period !== "evening" || time >= "18:00") &&
+                (!hour || time === hour),
+            ),
+      ) ?? candidates[0]
+    );
   }
   function available(c: Coach, o?: Offer) {
+    const selected = o ?? primary(c);
+    if (!selected) return [];
     return market
-      .times(c, day, o ?? primary(c))
+      .times(c, day, selected)
       .filter(
         (time) =>
           (period !== "evening" || time >= "18:00") && (!hour || time === hour),
@@ -378,7 +394,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         ? preferenceScore(b) - preferenceScore(a) ||
           (a.dist ?? 999) - (b.dist ?? 999)
         : sort === "price"
-          ? a.price - b.price
+          ? (primary(a)?.price ?? a.price) - (primary(b)?.price ?? b.price)
           : sort === "rating"
             ? parseFloat((b.rating ?? "0").replace(",", ".")) -
               parseFloat((a.rating ?? "0").replace(",", "."))
@@ -695,6 +711,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           </P>
         </Row>
         <P muted style={{ fontSize: 14, marginTop: 4 }}>
+          {shown ? `${shown.name} · ` : ""}
           {c.area}
           {c.dist !== null ? ` · ${String(c.dist).replace(".", ",")} km` : ""}
         </P>
@@ -716,7 +733,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             <Pressable
               accessibilityRole="button"
               key={time}
-              onPress={() => chooseTime(c, time)}
+              onPress={() => chooseTime(c, time, shown)}
               style={styles.slot}
             >
               <P style={{ fontFamily: t.medium, fontSize: 15 }}>{time}</P>
@@ -1445,7 +1462,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                     }}
                   >
                     <P bold style={{ fontSize: 14 }}>
-                      {euro(c.price)}
+                      {euro(primary(c)?.price ?? c.price)}
                     </P>
                   </Pressable>
                 ))}
@@ -2674,6 +2691,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     const ownBookings = store.bookings.filter((b) => b.coach === activeCoach);
     const coachSelf = coaches.find((c) => c.id === activeCoach);
     const ownOffers = store.offers.filter((o) => o.coach === activeCoach);
+    const agendaOffer =
+      ownOffers.find((o) => o.id === agendaOfferId && o.active) ??
+      ownOffers.find((o) => o.active);
     const todayBookings = ownBookings.filter(
       (b) => b.day === day && b.status === "confirmed",
     );
@@ -2985,24 +3005,41 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               <H2 style={{ fontSize: 18, marginTop: 24, marginBottom: 14 }}>
                 Disponibilités proposées
               </H2>
-              {coachSelf ? (
+              {agendaOffer && (
+                <Select
+                  label="Voir les créneaux de"
+                  value={agendaOffer.id}
+                  items={ownOffers
+                    .filter((o) => o.active)
+                    .map((o) => [
+                      o.id,
+                      `${o.name} · ${o.duration} min · ${euro(o.price)}${o.kind === "Groupe" ? "/pers." : ""}`,
+                    ])}
+                  onChange={setAgendaOfferId}
+                />
+              )}
+              {coachSelf && agendaOffer ? (
                 <Row wrap>
-                  {market.times(coachSelf, day).map((time) => (
+                  {market.times(coachSelf, day, agendaOffer).map((time) => (
                     <Pressable
                       accessibilityRole="button"
                       key={time}
                       onPress={() =>
-                        live
+                        agendaOffer.kind === "Groupe"
                           ? setNotice(
-                              "La fermeture d’un créneau serveur reste à raccorder.",
+                              "Gérez ce cours dans Mes cours en groupe.",
                             )
-                          : setStore((s) => ({
-                              ...s,
-                              closed: [
-                                ...s.closed,
-                                `${activeCoach}|${day}|${time}`,
-                              ],
-                            }))
+                          : live
+                            ? setNotice(
+                                "La fermeture d’un créneau serveur reste à raccorder.",
+                              )
+                            : setStore((s) => ({
+                                ...s,
+                                closed: [
+                                  ...s.closed,
+                                  `${activeCoach}|${day}|${time}`,
+                                ],
+                              }))
                       }
                       style={styles.slot}
                     >
@@ -3033,15 +3070,20 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                 </Note>
               )}
               <P small muted style={{ marginTop: 24 }}>
-                Touchez une heure pour la fermer ou la rouvrir. Les séances déjà
-                réservées sont protégées.
+                Fermer une heure bloque ce départ pour toutes vos offres. Les
+                réservations confirmées sont conservées. Gérez les cours
+                collectifs dans « Mes cours en groupe ».
               </P>
               <Note style={{ marginTop: 24 }}>
                 <Row>
                   <Icon name="clock" />
                   <P style={{ fontSize: 14, flex: 1 }}>
-                    {ownOffers[0]?.duration ?? 60} min par séance · réservation
-                    2 h minimum à l’avance.
+                    {agendaOffer
+                      ? `${agendaOffer.duration} min · ${euro(agendaOffer.price)}${agendaOffer.kind === "Groupe" ? "/personne" : "/séance"}`
+                      : "Créez votre première séance"}{" "}
+                    · réservation{" "}
+                    {live ? 24 : configFor(store, activeCoach ?? "0").notice} h
+                    minimum à l’avance.
                   </P>
                 </Row>
               </Note>

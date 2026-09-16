@@ -1,3 +1,7 @@
+import {
+  AvailabilityIntervals,
+  intervalSummary,
+} from "./AvailabilityIntervals";
 import React, { useEffect, useState } from "react";
 import { Pressable, View, Switch } from "react-native";
 import {
@@ -139,49 +143,10 @@ export function CoachConfiguration({
       numeric
     />
   );
-  function intervals(list: Interval[], change: (list: Interval[]) => void) {
-    return (
-      <View style={{ gap: 10 }}>
-        {list.map(([a, b], i) => (
-          <View key={i}>
-            <Row style={{ alignItems: "flex-start" }}>
-              <View style={{ flex: 1 }}>
-                <Field
-                  label={`Début de plage ${i + 1}`}
-                  value={a}
-                  onChange={(v) =>
-                    change(list.map((r, j) => (j === i ? [v, r[1]] : r)))
-                  }
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Field
-                  label={`Fin de plage ${i + 1}`}
-                  value={b}
-                  onChange={(v) =>
-                    change(list.map((r, j) => (j === i ? [r[0], v] : r)))
-                  }
-                />
-              </View>
-            </Row>
-            <TextButton onPress={() => change(list.filter((_, j) => j !== i))}>
-              Retirer la plage {i + 1}
-            </TextButton>
-          </View>
-        ))}
-        {list.length < 3 && (
-          <Button light onPress={() => change([...list, ["09:00", "18:00"]])}>
-            Ajouter une plage
-          </Button>
-        )}
-        {!list.length && (
-          <P small muted>
-            Journée fermée.
-          </P>
-        )}
-      </View>
-    );
-  }
+  const ownOffers = store.offers.filter((o) => o.coach === actual);
+  const intervals = (list: Interval[], change: (list: Interval[]) => void) => (
+    <AvailabilityIntervals list={list} offers={ownOffers} onChange={change} />
+  );
   const dates = Array.from({ length: 90 }, (_, i) => {
     const d = addDays(today(), i);
     return [d, d] as [string, string];
@@ -271,9 +236,14 @@ export function CoachConfiguration({
   if (section === "offers")
     return (
       <>
-        <P muted>
-          Des offres compréhensibles, avec un prix total et une durée précise.
+        <P muted style={{ marginVertical: 16 }}>
+          Créez une offre par formule : par exemple, renforcement 30 min à 30 €
+          et renforcement 60 min à 50 €. Choisissez ensuite leurs plages dans
+          Disponibilités.
         </P>
+        <TextButton onPress={() => go("config-native", "schedule")}>
+          Associer mes séances aux disponibilités
+        </TextButton>
         {store.offers
           .filter((o) => o.coach === actual)
           .map((o) => (
@@ -394,6 +364,7 @@ export function CoachConfiguration({
     return (
       <>
         <Eyebrow style={{ marginBottom: 20 }}>VOS RÉGLAGES</Eyebrow>
+
         <H2>Formats proposés</H2>
         {["Parc", "Studio", "Domicile", "Visio"].map((f) => (
           <Toggle
@@ -472,7 +443,9 @@ export function CoachConfiguration({
       <>
         <H1>À votre rythme.</H1>
         <P muted style={{ marginVertical: 20 }}>
-          Jusqu’à trois plages par jour. Laissez les plages inutilisées vides.
+          Une plage est une période d’ouverture, pas un rendez-vous. De 9 h à 12
+          h, vous pouvez recevoir trois clients pour des séances d’une heure,
+          sans pause entre les séances.
         </P>
         {[
           "Lundi",
@@ -488,7 +461,9 @@ export function CoachConfiguration({
               title={label}
               description={
                 cfg.week[i].length
-                  ? cfg.week[i].map((x) => x.join("–")).join(" · ")
+                  ? cfg.week[i]
+                      .map((x) => intervalSummary(x, ownOffers))
+                      .join(" · ")
                   : "Fermé"
               }
               onPress={() => setExpanded(expanded === i ? -1 : i)}
@@ -502,6 +477,15 @@ export function CoachConfiguration({
               )}
           </View>
         ))}
+        <TextButton onPress={() => go("config-native", "offers")}>
+          Gérer mes séances et leurs tarifs
+        </TextButton>
+        <P small muted>
+          Choisissez les offres autorisées sur chaque plage. Les départs sont
+          proposés toutes les 30 minutes, selon la durée de l’offre et le temps
+          entre deux séances. Pour un groupe, programmez ensuite un cours daté
+          dans « Mes cours en groupe ».
+        </P>
         <Note style={{ marginVertical: 20 }}>
           Les séances déjà confirmées sont conservées lorsque vous changez vos
           horaires.
@@ -514,7 +498,10 @@ export function CoachConfiguration({
           <Setting
             key={d}
             title={d}
-            description={list.map((x) => x.join("–")).join(" · ") || "Fermé"}
+            description={
+              list.map((x) => intervalSummary(x, ownOffers)).join(" · ") ||
+              "Fermé"
+            }
             onPress={() => {
               const next = { ...cfg, exceptions: { ...cfg.exceptions } };
               delete next.exceptions[d];

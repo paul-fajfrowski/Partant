@@ -27,6 +27,7 @@ Depuis la racine du projet :
 npm --prefix apps/mobile run typecheck
 node scripts/test-native-model.cjs
 node scripts/test-native-complete.cjs
+node scripts/test-native-availability.cjs
 npm ci --prefix work/qa-runtime
 ```
 
@@ -42,6 +43,7 @@ Et depuis la racine :
 node scripts/test-native-web.cjs
 node scripts/test-native-settings-web.cjs
 node scripts/test-native-navigation-web.cjs
+node scripts/test-native-availability-web.cjs
 ```
 
 Les tests DOM utilisent des simulations des API de polices et de mise en page. Une revue visuelle réelle reste nécessaire.

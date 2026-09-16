@@ -1,5 +1,6 @@
 import type { Account, Booking, Coach, Offer, Preferences } from "./model";
-export type Interval = [string, string];
+// Missing/null offer IDs preserve legacy availability for every offer.
+export type Interval = [start: string, end: string, offerIds?: string[] | null];
 export type Dossier = {
   status:
     | "approved"

@@ -29,3 +29,15 @@ Les cours et écritures avancées de démonstration sont locaux. OAuth Google/Ap
 - Client : « Mon espace » regroupe échanges, préférences et aide. Séances et favoris restent dans la navigation principale ; l’assistance et le suivi des demandes ont une seule entrée.
 - Onboarding : terminer ou passer ne doit pas activer automatiquement les filtres sport, budget, distance, format ou date d’Explorer. La localisation reste le secteur choisi. Les préférences sont enregistrées dans le profil et influencent le tri « Pour vous ». Les filtres choisis volontairement dans Explorer restent fonctionnels. Un changement de compte efface les critères temporaires du compte précédent.
 - Le script `scripts/test-native-navigation-web.cjs` rejoue ces régressions sur le bundle web, y compris une création de compte complète et les boîtes de réception vides.
+
+## Disponibilités par type de séance
+
+Dans Réglages → Séances & tarifs, créer plusieurs formules, chacune avec son nom, son format, sa durée et son prix. Dans Disponibilités, chaque plage peut proposer toutes les offres (y compris les futures) ou une sélection explicite. Exemple : renforcement 60 min à 50 € de 9 h à 12 h, puis renforcement express 30 min à 30 € de 14 h à 17 h. Une plage accueille autant de rendez-vous que sa durée et les pauses le permettent ; le nombre de plages n’est plus limité à trois.
+
+Tester une quatrième plage, deux offres différentes sur la même plage, puis une exception datée affectée à une autre offre. Modifier une heure doit conserver la sélection d’offres. Une réservation occupe le coach pour toutes ses offres pendant sa durée : pas de double réservation. Un tarif n’est pas saisi une deuxième fois dans le planning ; créer une autre formule dans Séances & tarifs si ses conditions diffèrent.
+
+L’Agenda permet de choisir la séance dont on consulte les créneaux. Côté client, choisir un horaire où seule la deuxième offre est disponible : le coach doit rester trouvable, afficher cette formule et réserver à son prix. Vérifier aussi que la durée complète tient dans la plage.
+
+Les groupes nécessitent toujours un cours daté et une capacité ; affecter une offre de groupe à une plage autorise sa programmation, sans ouvrir automatiquement un cours récurrent. Les réservations confirmées et cours déjà programmés conservent leurs conditions lors des changements de planning.
+
+Les anciens réglages de démonstration restent compatibles et proposent toutes les offres. Les affectations par plage sont locales ; leur persistance et leur contrôle côté serveur restent à raccorder dans le MVP connecté.

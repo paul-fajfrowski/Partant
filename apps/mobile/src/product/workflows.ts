@@ -199,8 +199,20 @@ function future(b: Booking) {
 export function saveSettings(s: Store, id: string, cfg: CoachSettings): Store {
   if (s.account?.role !== "coach" || coachAccountId(s) !== id)
     throw Error("Connectez-vous à ce compte coach.");
-  cfg.week.forEach(validateIntervals);
-  Object.values(cfg.exceptions).forEach(validateIntervals);
+  if (cfg.week.length !== 7)
+    throw Error("Complétez les sept jours de la semaine.");
+  const ownOffers = new Set(
+    s.offers.filter((o) => o.coach === id).map((o) => o.id),
+  );
+  for (const ranges of [...cfg.week, ...Object.values(cfg.exceptions)]) {
+    validateIntervals(ranges);
+    if (
+      ranges.some(([, , ids]) =>
+        ids?.some((offerId) => !ownOffers.has(offerId)),
+      )
+    )
+      throw Error("Une séance de cette plage n’appartient pas à votre offre.");
+  }
   if (
     ![7, 14, 30, 60, 90].includes(cfg.horizon) ||
     cfg.notice < 1 ||
