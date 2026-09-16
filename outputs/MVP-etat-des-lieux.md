@@ -2,6 +2,10 @@
 
 État au **16 septembre 2026**, après les priorités 1 et 2, le correctif notifications et la finalisation A1–A9. Voir `finalisation-prototype.md` pour les parcours ajoutés et les limites de validation.
 
+## Mise à jour architecture et branchements
+
+Cible confirmée : **React Native + TypeScript + Expo**, directement, sans étape Swift. Le prototype A1–A9 est validé visuellement. Les premières fondations Supabase sont déployées et un parcours React Native connecté est créé, mais les étapes 1–3 ne sont pas terminées. Consulter `../docs/branchements.md` pour les états vérifiés, les prérequis développeur et les limites. Paiement et communications externes restent reportés.
+
 ## Où nous en sommes
 
 **Le MVP d’expérience est déjà largement testable. Le MVP commercial reste à construire.**
@@ -116,7 +120,7 @@ Les neuf lots précédemment proposés disposent maintenant d’un parcours test
 | A8 | Proposition coach et accord/refus client, y compris transfert d’une réservation de groupe | Notification réelle et acceptation transactionnelle. |
 | A9 | Rappels et alertes internes tenant compte des places et préférences | Exécution en arrière-plan, canaux externes et suivi des échecs. |
 
-**478 vérifications passent** : 337 contrôles existants, 117 nouveaux contrôles de logique et 24 contrôles de formulaires/navigation dans jsdom. La revue visuelle mobile a été validée par le porteur du projet le 16 septembre 2026 ; l’audit d’accessibilité et les services externes restent à vérifier. Une fonctionnalité testable localement ne devient pas pour autant prête pour la production.
+**478 vérifications passent** : 337 contrôles existants, 117 nouveaux contrôles de logique et 24 contrôles de formulaires/navigation dans jsdom. L’audit visuel mobile, l’accessibilité et les services externes restent à vérifier. Une fonctionnalité testable localement ne devient pas pour autant prête pour la production.
 
 ## 5. Ce qui manque pour un MVP avec de vrais utilisateurs
 
@@ -133,7 +137,7 @@ Ce chantier est distinct de l’ajout d’écrans. Les éléments « testables �
 | B7 — Qualité et mesure | Hébergement, sauvegarde/restauration, suivi des erreurs, tests de paiement et de concurrence, accessibilité, mesure du parcours. | Les erreurs sont détectées ; on sait mesurer recherche sans résultat, conversion, réservations répétées et annulations. |
 | B8 — Offre de départ | Recruter et accompagner les premiers coachs, obtenir de vraies plages ouvertes, choisir un territoire et quelques disciplines. | Les recherches représentatives des premiers clients trouvent effectivement des séances. |
 
-Une synchronisation avec tous les agendas, une carte avancée et une application native ne sont pas forcément nécessaires dès le premier pilote. En revanche, il faut décider comment éviter les conflits de planning : agenda Partant tenu à jour par le coach ou connexion effective à un agenda externe.
+Décision du 16 septembre : commencer directement en React Native, connecter la découverte locale et préparer Google Calendar puis Outlook avant le paiement. Les agendas ne sont pas encore synchronisés ; le coach doit tenir son planning Partant à jour tant que les connexions ne sont pas actives.
 
 ## 6. Fonctionnalités absentes que je garderais pour plus tard
 
@@ -153,7 +157,7 @@ Une synchronisation avec tous les agendas, une carte avancée et une application
 | Statistiques avancées et prévisions de revenus | Reporter ; suivre d’abord les réservations, remboursements et indicateurs essentiels. |
 | Codes promotionnels, parrainage, cartes cadeaux | Reporter jusqu’à compréhension de la conversion et du retour client. |
 | Visio intégrée | Le format est sélectionnable ; un véritable lien externe peut suffire avant un outil intégré. |
-| Applications iOS / Android natives | Le HTML responsive ne constitue pas une application distribuée en boutique. Évaluer le besoin après le pilote web. |
+| Applications iOS / Android | Décision confirmée : React Native + Expo dès maintenant. Le HTML reste la référence ; les écrans natifs sont à intégrer progressivement, sans publication pour le moment. |
 | Fil social, défis, nutrition, objets connectés | Hors cœur du MVP de réservation. |
 
 ## 7. Définition proposée du MVP commercial

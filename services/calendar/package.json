@@ -1,0 +1,7 @@
+{
+  "name": "@partant/calendar-adapters",
+  "private": true,
+  "type": "module",
+  "scripts": {"test": "node --test test/*.test.mjs"},
+  "dependencies": {"@js-temporal/polyfill":"0.5.1"}
+}

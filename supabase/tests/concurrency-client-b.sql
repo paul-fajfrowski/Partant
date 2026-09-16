@@ -1,0 +1,1 @@
+begin;set local role authenticated;select set_config('request.jwt.claims','{"sub":"41000000-0000-4000-8000-000000000003","role":"authenticated"}',true);select pg_advisory_xact_lock(hashtextextended('coach:41000000-0000-4000-8000-000000000001',0));select pg_sleep(1);select public.reserve_slot('43000000-0000-4000-8000-000000000001',1,'44000000-0000-4000-8000-000000000003');commit;

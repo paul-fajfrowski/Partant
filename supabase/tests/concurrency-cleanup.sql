@@ -1,0 +1,10 @@
+begin;
+do $$ begin if (select count(*) from public.bookings where slot_id='43000000-0000-4000-8000-000000000001')<>1 then raise exception 'CONCURRENCY_FAILED';end if;end $$;
+delete from public.notifications where booking_id in(select id from public.bookings where slot_id='43000000-0000-4000-8000-000000000001');
+delete from public.bookings where slot_id='43000000-0000-4000-8000-000000000001';
+delete from public.slots where id='43000000-0000-4000-8000-000000000001';
+delete from public.offers where id='42000000-0000-4000-8000-000000000001';
+delete from public.coaches where id='41000000-0000-4000-8000-000000000001';
+delete from public.profiles where id in ('41000000-0000-4000-8000-000000000001','41000000-0000-4000-8000-000000000002','41000000-0000-4000-8000-000000000003');
+delete from auth.users where id in ('41000000-0000-4000-8000-000000000001','41000000-0000-4000-8000-000000000002','41000000-0000-4000-8000-000000000003');
+commit;

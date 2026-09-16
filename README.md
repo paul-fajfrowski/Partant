@@ -2,6 +2,13 @@
 
 Marketplace locale de coachs sportifs — prototype mobile interactif, autonome et en français.
 
+
+## Application cible et branchements
+
+**Décision du 16 septembre 2026 : React Native + TypeScript + Expo, sans développement Swift préalable.** Le prototype HTML reste la référence visuelle validée. Le démarrage de l’application connectée se trouve dans `apps/mobile`.
+
+Consulter [la décision](docs/decisions/001-react-native.md) et [l’état exact des branchements et réglages à faire](docs/branchements.md). Les fondations Supabase sont déployées ; les étapes 1–3 restent en cours. Google, Apple et Outlook ne sont pas encore activés. Paiement et communications externes sont reportés.
+
 ## Ouvrir le prototype
 
 Téléchargez le dépôt (bouton **Code → Download ZIP**), décompressez-le, puis ouvrez **[outputs/partant.html](outputs/partant.html)** dans votre navigateur. Aucun serveur ni installation nécessaire : CSS, JavaScript, photos et police sont intégrés au HTML.
@@ -25,7 +32,7 @@ Ouvrez ensuite http://localhost:8765/partant.html.
 - Réserver à nouveau, transfert de cours collectif et annulation partielle de places.
 - Assistance et modération de démonstration.
 
-Les priorités 1 et 2 sont incluses. La finalisation A1–A9 est intégrée à cette version ; le MVP connecté B1–B8 reste à réaliser : voir **[l’état des lieux MVP](outputs/MVP-etat-des-lieux.md)**. Voir [la finalisation du prototype](outputs/finalisation-prototype.md). Le point de sauvegarde GitHub antérieur est le commit 992eb4b.
+Les priorités 1 et 2 sont incluses. La finalisation A1–A9 est disponible localement ; le MVP connecté B1–B8 reste à réaliser : voir **[l’état des lieux MVP](outputs/MVP-etat-des-lieux.md)**. Voir [la finalisation du prototype](outputs/finalisation-prototype.md). Le point de sauvegarde GitHub antérieur est le commit 992eb4b.
 
 ## Tester les parcours
 
@@ -92,4 +99,4 @@ node work/test-finalization.cjs
 
 Le dépôt Project-H-iOS a uniquement servi de référence visuelle en lecture seule ; il n’est pas modifié par ce projet.
 
-Pour les tests DOM optionnels : `npm ci --prefix work/qa-runtime`, puis `node work/test-finalization-dom.cjs`. La revue visuelle mobile a été validée par le porteur du projet le 16 septembre 2026. L’audit d’accessibilité reste à réaliser.
+Pour les tests DOM optionnels : `npm ci --prefix work/qa-runtime`, puis `node work/test-finalization-dom.cjs`. La revue visuelle mobile du prototype HTML a été validée par l’utilisateur le 16 septembre 2026 ; l’audit d’accessibilité reste à réaliser.
