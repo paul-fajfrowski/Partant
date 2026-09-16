@@ -27,6 +27,7 @@ export type CoachSettings = {
     title: string;
   }[];
   buffer: number;
+  departureStep?: number | null; // null: session duration + the coach’s pause
   notice: number;
   horizon: number;
   cancelHours: number;

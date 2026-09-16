@@ -3757,9 +3757,16 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               value={hour}
               items={[
                 ["", "Toutes les heures"],
-                ...Array.from({ length: 48 }, (_, i) =>
-                  endTime("00:00", i * 30),
-                ).map((v) => [v, v] as [string, string]),
+                ...[
+                  ...new Set([
+                    ...Array.from({ length: 48 }, (_, i) =>
+                      endTime("00:00", i * 30),
+                    ),
+                    ...coaches.flatMap((c) => market.times(c, day)),
+                  ]),
+                ]
+                  .sort()
+                  .map((v) => [v, v] as [string, string]),
               ]}
               onChange={setHour}
             />

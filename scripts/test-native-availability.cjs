@@ -263,5 +263,77 @@ ok(
   ).join(",") === "09:00,14:00",
   "User-entered ranges display slots chronologically",
 );
+const controlled = {
+  ...cfg,
+  buffer: 15,
+  departureStep: null,
+  week: Array.from({ length: 7 }, () => [["09:10", "13:10", [long.id]]]),
+};
+ok(
+  M.generatedTimes(controlled, day, 60, long.id).join(",") ===
+    "09:10,10:25,11:40",
+  "Coach start time and pause determine departures",
+);
+ok(
+  M.generatedTimes({ ...controlled, departureStep: 20 }, day, 60, long.id)
+    .slice(0, 3)
+    .join(",") === "09:10,09:30,09:50",
+  "Coach can choose departure spacing without snapping to a grid",
+);
+ok(
+  M.generatedTimes({ ...controlled, departureStep: 0 }, day, 60, long.id)
+    .length === 0,
+  "Invalid stored cadence cannot freeze generation",
+);
+ok(
+  M.generatedTimes(
+    { ...controlled, week: Array.from({ length: 7 }, () => [["", ""]]) },
+    day,
+    60,
+    long.id,
+  ).length === 0,
+  "Blank hours do not create bookable times",
+);
+let timingOwner = M.switchAccount(
+  added,
+  W.identities(added).find((a) => a.id === "coach-0"),
+);
+fail(
+  () => W.saveSettings(timingOwner, "0", { ...controlled, departureStep: 0 }),
+  /délais/,
+);
+fail(
+  () => W.saveSettings(timingOwner, "0", { ...controlled, departureStep: NaN }),
+  /délais/,
+);
+fail(
+  () => W.saveSettings(timingOwner, "0", { ...controlled, buffer: NaN }),
+  /délais/,
+);
+let timingSaved = W.saveSettings(timingOwner, "0", controlled);
+timingSaved = M.switchAccount(timingSaved, alex);
+timingSaved = M.reserve(timingSaved, {
+  ...draft,
+  id: "timing",
+  offerId: long.id,
+  time: "09:10",
+});
+ok(
+  !M.slotsFor(c, day, timingSaved, long).includes("09:10") &&
+    M.slotsFor(c, day, timingSaved, long).includes("10:25"),
+  "Availability keeps exact starts after a booking and respects the pause",
+);
+const newcomer = W.loginDemo(
+    M.initialStore,
+    "independent@example.test",
+    "Coach autonome",
+    "coach",
+    true,
+  ),
+  nc = M.configFor(newcomer, newcomer.account.coachId);
+ok(
+  nc.week.every((r) => r.length === 0) && nc.weeklyConfigured,
+  "New coaches choose their hours before any availability exists",
+);
 M.setDemoClock(0);
 console.log(`PASS ${count} offer-specific availability assertions.`);

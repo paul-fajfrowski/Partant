@@ -8,3 +8,5 @@
 - Ne jamais modifier le repository Project-H-iOS, utilisé seulement comme référence visuelle.
 
 - Consigne utilisateur confirmée : le prototype est la référence stricte. Reproduire ses écrans et parcours en React Native ; aucune refonte implicite. Lire docs/parite-prototype-react-native.md avant de poursuivre le portage. Ne pas déclarer la parité complète sur la seule base de tests TypeScript/DOM.
+
+- Planning confirmé par l’utilisateur : une seule logique de disponibilités définies par le coach. Aucun mode « heures fixes » ni cadence imposée par Partant. Le coach renseigne ses plages, les offres, les pauses et le rythme des départs. Tout nouveau coach commence sans horaires ouverts.

@@ -72,3 +72,9 @@ La limite de trois plages par jour est supprimée. Chaque plage hebdomadaire ou 
 Le client peut découvrir un coach sur sa deuxième offre disponible même si sa première offre est fermée à cette heure. La carte et le tri par prix utilisent la formule présentée. L’Agenda coach comporte un sélecteur d’offre. Les groupes restent des cours datés, programmables dans les plages autorisées. Les changements d’horaires conservent les réservations et cours déjà confirmés.
 
 Validation : 26 assertions métier ciblées, 10 assertions DOM de configuration puis réservation au tarif de l’offre, suites existantes de réservation et réglages réussies. TypeScript et exports web/iOS/Android vérifiés. Les affectations par plage sont pour l’instant locales ; leur contrôle et persistance serveur restent à raccorder.
+
+## Précision utilisateur : un planning décidé par le coach
+
+Aucun mode distinct « heures fixes ». Le coach renseigne ses horaires sans heure préremplie sur les nouvelles plages. La cadence universelle de 30 min est retirée : la durée de ses offres et sa pause déterminent les départs, avec un espacement personnalisable. Un aperçu rend ces choix visibles. Les nouveaux comptes coach n’ont aucune plage ouverte par défaut ; les comptes fictifs gardent leurs horaires de démonstration. La recherche client intègre les horaires précis disponibles.
+
+Les réservations existantes restent conservées. Cette évolution porte sur le moteur local ; les règles avancées restent à raccorder au serveur. Contrôles : 35 assertions métier de disponibilités, tests DOM de configuration/réservation, TypeScript et exports natifs/web.

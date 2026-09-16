@@ -534,6 +534,7 @@ export function configFor(store: Store, id: string): CoachSettings {
     exceptions: {},
     blocks: [],
     buffer: 0,
+    departureStep: null,
     notice: 2,
     horizon: 90,
     cancelHours: 24,
@@ -603,10 +604,23 @@ export function generatedTimes(
   offerId?: string,
 ) {
   const times: string[] = [];
+  const step = cfg.departureStep ?? duration + cfg.buffer;
+  if (
+    !Number.isFinite(step) ||
+    step < 1 ||
+    !Number.isFinite(duration) ||
+    duration < 1
+  )
+    return times;
   for (const [a, b, ids] of intervalsFor(cfg, day)) {
+    if (
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(a) ||
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(b)
+    )
+      continue;
     if (offerId !== undefined && ids != null && !ids.includes(offerId))
       continue;
-    for (let t = mins(a); t + duration <= mins(b); t += 30)
+    for (let t = mins(a); t + duration <= mins(b); t += step)
       times.push(endTime("00:00", t));
   }
   return [...new Set(times)].sort();

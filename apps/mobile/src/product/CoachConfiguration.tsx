@@ -94,7 +94,7 @@ export function CoachConfiguration({
   const [expanded, setExpanded] = useState(0);
   const [exceptionDay, setExceptionDay] = useState(addDays(today(), 1));
   const [exceptionClosed, setExceptionClosed] = useState(false);
-  const [exception, setException] = useState<Interval[]>([["09:00", "18:00"]]);
+  const [exception, setException] = useState<Interval[]>([["", ""]]);
   const [blockDay, setBlockDay] = useState(addDays(today(), 1));
   const [blockStart, setBlockStart] = useState("14:00"),
     [blockEnd, setBlockEnd] = useState("15:00"),
@@ -145,7 +145,12 @@ export function CoachConfiguration({
   );
   const ownOffers = store.offers.filter((o) => o.coach === actual);
   const intervals = (list: Interval[], change: (list: Interval[]) => void) => (
-    <AvailabilityIntervals list={list} offers={ownOffers} onChange={change} />
+    <AvailabilityIntervals
+      list={list}
+      offers={ownOffers}
+      settings={cfg}
+      onChange={change}
+    />
   );
   const dates = Array.from({ length: 90 }, (_, i) => {
     const d = addDays(today(), i);
@@ -443,9 +448,42 @@ export function CoachConfiguration({
       <>
         <H1>À votre rythme.</H1>
         <P muted style={{ marginVertical: 20 }}>
-          Une plage est une période d’ouverture, pas un rendez-vous. De 9 h à 12
-          h, vous pouvez recevoir trois clients pour des séances d’une heure,
-          sans pause entre les séances.
+          Vous choisissez les jours, l’heure de début et l’heure de fin. Chaque
+          plage commence à l’heure que vous saisissez, même à 9 h 10 ou 14 h 20.
+        </P>
+        <Field
+          label="Pause entre deux séances (minutes)"
+          numeric
+          value={String(cfg.buffer)}
+          onChange={(v) => setCfg({ ...cfg, buffer: Number(v) })}
+        />
+        <Select
+          label="Espacement des départs"
+          value={cfg.departureStep == null ? "duration" : "custom"}
+          items={[
+            ["duration", "Selon mes séances et mes pauses"],
+            ["custom", "Intervalle de mon choix"],
+          ]}
+          onChange={(v) =>
+            setCfg({
+              ...cfg,
+              departureStep:
+                v === "duration" ? null : (cfg.departureStep ?? 30),
+            })
+          }
+        />
+        {cfg.departureStep != null && (
+          <Field
+            label="Minutes entre deux départs"
+            numeric
+            value={String(cfg.departureStep)}
+            onChange={(v) => setCfg({ ...cfg, departureStep: Number(v) })}
+          />
+        )}
+        <P small muted style={{ marginBottom: 16 }}>
+          Le premier départ correspond au début de votre plage. Les suivants
+          respectent la durée de chaque séance et votre pause, ou l’intervalle
+          que vous choisissez. Le client réserve parmi ces possibilités.
         </P>
         {[
           "Lundi",
@@ -481,10 +519,9 @@ export function CoachConfiguration({
           Gérer mes séances et leurs tarifs
         </TextButton>
         <P small muted>
-          Choisissez les offres autorisées sur chaque plage. Les départs sont
-          proposés toutes les 30 minutes, selon la durée de l’offre et le temps
-          entre deux séances. Pour un groupe, programmez ensuite un cours daté
-          dans « Mes cours en groupe ».
+          Choisissez les séances proposées sur chaque plage. Pour un cours
+          collectif, vous choisissez également la date et l’heure dans « Mes
+          cours en groupe ».
         </P>
         <Note style={{ marginVertical: 20 }}>
           Les séances déjà confirmées sont conservées lorsque vous changez vos
@@ -567,15 +604,25 @@ export function CoachConfiguration({
               "heures avant",
             ],
           ] as const
-        ).map(([key, label, values, suffix]) => (
-          <Select
-            key={key}
-            label={label}
-            value={String(cfg[key])}
-            items={values.map((v) => [String(v), `${v} ${suffix}`])}
-            onChange={(v) => setCfg({ ...cfg, [key]: Number(v) })}
-          />
-        ))}
+        ).map(([key, label, values, suffix]) =>
+          key === "buffer" ? (
+            <Field
+              key={key}
+              label="Temps entre deux séances (minutes)"
+              numeric
+              value={String(cfg.buffer)}
+              onChange={(v) => setCfg({ ...cfg, buffer: Number(v) })}
+            />
+          ) : (
+            <Select
+              key={key}
+              label={label}
+              value={String(cfg[key])}
+              items={values.map((v) => [String(v), `${v} ${suffix}`])}
+              onChange={(v) => setCfg({ ...cfg, [key]: Number(v) })}
+            />
+          ),
+        )}
         <Note>
           <P bold>Réservation automatique</P>
           <P small>

@@ -41,3 +41,11 @@ L’Agenda permet de choisir la séance dont on consulte les créneaux. Côté c
 Les groupes nécessitent toujours un cours daté et une capacité ; affecter une offre de groupe à une plage autorise sa programmation, sans ouvrir automatiquement un cours récurrent. Les réservations confirmées et cours déjà programmés conservent leurs conditions lors des changements de planning.
 
 Les anciens réglages de démonstration restent compatibles et proposent toutes les offres. Les affectations par plage sont locales ; leur persistance et leur contrôle côté serveur restent à raccorder dans le MVP connecté.
+
+## Le coach décide de ses horaires
+
+Une seule logique de disponibilités, sans mode « heures fixes ». Une nouvelle plage ne contient aucune heure préremplie. Un nouveau coach commence avec les sept jours fermés. Les horaires existants des comptes fictifs restent les données de démonstration de ces coachs.
+
+Le premier départ est l’heure de début saisie par le coach, par exemple 9 h 10. Par défaut, les départs suivants suivent la durée de l’offre et la pause choisie par le coach ; il peut renseigner un autre espacement en minutes. L’aperçu affiche le résultat avant sauvegarde. Les réservations et occupations enlèvent ensuite les créneaux incompatibles. Ce réglage n’est pas une seconde catégorie de planning.
+
+Tester 9 h 10–13 h 10 avec une offre d’une heure et 15 min de pause : départs à 9 h 10, 10 h 25 et 11 h 40. Vérifier un intervalle personnalisé de 20 min, puis la recherche côté client : les heures réellement configurées doivent être sélectionnables, y compris 18 h 10. Les cours collectifs gardent leur date et leur heure choisies par le coach.

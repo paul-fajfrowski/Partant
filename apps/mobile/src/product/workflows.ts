@@ -133,6 +133,8 @@ export function loginDemo(
       [coachId]: {
         ...cfg,
         published: false,
+        weeklyConfigured: true,
+        week: Array.from({ length: 7 }, () => []),
         payoutReady: false,
         dossier: {
           ...cfg.dossier,
@@ -216,7 +218,13 @@ export function saveSettings(s: Store, id: string, cfg: CoachSettings): Store {
   if (
     ![7, 14, 30, 60, 90].includes(cfg.horizon) ||
     cfg.notice < 1 ||
+    !Number.isInteger(cfg.buffer) ||
     cfg.buffer < 0 ||
+    cfg.buffer > 1440 ||
+    (cfg.departureStep != null &&
+      (!Number.isInteger(cfg.departureStep) ||
+        cfg.departureStep < 1 ||
+        cfg.departureStep > 1440)) ||
     cfg.cancelHours < 0
   )
     throw Error("Vérifiez les délais.");

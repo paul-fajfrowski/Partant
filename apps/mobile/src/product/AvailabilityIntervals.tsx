@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Switch, View } from "react-native";
-import { Offer, endTime, mins } from "./model";
-import type { Interval } from "./extendedTypes";
+import { Offer, generatedTimes, today } from "./model";
+import type { CoachSettings, Interval } from "./extendedTypes";
 import { Button, Dialog, Field, P, Row, Rule, TextButton } from "./ui";
 
 const price = (o: Offer) =>
@@ -9,39 +9,19 @@ const price = (o: Offer) =>
 export function intervalSummary([a, b, ids]: Interval, offers: Offer[]) {
   return `${a}–${b} · ${ids == null ? "Toutes les séances" : ids.map((id) => offers.find((o) => o.id === id)?.name ?? "Offre indisponible").join(", ")}`;
 }
-function nextRange(list: Interval[]): Interval | null {
-  const valid = list
-    .filter(([a, b]) => Number.isFinite(mins(a)) && mins(b) > mins(a))
-    .sort((a, b) => mins(a[0]) - mins(b[0]));
-  const start = valid.length ? mins(valid[valid.length - 1][1]) : 9 * 60;
-  if (start + 30 <= 1439)
-    return [
-      endTime("00:00", start),
-      endTime("00:00", Math.min(start + 60, 1439)),
-    ];
-  let cursor = 0;
-  for (const [a, b] of valid) {
-    if (mins(a) - cursor >= 30)
-      return [
-        endTime("00:00", cursor),
-        endTime("00:00", Math.min(cursor + 60, mins(a))),
-      ];
-    cursor = Math.max(cursor, mins(b));
-  }
-  return null;
-}
 export function AvailabilityIntervals({
   list,
   offers,
+  settings,
   onChange,
 }: {
   list: Interval[];
   offers: Offer[];
+  settings: CoachSettings;
   onChange: (list: Interval[]) => void;
 }) {
   const [editing, setEditing] = useState<number | null>(null);
   const [selection, setSelection] = useState<string[] | null>(null);
-  const next = nextRange(list);
   const replace = (index: number, value: Interval) =>
     onChange(list.map((range, i) => (i === index ? value : range)));
   return (
@@ -53,6 +33,7 @@ export function AvailabilityIntervals({
               <Field
                 label={`Début de plage ${i + 1}`}
                 value={a}
+                placeholder="HH:mm"
                 onChange={(v) => replace(i, [v, b, ids ?? null])}
               />
             </View>
@@ -60,6 +41,7 @@ export function AvailabilityIntervals({
               <Field
                 label={`Fin de plage ${i + 1}`}
                 value={b}
+                placeholder="HH:mm"
                 onChange={(v) => replace(i, [a, v, ids ?? null])}
               />
             </View>
@@ -85,29 +67,53 @@ export function AvailabilityIntervals({
                   })
                   .join("\n")}
           </P>
+          {!!a && !!b && (
+            <View style={{ marginTop: 12, gap: 6 }}>
+              <P small bold>
+                Aperçu des départs selon vos réglages
+              </P>
+              {offers
+                .filter(
+                  (o) =>
+                    o.active &&
+                    o.kind !== "Groupe" &&
+                    (ids == null || ids.includes(o.id)),
+                )
+                .map((o) => {
+                  const day = today();
+                  const times = generatedTimes(
+                    { ...settings, exceptions: { [day]: [[a, b, ids]] } },
+                    day,
+                    o.duration,
+                    o.id,
+                  );
+                  return (
+                    <P key={o.id} small muted>
+                      {o.name} :{" "}
+                      {times.length
+                        ? `${times.slice(0, 4).join(" · ")}${times.length > 4 ? "…" : ""}`
+                        : "la séance ne tient pas dans cette plage"}
+                    </P>
+                  );
+                })}
+              <P small muted>
+                Les réservations et indisponibilités retireront les départs
+                occupés.
+              </P>
+            </View>
+          )}
           <TextButton onPress={() => onChange(list.filter((_, j) => j !== i))}>
             Retirer la plage {i + 1}
           </TextButton>
           <Rule />
         </View>
       ))}
-      <Button
-        light
-        disabled={!next}
-        onPress={() => {
-          if (next) onChange([...list, next]);
-        }}
-      >
+      <Button light onPress={() => onChange([...list, ["", ""]])}>
         Ajouter une plage
       </Button>
       {!list.length && (
         <P small muted>
-          Journée fermée.
-        </P>
-      )}
-      {!next && (
-        <P small muted>
-          La journée est entièrement couverte. Ajustez une plage existante.
+          Journée fermée. Ajoutez vos horaires pour l’ouvrir.
         </P>
       )}
       <Dialog

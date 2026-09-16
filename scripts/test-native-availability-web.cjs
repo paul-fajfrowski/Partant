@@ -50,7 +50,7 @@ async function field(label, value) {
   await click("Réglages");
   await click("Disponibilités");
   ok(
-    d.body.textContent.includes("pas un rendez-vous"),
+    d.body.textContent.includes("Vous choisissez les jours"),
     "Explains range versus appointment",
   );
   await field("Début de plage 1", "09:00");
@@ -76,8 +76,33 @@ async function field(label, value) {
   await field("Fin de plage 2", "17:30");
   await field("Fin de plage 2", "17:00");
   await click("Ajouter une plage");
+  ok(
+    d.querySelector('input[aria-label="Début de plage 3"]').value === "",
+    "No hour is imposed for a new range",
+  );
+  await field("Début de plage 3", "18:10");
+  await field("Fin de plage 3", "19:10");
   await click("Ajouter une plage");
+  await field("Début de plage 4", "20:00");
+  await field("Fin de plage 4", "21:00");
+  await field("Pause entre deux séances (minutes)", "15");
+  ok(
+    d.body.textContent.includes("10:15"),
+    "Preview follows session duration and the coach pause",
+  );
+  await click("Espacement des départs : Selon mes séances et mes pauses");
+  await click("Intervalle de mon choix");
+  await field("Minutes entre deux départs", "20");
+  ok(
+    d.body.textContent.includes("14:20"),
+    "Preview follows coach-defined spacing",
+  );
   await click("Enregistrer la semaine");
+  ok(
+    stored().settings["0"].departureStep === 20 &&
+      stored().settings["0"].buffer === 15,
+    "Coach timing settings persist",
+  );
   const monday = stored().settings["0"].week[0];
   ok(monday.length === 4, "Coach can save a fourth range");
   ok(
@@ -113,6 +138,12 @@ async function field(label, value) {
   await click("Date & heure");
   await click(M.dayLabel(mondayDate));
   await click("À quelle heure ? : Toutes les heures");
+  ok(
+    [...d.querySelectorAll('[role="radio"]')].some(
+      (e) => e.textContent.trim() === "18:10",
+    ),
+    "Search includes exact times configured by coaches",
+  );
   await click("14:00");
   await click("Voir les disponibilités");
   ok(
