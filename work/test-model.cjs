@@ -1,0 +1,27 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const html=fs.readFileSync('outputs/partant.html','utf8');
+const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
+const nodes=new Map();const node=id=>nodes.has(id)?nodes.get(id):(nodes.set(id,{innerHTML:'',value:'',classList:{add(){},remove(){},toggle(){}},addEventListener(){},focus(){},showModal(){this.open=true},close(){this.open=false},scrollTop:0}),nodes.get(id));
+const ctx=vm.createContext({document:{getElementById:node,addEventListener(){},querySelectorAll(){return []}},localStorage:{getItem(){return null},setItem(){}},setTimeout(){},clearTimeout(){},console,Date,Blob,URL,FormData});
+vm.runInContext(script,ctx);
+const run=x=>vm.runInContext(x,ctx);
+assert.equal(run('results().length'),6);
+assert.equal(run("state.day=1;state.hour='19:00';results().length"),4);
+run("state.sport='Pilates'");assert.equal(run('results()[0].name'),'Sarah Dubois');
+run("state.sport='Tout';state.hour='';state.maxPrice=40");assert.equal(run('results().length'),1);
+run("state.maxPrice=80;state.maxDist=1");assert.equal(run('results().length'),1);
+run("state.maxDist=10;state.city='Lyon'");assert.equal(run('results().length'),0);
+run("state.format='Visio'");assert.equal(run('results().length'),4);
+run("resetFilters();startBooking(0,'19:00',1);state.booking.kind='Duo';doPay()");assert.equal(run('state.bookings[0].price'),70);assert.equal(run('state.screen'),'confirmation');assert.equal(run("avail(coaches[0],1).includes('19:00')"),false);
+run("startBooking(1,'19:00',1);doPay()");assert.equal(run('state.bookings.length'),1,'Client conflict must block a second booking');
+run("state.selectedBooking=state.bookings[0].id;act('confirm-cancel',{})");assert.equal(run('state.bookings[0].refund'),70);assert.equal(run("avail(coaches[0],1).includes('19:00')"),true);
+run("state.coachDay=0;act('coach-toggle',{time:'18:00'})");assert.equal(run("avail(coaches[0],0).includes('18:00')"),false);
+run("act('coach-toggle',{time:'18:00'})");assert.equal(run("avail(coaches[0],0).includes('18:00')"),true);
+run("state.prices[0]=65;startBooking(0,'12:00',0);doPay()");assert.equal(run('state.bookings[1].price'),65);
+run("state.prices[0]=75");assert.equal(run('state.bookings[1].price'),65,'Paid prices are immutable');
+run("state.selectedBooking=state.bookings[1].id;act('confirm-cancel',{})");assert.equal(run('state.bookings[1].refund'),0,'Late cancellation retains the session fee');
+for(const screen of ['explore','favorites','bookings','account','profile','setup','checkout','confirmation','detail','coach']){run(`state.screen='${screen}';render()`);assert.ok(node('view').innerHTML.length>50)}
+assert.equal(run('avail(coaches[0],6).length'),0,'Sunday rest day');
+assert.ok(!/<(?:script|link)[^>]+(?:src|href)="https?:/.test(html),'No remote scripts or styles');
+assert.ok(html.includes('data:font/ttf;base64,'));assert.ok(html.includes('data:image/png;base64,'));
+console.log('PASS: model/render/offline checks; temporal filtering, city/visio, budgets, conflict prevention, price snapshots, cancellation/refund, coach availability and all screens.');
