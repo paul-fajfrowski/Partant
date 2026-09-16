@@ -6,3 +6,5 @@
 - Étapes 1–3 autorisées ; étapes 4 (paiements) et 5 (communications externes) reportées par l’utilisateur.
 - Supabase de développement autorisé : jhhsysjdeyqsuztjtgea. Aucun secret dans le frontend ou Git. Les réservations de développement ne sont jamais des paiements.
 - Ne jamais modifier le repository Project-H-iOS, utilisé seulement comme référence visuelle.
+
+- Consigne utilisateur confirmée : le prototype est la référence stricte. Reproduire ses écrans et parcours en React Native ; aucune refonte implicite. Lire docs/parite-prototype-react-native.md avant de poursuivre le portage. Ne pas déclarer la parité complète sur la seule base de tests TypeScript/DOM.

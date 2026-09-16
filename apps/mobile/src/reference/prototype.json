@@ -1,0 +1,829 @@
+{
+  "coaches": [
+    {
+      "id": 0,
+      "name": "Thomas Martin",
+      "sport": "Préparation physique",
+      "tags": [
+        "Renforcement",
+        "Perte de poids",
+        "Remise en forme"
+      ],
+      "price": 50,
+      "rating": "4,9",
+      "reviews": 86,
+      "sessions": 324,
+      "years": 8,
+      "area": "Paris 11e · Voltaire",
+      "dist": 0.8,
+      "formats": [
+        "Parc",
+        "Studio",
+        "Domicile"
+      ],
+      "place": "Square Maurice-Gardette",
+      "address": "2 rue du Général-Blaise, 75011 Paris",
+      "cert": "BPJEPS Activités de la forme",
+      "langs": "Français, anglais",
+      "quote": "Reprendre, progresser, se surprendre.",
+      "bio": "On part de là où vous en êtes. Je construis des séances variées pour retrouver de la force et de l’énergie, sans pression de performance. Du premier footing à votre prochain défi, on avance ensemble.",
+      "method": "Un point sur votre objectif, un échauffement progressif, puis du renforcement adapté. Vous repartez avec des repères simples pour progresser entre les séances.",
+      "slots": [
+        "12:00",
+        "18:00",
+        "19:00"
+      ],
+      "xy": [
+        66,
+        51
+      ]
+    },
+    {
+      "id": 1,
+      "name": "Sarah Dubois",
+      "sport": "Pilates",
+      "tags": [
+        "Mobilité",
+        "Renforcement",
+        "Récupération"
+      ],
+      "price": 45,
+      "rating": "5,0",
+      "reviews": 42,
+      "sessions": 187,
+      "years": 6,
+      "area": "Paris 15e · Commerce",
+      "dist": 5.2,
+      "formats": [
+        "Studio",
+        "Visio"
+      ],
+      "place": "Studio du Commerce",
+      "address": "18 rue du Commerce, 75015 Paris",
+      "cert": "BPJEPS AF · certification Pilates Matwork",
+      "langs": "Français, anglais",
+      "quote": "Plus de mouvement. Moins de tensions.",
+      "bio": "Le Pilates m’a appris à bouger avec plus de précision et moins d’effort. J’accompagne les débutants comme les sportifs à retrouver mobilité, équilibre et confiance.",
+      "method": "Respiration, mobilité douce puis renforcement profond. Chaque mouvement est expliqué et adapté à votre niveau.",
+      "slots": [
+        "09:00",
+        "17:00",
+        "19:00"
+      ],
+      "xy": [
+        18,
+        76
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Idriss Benali",
+      "sport": "Running",
+      "tags": [
+        "Préparation compétition",
+        "Préparation physique"
+      ],
+      "price": 40,
+      "rating": "4,9",
+      "reviews": 63,
+      "sessions": 251,
+      "years": 7,
+      "area": "Paris 12e · Bastille",
+      "dist": 1.3,
+      "formats": [
+        "Parc",
+        "Visio"
+      ],
+      "place": "Coulée verte René-Dumont",
+      "address": "44 rue de Lyon, 75012 Paris",
+      "cert": "Licence STAPS · entraîneur FFA",
+      "langs": "Français, anglais",
+      "quote": "Votre premier 5 km. Ou votre meilleur.",
+      "bio": "Pas besoin de courir vite pour être coureur. Je vous aide à trouver votre allure, préparer une course ou simplement apprécier de sortir. Le plaisir fait partie du programme.",
+      "method": "Un footing d’observation, des éducatifs et un travail d’allure adapté. Une progression mesurable, sans brûler les étapes.",
+      "slots": [
+        "08:30",
+        "18:30",
+        "20:00"
+      ],
+      "xy": [
+        73,
+        72
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Camille Laurent",
+      "sport": "Yoga",
+      "tags": [
+        "Mobilité",
+        "Récupération"
+      ],
+      "price": 48,
+      "rating": "4,9",
+      "reviews": 57,
+      "sessions": 216,
+      "years": 9,
+      "area": "Paris 10e · Canal Saint-Martin",
+      "dist": 2.1,
+      "formats": [
+        "Studio",
+        "Domicile",
+        "Visio"
+      ],
+      "place": "Atelier du Canal",
+      "address": "35 quai de Valmy, 75010 Paris",
+      "cert": "Certification Yoga Alliance RYT 500",
+      "langs": "Français, espagnol",
+      "quote": "Un moment pour revenir à vous.",
+      "bio": "Un yoga accessible et vivant, qui s’adapte à votre corps. Mes séances mêlent respiration, postures et mobilité pour retrouver de l’espace dans les journées chargées.",
+      "method": "Quelques minutes pour se poser, un enchaînement progressif, puis un temps de relaxation. Aucun niveau préalable nécessaire.",
+      "slots": [
+        "10:00",
+        "18:00",
+        "20:00"
+      ],
+      "xy": [
+        51,
+        25
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Lucas Bernard",
+      "sport": "Musculation",
+      "tags": [
+        "Performance",
+        "Préparation physique"
+      ],
+      "price": 55,
+      "rating": "4,8",
+      "reviews": 109,
+      "sessions": 481,
+      "years": 10,
+      "area": "Paris 9e · Saint-Georges",
+      "dist": 3.5,
+      "formats": [
+        "Studio",
+        "Visio"
+      ],
+      "place": "Atelier Force",
+      "address": "24 rue Notre-Dame-de-Lorette, 75009 Paris",
+      "cert": "DEUST Métiers de la forme",
+      "langs": "Français, anglais",
+      "quote": "De bonnes bases. De vrais progrès.",
+      "bio": "Apprendre les bons gestes, devenir plus fort et garder l’envie. Je rends la musculation accessible avec une approche technique et une progression adaptée à votre quotidien.",
+      "method": "Un bilan de mouvement puis un travail des fondamentaux : pousser, tirer, porter. La qualité du geste avant la charge.",
+      "slots": [
+        "11:00",
+        "17:30",
+        "19:30"
+      ],
+      "xy": [
+        30,
+        28
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Inès Haddad",
+      "sport": "Boxe",
+      "tags": [
+        "Sports de combat",
+        "Remise en forme"
+      ],
+      "price": 60,
+      "rating": "5,0",
+      "reviews": 38,
+      "sessions": 163,
+      "years": 5,
+      "area": "Paris 20e · Ménilmontant",
+      "dist": 1.8,
+      "formats": [
+        "Studio",
+        "Parc"
+      ],
+      "place": "Club Ménilmontant",
+      "address": "27 rue de Ménilmontant, 75020 Paris",
+      "cert": "BPJEPS Boxe",
+      "langs": "Français, anglais, arabe",
+      "quote": "Prenez votre place. Trouvez votre rythme.",
+      "bio": "La boxe, c’est autant la tête que les jambes. On travaille la coordination, la technique et le cardio dans une ambiance bienveillante. Débutants bienvenus, aucun combat imposé.",
+      "method": "Échauffement, déplacements, travail aux pattes d’ours et retour au calme. Gants prêtés pour votre première séance.",
+      "slots": [
+        "12:30",
+        "18:00",
+        "19:30"
+      ],
+      "xy": [
+        83,
+        36
+      ]
+    }
+  ],
+  "icons": {
+    "search": "<circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><path d=\"m16 16 5 5\"/>",
+    "pin": "<path d=\"M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z\"/><circle cx=\"12\" cy=\"10\" r=\"2.5\"/>",
+    "heart": "<path d=\"M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.5a5.5 5.5 0 0 0 0-7.8Z\"/>",
+    "calendar": "<rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"3\"/><path d=\"M7 3v4m10-4v4M3 11h18m-13 5h2m4 0h2\"/>",
+    "user": "<circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21a8 8 0 0 1 16 0\"/>",
+    "filter": "<path d=\"M4 7h7m5 0h4M4 17h3m5 0h8\"/><circle cx=\"13\" cy=\"7\" r=\"2\"/><circle cx=\"9\" cy=\"17\" r=\"2\"/>",
+    "arrow": "<path d=\"M5 12h14m-6-6 6 6-6 6\"/>",
+    "back": "<path d=\"m14 5-7 7 7 7\"/>",
+    "close": "<path d=\"m6 6 12 12M6 18 18 6\"/>",
+    "check": "<path d=\"m5 12 4 4 10-10\"/>",
+    "clock": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 6v6l4 2\"/>",
+    "map": "<path d=\"m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2V5Zm6-2v16m6-14v16\"/>",
+    "chevron": "<path d=\"m9 5 7 7-7 7\"/>",
+    "down": "<path d=\"m6 9 6 6 6-6\"/>",
+    "star": "<path d=\"m12 3 2.7 5.5 6 .9-4.4 4.3 1 6L12 17l-5.3 2.7 1-6-4.4-4.3 6-.9L12 3Z\"/>",
+    "shield": "<path d=\"m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z\"/><path d=\"m8 12 3 3 5-6\"/>",
+    "run": "<path d=\"m4 5 4 2 2 5 4 2 4 .8A3.5 3.5 0 0 1 21 18v1H3v-7l1-7Z\"/><path d=\"M3 16h5m3-5-2 2m5 0-2 2M5 7l-1 5\"/>",
+    "strength": "<rect x=\"4\" y=\"6\" width=\"4\" height=\"12\" rx=\"1.5\"/><rect x=\"16\" y=\"6\" width=\"4\" height=\"12\" rx=\"1.5\"/><path d=\"M8 10h8m-8 4h8M2 9v6m20-6v6\"/>",
+    "pilates": "<ellipse cx=\"12\" cy=\"12\" rx=\"7\" ry=\"8\"/><rect x=\"2.5\" y=\"9\" width=\"4\" height=\"6\" rx=\"1.5\" fill=\"var(--sport-surface,#fff)\"/><rect x=\"17.5\" y=\"9\" width=\"4\" height=\"6\" rx=\"1.5\" fill=\"var(--sport-surface,#fff)\"/>",
+    "boxing": "<path d=\"M7 16c-3-1-4-3-4-6V9a2 2 0 0 1 4 0V6a4 4 0 0 1 4-4h3a5 5 0 0 1 5 5v4c0 2-1 4-3 5v5H7v-5Z\"/><path d=\"M7 9v3m0 5h9m-6 2h3\"/>",
+    "all": "<rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"2.5\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"2.5\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"2.5\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"2.5\"/>",
+    "message": "<path d=\"M21 11a9 9 0 0 1-9 9H3l2-5a9 9 0 1 1 16-4Z\"/>",
+    "plus": "<path d=\"M12 5v14M5 12h14\"/>",
+    "wallet": "<rect x=\"3\" y=\"5\" width=\"18\" height=\"15\" rx=\"3\"/><path d=\"M3 9h18m-6 5h3\"/>",
+    "home": "<path d=\"m3 11 9-8 9 8M5 10v11h14V10m-9 11v-7h4v7\"/>",
+    "sun": "<circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1\"/>",
+    "moon": "<path d=\"M21 13A9 9 0 0 1 11 3a9 9 0 1 0 10 10Z\"/>",
+    "yoga": "<circle cx=\"12\" cy=\"4.5\" r=\"2\"/><path d=\"M12 8v6m-4-5-2 4H3m13-4 2 4h3M9 14l-5 3a2 2 0 0 0 1 4h14a2 2 0 0 0 1-4l-5-3m-7 4 8 3m0-3-8 3\"/>"
+  },
+  "sportGoals": {
+    "Tout": [
+      "Gagner en force",
+      "Préparer une course",
+      "Améliorer ma mobilité",
+      "Perdre du poids"
+    ],
+    "Préparation physique": [
+      "Gagner en force",
+      "Préparer une compétition",
+      "Améliorer mon endurance"
+    ],
+    "Running": [
+      "Courir plus longtemps",
+      "Préparer une course",
+      "Améliorer ma vitesse"
+    ],
+    "Pilates": [
+      "Renforcer mes muscles profonds",
+      "Améliorer ma posture",
+      "Améliorer ma mobilité"
+    ],
+    "Musculation": [
+      "Gagner en force",
+      "Développer ma masse musculaire",
+      "Améliorer ma technique"
+    ],
+    "Boxe": [
+      "Apprendre les bases de la boxe",
+      "Améliorer mon cardio",
+      "Préparer un combat"
+    ],
+    "Yoga": [
+      "Gagner en souplesse",
+      "Mieux gérer mon stress",
+      "Approfondir ma pratique"
+    ],
+    "Mobilité": [
+      "Améliorer ma mobilité",
+      "Gagner en souplesse",
+      "Bouger plus facilement au quotidien"
+    ],
+    "Remise en forme": [
+      "Améliorer mon endurance",
+      "Renforcer tout mon corps",
+      "Perdre du poids"
+    ],
+    "Tennis": [
+      "Apprendre les bases du tennis",
+      "Améliorer mon service",
+      "Préparer un tournoi"
+    ],
+    "Football": [
+      "Améliorer ma technique de balle",
+      "Améliorer mon endurance",
+      "Préparer la saison"
+    ],
+    "Natation": [
+      "Apprendre à nager",
+      "Améliorer ma technique de nage",
+      "Nager plus longtemps"
+    ],
+    "Sports de combat": [
+      "Apprendre les techniques de base",
+      "Améliorer mon cardio",
+      "Préparer un combat"
+    ],
+    "Récupération": [
+      "Retrouver de la mobilité",
+      "Mieux récupérer après l’effort",
+      "Installer une routine de récupération"
+    ]
+  },
+  "services": [
+    {
+      "coach": 0,
+      "offers": [
+        {
+          "id": "solo",
+          "name": "Coaching individuel",
+          "kind": "Individuel",
+          "duration": 60,
+          "price": 50,
+          "active": true
+        },
+        {
+          "id": "duo",
+          "name": "Coaching duo",
+          "kind": "Duo",
+          "duration": 60,
+          "price": 70,
+          "active": true
+        }
+      ]
+    },
+    {
+      "coach": 1,
+      "offers": [
+        {
+          "id": "solo",
+          "name": "Coaching individuel",
+          "kind": "Individuel",
+          "duration": 60,
+          "price": 45,
+          "active": true
+        },
+        {
+          "id": "duo",
+          "name": "Coaching duo",
+          "kind": "Duo",
+          "duration": 60,
+          "price": 65,
+          "active": true
+        }
+      ]
+    },
+    {
+      "coach": 2,
+      "offers": [
+        {
+          "id": "solo",
+          "name": "Coaching individuel",
+          "kind": "Individuel",
+          "duration": 60,
+          "price": 40,
+          "active": true
+        },
+        {
+          "id": "duo",
+          "name": "Coaching duo",
+          "kind": "Duo",
+          "duration": 60,
+          "price": 60,
+          "active": true
+        }
+      ]
+    },
+    {
+      "coach": 3,
+      "offers": [
+        {
+          "id": "solo",
+          "name": "Coaching individuel",
+          "kind": "Individuel",
+          "duration": 60,
+          "price": 48,
+          "active": true
+        },
+        {
+          "id": "duo",
+          "name": "Coaching duo",
+          "kind": "Duo",
+          "duration": 60,
+          "price": 68,
+          "active": true
+        }
+      ]
+    },
+    {
+      "coach": 4,
+      "offers": [
+        {
+          "id": "solo",
+          "name": "Coaching individuel",
+          "kind": "Individuel",
+          "duration": 60,
+          "price": 55,
+          "active": true
+        },
+        {
+          "id": "duo",
+          "name": "Coaching duo",
+          "kind": "Duo",
+          "duration": 60,
+          "price": 75,
+          "active": true
+        }
+      ]
+    },
+    {
+      "coach": 5,
+      "offers": [
+        {
+          "id": "solo",
+          "name": "Coaching individuel",
+          "kind": "Individuel",
+          "duration": 60,
+          "price": 60,
+          "active": true
+        },
+        {
+          "id": "duo",
+          "name": "Coaching duo",
+          "kind": "Duo",
+          "duration": 60,
+          "price": 80,
+          "active": true
+        }
+      ]
+    }
+  ],
+  "coachSections": [
+    [
+      "profile",
+      "user",
+      "Votre profil",
+      "La personne derrière le coach"
+    ],
+    [
+      "offers",
+      "strength",
+      "Séances & tarifs",
+      "Individuel, duo et cours en groupe"
+    ],
+    [
+      "places",
+      "pin",
+      "Lieux & déplacements",
+      "Adresses, rayon, frais éventuels"
+    ],
+    [
+      "schedule",
+      "calendar",
+      "Disponibilités",
+      "Semaine type, pauses et absences"
+    ],
+    [
+      "rules",
+      "shield",
+      "Réservation & annulation",
+      "Délais et temps entre séances"
+    ],
+    [
+      "documents",
+      "shield",
+      "Documents & vérification",
+      "Identité, diplômes, assurance"
+    ],
+    [
+      "payout",
+      "wallet",
+      "Paiements & versements",
+      "Commission et coordonnées professionnelles"
+    ],
+    [
+      "notifications",
+      "message",
+      "Notifications",
+      "Les nouvelles qui comptent"
+    ],
+    [
+      "calendars",
+      "calendar",
+      "Agendas connectés",
+      "Google, Apple et Outlook"
+    ]
+  ],
+  "availability": [
+    [
+      [
+        "10:00",
+        "16:00",
+        "18:30"
+      ],
+      [
+        "12:00",
+        "18:00",
+        "19:00"
+      ],
+      [
+        "09:00",
+        "12:00",
+        "18:00",
+        "19:00"
+      ],
+      [
+        "10:00",
+        "16:00",
+        "18:30"
+      ],
+      [],
+      [
+        "09:00",
+        "12:00",
+        "18:00",
+        "19:00"
+      ],
+      [
+        "10:00",
+        "16:00",
+        "18:30"
+      ]
+    ],
+    [
+      [
+        "09:00",
+        "11:00",
+        "18:30"
+      ],
+      [
+        "09:00",
+        "17:00",
+        "19:00"
+      ],
+      [
+        "09:00",
+        "12:00",
+        "19:00"
+      ],
+      [
+        "09:00",
+        "11:00",
+        "18:30"
+      ],
+      [],
+      [
+        "09:00",
+        "12:00",
+        "19:00"
+      ],
+      [
+        "09:00",
+        "11:00",
+        "18:30"
+      ]
+    ],
+    [
+      [
+        "08:30",
+        "17:00",
+        "19:00"
+      ],
+      [
+        "08:30",
+        "18:30",
+        "20:00"
+      ],
+      [
+        "07:30",
+        "18:30",
+        "19:30"
+      ],
+      [
+        "08:30",
+        "17:00",
+        "19:00"
+      ],
+      [],
+      [
+        "07:30",
+        "18:30",
+        "19:30"
+      ],
+      [
+        "08:30",
+        "17:00",
+        "19:00"
+      ]
+    ],
+    [
+      [
+        "10:00",
+        "16:00",
+        "18:00"
+      ],
+      [
+        "10:00",
+        "18:00",
+        "20:00"
+      ],
+      [
+        "10:00",
+        "18:00",
+        "19:00"
+      ],
+      [
+        "10:00",
+        "16:00",
+        "18:00"
+      ],
+      [],
+      [
+        "10:00",
+        "18:00",
+        "19:00"
+      ],
+      [
+        "10:00",
+        "16:00",
+        "18:00"
+      ]
+    ],
+    [
+      [
+        "11:00",
+        "17:00",
+        "19:30"
+      ],
+      [
+        "11:00",
+        "17:30",
+        "19:30"
+      ],
+      [
+        "08:00",
+        "17:30",
+        "19:00"
+      ],
+      [
+        "11:00",
+        "17:00",
+        "19:30"
+      ],
+      [],
+      [
+        "08:00",
+        "17:30",
+        "19:00"
+      ],
+      [
+        "11:00",
+        "17:00",
+        "19:30"
+      ]
+    ],
+    [
+      [
+        "09:30",
+        "16:00",
+        "18:30"
+      ],
+      [
+        "12:30",
+        "18:00",
+        "19:30"
+      ],
+      [
+        "12:30",
+        "18:00",
+        "20:00"
+      ],
+      [
+        "09:30",
+        "16:00",
+        "18:30"
+      ],
+      [],
+      [
+        "12:30",
+        "18:00",
+        "20:00"
+      ],
+      [
+        "09:30",
+        "16:00",
+        "18:30"
+      ]
+    ]
+  ],
+  "anchor": "2026-09-16",
+  "goals": {
+    "Tout": [
+      "Me remettre en forme",
+      "Me sentir mieux",
+      "Découvrir une pratique",
+      "Gagner en force",
+      "Préparer une course",
+      "Améliorer ma mobilité",
+      "Perdre du poids"
+    ],
+    "Préparation physique": [
+      "Me remettre en forme",
+      "Me sentir mieux",
+      "Découvrir une pratique",
+      "Gagner en force",
+      "Préparer une compétition",
+      "Améliorer mon endurance"
+    ],
+    "Running": [
+      "Me remettre en forme",
+      "Me sentir mieux",
+      "Découvrir une pratique",
+      "Courir plus longtemps",
+      "Préparer une course",
+      "Améliorer ma vitesse"
+    ],
+    "Pilates": [
+      "Me remettre en forme",
+      "Me sentir mieux",
+      "Découvrir une pratique",
+      "Renforcer mes muscles profonds",
+      "Améliorer ma posture",
+      "Améliorer ma mobilité"
+    ],
+    "Musculation": [
+      "Me remettre en forme",
+      "Me sentir mieux",
+      "Découvrir une pratique",
+      "Gagner en force",
+      "Développer ma masse musculaire",
+      "Améliorer ma technique"
+    ],
+    "Boxe": [
+      "Me remettre en forme",
+      "Me sentir mieux",
+      "Découvrir une pratique",
+      "Apprendre les bases de la boxe",
+      "Améliorer mon cardio",
+      "Préparer un combat"
+    ],
+    "Yoga": [
+      "Me remettre en forme",
+      "Me sentir mieux",
+      "Découvrir une pratique",
+      "Gagner en souplesse",
+      "Mieux gérer mon stress",
+      "Approfondir ma pratique"
+    ],
+    "Mobilité": [
+      "Me remettre en forme",
+      "Me sentir mieux",
+      "Découvrir une pratique",
+      "Améliorer ma mobilité",
+      "Gagner en souplesse",
+      "Bouger plus facilement au quotidien"
+    ],
+    "Remise en forme": [
+      "Me remettre en forme",
+      "Me sentir mieux",
+      "Découvrir une pratique",
+      "Améliorer mon endurance",
+      "Renforcer tout mon corps",
+      "Perdre du poids"
+    ],
+    "Tennis": [
+      "Me remettre en forme",
+      "Me sentir mieux",
+      "Découvrir une pratique",
+      "Apprendre les bases du tennis",
+      "Améliorer mon service",
+      "Préparer un tournoi"
+    ],
+    "Football": [
+      "Me remettre en forme",
+      "Me sentir mieux",
+      "Découvrir une pratique",
+      "Améliorer ma technique de balle",
+      "Améliorer mon endurance",
+      "Préparer la saison"
+    ],
+    "Natation": [
+      "Me remettre en forme",
+      "Me sentir mieux",
+      "Découvrir une pratique",
+      "Apprendre à nager",
+      "Améliorer ma technique de nage",
+      "Nager plus longtemps"
+    ],
+    "Sports de combat": [
+      "Me remettre en forme",
+      "Me sentir mieux",
+      "Découvrir une pratique",
+      "Apprendre les techniques de base",
+      "Améliorer mon cardio",
+      "Préparer un combat"
+    ],
+    "Récupération": [
+      "Me remettre en forme",
+      "Me sentir mieux",
+      "Découvrir une pratique",
+      "Retrouver de la mobilité",
+      "Mieux récupérer après l’effort",
+      "Installer une routine de récupération"
+    ]
+  }
+}

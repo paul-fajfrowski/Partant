@@ -134,3 +134,7 @@ Travaux restant après obtention des identifiants :
 Contrôle Supabase final : aucun signalement dans l’advisor sécurité. L’advisor performance indique uniquement un index encore inutilisé sur cette base neuve ; il est conservé pour la recherche de créneaux. Voir https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index .
 
 Audit dépendances du scaffold Expo : 10 signalements modérés dans la chaîne CLI/configuration (uuid/xcode), aucun élevé ou critique. Pas de mise à jour forcée incompatible ; à réexaminer avant les builds distribués.
+
+## Interface native — reprise du prototype
+
+La première interface produit React Native est disponible ; l’ancien atelier technique reste accessible avec `?tools=connections`. Le mode par défaut est une démonstration locale ; `?data=connected` utilise Supabase. Consulter [le suivi de parité](parite-prototype-react-native.md) avant de considérer un écran ou une intégration terminé. Aucun fournisseur OAuth, paiement ou SMS supplémentaire n’a été activé par ce portage.

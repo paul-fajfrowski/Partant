@@ -9,6 +9,8 @@ Marketplace locale de coachs sportifs — prototype mobile interactif, autonome 
 
 Consulter [la décision](docs/decisions/001-react-native.md) et [l’état exact des branchements et réglages à faire](docs/branchements.md). Les fondations Supabase sont déployées ; les étapes 1–3 restent en cours. Google, Apple et Outlook ne sont pas encore activés. Paiement et communications externes sont reportés.
 
+Le premier parcours natif navigable reprend maintenant les actifs et les écrans du prototype. Voir [le suivi précis de parité](docs/parite-prototype-react-native.md) et [le lancement React Native](apps/mobile/README.md). Le portage complet et sa validation visuelle restent en cours.
+
 ## Ouvrir le prototype
 
 Téléchargez le dépôt (bouton **Code → Download ZIP**), décompressez-le, puis ouvrez **[outputs/partant.html](outputs/partant.html)** dans votre navigateur. Aucun serveur ni installation nécessaire : CSS, JavaScript, photos et police sont intégrés au HTML.

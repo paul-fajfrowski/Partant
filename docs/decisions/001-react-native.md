@@ -11,3 +11,7 @@ Supabase héberge les comptes, données, fichiers et fonctions serveur. Les secr
 Périmètre autorisé maintenant : étapes 1–3 (fondations, connexion/découverte, agendas Google et Outlook). Paiement Stripe et communications externes (étapes 4–5) sont explicitement reportés.
 
 Le prototype A1–A9 est implémenté et la revue visuelle mobile a été validée par l’utilisateur. Le MVP connecté B1–B8 n’est pas terminé. Ne pas confondre interface simulée et intégration vérifiée.
+
+## Fidélité confirmée par l’utilisateur
+
+Le prototype est la référence clé : tout ce qui est repris en React Native doit lui être identique en design et en parcours. Le suivi détaillé se trouve dans [la matrice de parité](../parite-prototype-react-native.md). Les composants natifs reprennent les actifs du prototype ; les écrans provisoires doivent être signalés, puis complétés, sans redéfinir le produit.

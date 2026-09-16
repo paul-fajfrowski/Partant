@@ -1,0 +1,3 @@
+// Values taken from the validated HTML, including its final mobile overrides.
+export const tokens={ink:'#141414',muted:'#626262',fog:'#f2f2f2',white:'#FFFFFF',border:'#e9e9e9',desktop:'#eaeaea',
+ font:'Hanken',medium:'HankenMedium',bold:'HankenBold',page:24,pageMobile:22,h1:28,h1Line:31.64,h2:20,h3:18,pill:99,pillHeight:50,sheet:24,photo:12,touch:44} as const;
