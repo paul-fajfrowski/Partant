@@ -4,7 +4,7 @@ Décision utilisateur du 16 septembre 2026.
 
 L’application Partant sera développée en **React Native, TypeScript et Expo**, pour iOS et Android. Il n’est pas prévu de construire une application Swift pour la migrer ensuite. L’aperçu web Expo sert à tester sans publication.
 
-Le prototype HTML validé reste une référence de parcours et de direction artistique : Hanken Grotesk, #141414, blanc, gris, boutons pillules, surfaces arrondies, photographie et sobriété. Le HTML n’est pas une application React Native ; ses écrans devront être reconstruits en composants natifs. Les règles métier partagées restent côté serveur.
+Le prototype HTML validé reste une référence de parcours et de direction artistique : Hanken Grotesk, #141414, blanc, gris, boutons pillules, surfaces arrondies, photographie et sobriété. Le HTML n’est pas une application React Native ; ses parcours sont désormais repris en composants natifs. Les évolutions produit se font uniquement dans `apps/mobile`, le HTML restant archivé comme référence. La revue visuelle du portage reste à effectuer. Les règles métier partagées restent côté serveur.
 
 Supabase héberge les comptes, données, fichiers et fonctions serveur. Les secrets des prestataires restent côté serveur. Les services sont développés en TypeScript pour être utilisables par React Native.
 

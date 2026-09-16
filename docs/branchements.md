@@ -7,7 +7,7 @@
 | Élément | État vérifié | Limite actuelle |
 |---|---|---|
 | Prototype HTML A1–A9 | Réalisé, revue visuelle mobile validée par l’utilisateur | Les données du HTML restent locales ; il n’est pas raccordé au backend. |
-| Application React Native / Expo | Sources dans `apps/mobile`, compilation TypeScript et export web réussis | Premier parcours technique, pas encore tous les écrans premium du prototype. Aucun build iOS/Android validé. |
+| Application React Native / Expo | Sources dans `apps/mobile`, compilation TypeScript et export web réussis | Parcours produit et configurations avancées repris en démonstration locale. Revue visuelle native et tests sur appareils encore nécessaires. |
 | Supabase | Projet `jhhsysjdeyqsuztjtgea` réellement modifié | Environnement de développement, pas de production. |
 | Base et droits | Profils privés, profils coach publics, offres, créneaux, réservations, notifications et métadonnées d’agendas | Reprise progressive du modèle complet du prototype encore nécessaire. |
 | Réservation serveur | Prix et capacité calculés côté serveur ; individuel, duo, groupe ; idempotence | Confirmation de test sans encaissement, aucune promesse de paiement. |
@@ -133,8 +133,8 @@ Travaux restant après obtention des identifiants :
 
 Contrôle Supabase final : aucun signalement dans l’advisor sécurité. L’advisor performance indique uniquement un index encore inutilisé sur cette base neuve ; il est conservé pour la recherche de créneaux. Voir https://supabase.com/docs/guides/database/database-linter?lint=0005_unused_index .
 
-Audit dépendances du scaffold Expo : 10 signalements modérés dans la chaîne CLI/configuration (uuid/xcode), aucun élevé ou critique. Pas de mise à jour forcée incompatible ; à réexaminer avant les builds distribués.
+Audit dépendances du scaffold Expo après ajout des modules natifs : 11 signalements modérés dans la chaîne CLI/configuration (uuid/xcode), aucun élevé ou critique. Pas de mise à jour forcée incompatible ; à réexaminer avant les builds distribués.
 
 ## Interface native — reprise du prototype
 
-La première interface produit React Native est disponible ; l’ancien atelier technique reste accessible avec `?tools=connections`. Le mode par défaut est une démonstration locale ; `?data=connected` utilise Supabase. Consulter [le suivi de parité](parite-prototype-react-native.md) avant de considérer un écran ou une intégration terminé. Aucun fournisseur OAuth, paiement ou SMS supplémentaire n’a été activé par ce portage.
+React Native est désormais la version de travail produit ; le HTML reste une référence archivée. La reprise fonctionnelle locale des parcours avancés est disponible ; l’ancien atelier technique reste accessible avec `?tools=connections`. Le mode par défaut est une démonstration locale ; `?data=connected` utilise Supabase. Consulter [le suivi de parité](parite-prototype-react-native.md) avant de considérer un écran ou une intégration terminé. Aucun fournisseur OAuth, paiement ou SMS supplémentaire n’a été activé par ce portage.

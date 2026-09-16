@@ -5,11 +5,11 @@ Marketplace locale de coachs sportifs — prototype mobile interactif, autonome 
 
 ## Application cible et branchements
 
-**Décision du 16 septembre 2026 : React Native + TypeScript + Expo, sans développement Swift préalable.** Le prototype HTML reste la référence visuelle validée. Le démarrage de l’application connectée se trouve dans `apps/mobile`.
+**Décision du 16 septembre 2026 : React Native + TypeScript + Expo, sans développement Swift préalable.** Le prototype HTML reste la référence visuelle validée. **Les prochaines modifications produit se font uniquement dans `apps/mobile`.** Le HTML est conservé comme archive de référence.
 
 Consulter [la décision](docs/decisions/001-react-native.md) et [l’état exact des branchements et réglages à faire](docs/branchements.md). Les fondations Supabase sont déployées ; les étapes 1–3 restent en cours. Google, Apple et Outlook ne sont pas encore activés. Paiement et communications externes sont reportés.
 
-Le premier parcours natif navigable reprend maintenant les actifs et les écrans du prototype. Voir [le suivi précis de parité](docs/parite-prototype-react-native.md) et [le lancement React Native](apps/mobile/README.md). Le portage complet et sa validation visuelle restent en cours.
+La version native navigable reprend les actifs, les parcours client et les configurations coach du prototype. Voir [le suivi précis de parité](docs/parite-prototype-react-native.md) et [le lancement React Native](apps/mobile/README.md). Les parcours avancés sont disponibles en démonstration locale ; leur raccordement serveur et la validation visuelle native restent à terminer. Voir [la recette native](docs/recette-react-native.md).
 
 ## Ouvrir le prototype
 
@@ -54,7 +54,7 @@ outputs/
   *.md                        Benchmark, réflexion produit et validation
   OFL-Hanken-Grotesk.txt       Licence de la police
 work/
-  partant.template.html       Source actuelle faisant référence
+  partant.template.html       Source historique du prototype
   build.py                    Construction du HTML autonome
   coaches.png                 Visuels embarqués
   hanken*.ttf                 Police embarquée
@@ -65,7 +65,7 @@ work/
 
 Les fichiers historiques sont conservés pour sauvegarder le travail réalisé. Ils ne constituent pas des étapes à rejouer pour installer le prototype.
 
-## Reconstruire
+## Reconstruction historique du HTML
 
 Python 3 suffit, sans dépendance externe :
 
@@ -73,7 +73,7 @@ Python 3 suffit, sans dépendance externe :
 python3 work/build.py
 ```
 
-Le résultat est écrit dans `outputs/partant.html`. Modifiez `work/partant.template.html`, puis reconstruisez ; évitez de modifier uniquement le HTML généré.
+Cette commande historique écrit dans `outputs/partant.html`. Ne pas la lancer pour les nouvelles évolutions : la référence validée reste figée et le développement courant se fait dans `apps/mobile`.
 
 ## Vérifier
 

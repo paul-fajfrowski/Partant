@@ -31,7 +31,12 @@ export default function App() {
       {params?.get("tools") === "connections" ? (
         <ConnectedPilot />
       ) : (
-        <ProductApp live={params?.get("data") === "connected"} />
+        <ProductApp
+          live={
+            (params?.get("data") ?? process.env.EXPO_PUBLIC_DATA_MODE) ===
+            "connected"
+          }
+        />
       )}
     </SafeAreaProvider>
   );

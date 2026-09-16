@@ -127,6 +127,7 @@ function input(label, value) {
     !d.body.textContent.includes("À vous de jouer."),
     "Technical pilot is not the default interface",
   );
+  await click("À propos de la simulation");await click("Test · comptes et incidents");await click("Retour");
   await click("Explorer d’abord");
   ok(d.body.textContent.includes("On bouge quand ?"), "Explore headline");
   await click("Demain");
@@ -200,12 +201,12 @@ function input(label, value) {
   assert.ok(pay);
   pay.click();
   await wait();
-  await click("Simuler un refus");
+  await click("Tester un refus bancaire");
   ok(
-    d.body.textContent.includes("Votre séance n’est pas réservée."),
+    d.body.textContent.includes("Paiement refusé."),
     "Payment refusal does not confirm",
   );
-  await click("Simuler un paiement réussi");
+  await click("Réessayer avec ma sélection");await click("Valider le paiement simulé");
   ok(
     d.body.textContent.includes("Vous êtes partant."),
     "Successful simulated booking",
@@ -221,7 +222,7 @@ function input(label, value) {
   await wait();
   await click("Me connecter");
   ok(
-    d.body.textContent.includes("nouvelle notification"),
+    /nouvelles? notifications?/.test(d.body.textContent),
     "Coach sees booking notification",
   );
   await click("Mes cours en groupe");
@@ -236,7 +237,16 @@ function input(label, value) {
   await click('Retour');await click('Réglages');await click('Me déconnecter');
   await click('Explorer d’abord');await click('Demain');await click('Voir le profil de Thomas Martin');await click('Renforcement collectif · 20 €');
   ok([...d.querySelectorAll('[role="button"]')].some(e=>e.textContent==='18:00'),'Group class available on customer profile');await click('18:00');
-  ok(d.body.textContent.includes('Nombre de participants'),'Customer can choose group seats');
+  ok(d.body.textContent.includes('Combien de participants ?'),'Customer can choose group seats');
+  await click('Combien de participants ? : 1 personne');await click('3 personnes');await click('Continuer');
+  await click('Continuer avec mon e-mail');input('Code de démonstration','123456');await wait();await click('Me connecter');
+  const payGroup=[...d.querySelectorAll('[role="button"]')].find(e=>e.textContent.includes('Réserver · 60 €'));ok(payGroup,'Group checkout uses total for three seats');payGroup.click();await wait();await click('Valider le paiement simulé');await click('Voir ma séance');
+  await click('Annuler certaines places');await click('Confirmer les places à garder');ok(d.body.textContent.includes('3 → 1 places'),'Partial cancellation updates history');
+  await click('Signaler un imprévu');input('Votre message','Je voudrais une précision sur le lieu du cours.');await wait();await click('Envoyer ma demande');ok(d.body.textContent.includes('En cours de traitement'),'Support request visible to its owner');
+  await click('Retour');await click('Retour');await click('Retour');
+  // Persistence checks durable booking, support and payment data rather than transient React state.
+  const stored=JSON.parse(w.localStorage.getItem('partant-native-preview-v1'));ok(stored.bookings.some(b=>b.kind==='Groupe'&&b.seats===1),'Group edit persisted');ok(stored.tickets.length===1,'Support ticket persisted');
+  ok(stored.attempts.filter(p=>p.status==='success').length>=2,'Payment attempts persisted');
   ok(errors.length === 0, "No runtime errors: " + errors.join("\n"));
   console.log(
     `PASS ${count} native-web DOM checks. Not a pixel/visual browser validation.`,
@@ -245,7 +255,7 @@ function input(label, value) {
 })().catch((e) => {
   console.error(e);
   console.error("Runtime errors:", errors);
-  console.error(d.body.innerHTML.slice(-5000));
+  console.error(d.body.textContent.slice(-4000));
   dom.window.close();
   process.exitCode = 1;
 });

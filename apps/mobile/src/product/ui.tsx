@@ -462,12 +462,14 @@ export function Select({
 }
 export function Photo({
   index,
+  uri,
   height,
   style,
   children,
   label = "Portrait de coach",
 }: {
   index: number | null;
+  uri?: string;
   height?: number;
   style?: ViewStyle;
   children?: React.ReactNode;
@@ -487,7 +489,13 @@ export function Photo({
       }}
       style={[{ height, overflow: "hidden", backgroundColor: "#ddd" }, style]}
     >
-      {index !== null && width > 0 ? (
+      {uri ? (
+        <Image
+          source={{ uri }}
+          style={{ width: "100%", height: "100%" }}
+          resizeMode="cover"
+        />
+      ) : index !== null && width > 0 ? (
         <Image
           source={require("../../assets/coaches.png")}
           accessibilityIgnoresInvertColors

@@ -1,7 +1,9 @@
+import type { ExtendedStore, CoachSettings, Interval } from "./extendedTypes";
 import reference from "../reference/prototype.json";
 export type Coach = {
   id: string;
   photo: number | null;
+  photoUri?: string;
   name: string;
   sport: string;
   tags: string[];
@@ -23,6 +25,7 @@ export type Coach = {
   verified: boolean;
 };
 export type Offer = {
+  level?: string;
   id: string;
   coach: string;
   name: string;
@@ -50,6 +53,13 @@ export type Booking = {
   address: string;
   status: "confirmed" | "cancelled" | "completed";
   slotId?: string;
+  cancelHours?: number;
+  paid?: number;
+  refunded?: number;
+  preparation?: Record<string, string>;
+  prepared?: boolean;
+  changes?: string[];
+  noShow?: boolean;
 };
 export type Preferences = {
   sport: string;
@@ -66,8 +76,10 @@ export type Account = {
   name: string;
   email: string;
   role: "client" | "coach";
+  coachId?: string;
 };
 export type Notice = {
+  category?: "booking" | "changes" | "reminder" | "availability";
   id: string;
   recipient: string;
   body: string;
@@ -80,8 +92,12 @@ export type GroupSession = {
   day: string;
   time: string;
   address: string;
+  cancelled?: boolean;
+  cancelHours?: number;
+  preparation?: Record<string, string>;
+  level?: string;
 };
-export type Store = {
+export type Store = ExtendedStore & {
   groups?: GroupSession[];
   accounts?: Record<string, { preferences: Preferences; favorites: string[] }>;
   coachOverrides?: Record<string, Partial<Coach>>;
@@ -93,7 +109,7 @@ export type Store = {
   closed: string[];
   published: boolean;
   offers: Offer[];
-  messages: Record<string, { who: string; text: string }[]>;
+  messages: Record<string, { who: string; text: string; readBy?: string[] }[]>;
 };
 export const seedCoaches: Coach[] = reference.coaches.map((c) => ({
   ...c,
@@ -142,13 +158,18 @@ export const fold = (s: string) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[’'\-]/g, " ");
+let clockOffset = 0;
+export const setDemoClock = (hours: number) => {
+  clockOffset = hours * 3600000;
+};
+export const now = () => Date.now() + clockOffset;
 export const today = () =>
   new Intl.DateTimeFormat("fr-CA", {
     timeZone: "Europe/Paris",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(new Date());
+  }).format(new Date(now()));
 export const addDays = (iso: string, n: number) =>
   new Date(Date.parse(iso + "T12:00:00Z") + n * 86400000)
     .toISOString()
@@ -193,36 +214,73 @@ export function slotsFor(
   store: Store,
   offer?: Offer,
 ): string[] {
-  if (c.id === "0" && !store.published) return [];
+  const cfg = configFor(store, c.id);
+  if (
+    !cfg.published ||
+    cfg.dossier.status !== "approved" ||
+    cfg.dossier.expires < today() ||
+    day < today() ||
+    day >= addDays(today(), cfg.horizon)
+  )
+    return [];
   const offset = Math.round(
     (Date.parse(day) - Date.parse(reference.anchor)) / 86400000,
   );
   const groups = (store.groups ?? []).filter(
-    (g) => g.offer.coach === c.id && g.day === day,
+    (g) => g.offer.coach === c.id && g.day === day && !g.cancelled,
   );
   const base =
     offer?.kind === "Groupe"
       ? groups.filter((g) => g.offer.id === offer.id).map((g) => g.time)
-      : (reference.availability[Number(c.id)]?.[((offset % 7) + 7) % 7] ?? []);
+      : cfg.weeklyConfigured || cfg.exceptions[day]
+        ? generatedTimes(cfg, day, offer?.duration ?? 60)
+        : (reference.availability[Number(c.id)]?.[((offset % 7) + 7) % 7] ??
+          generatedTimes(cfg, day, offer?.duration ?? 60));
   return base.filter(
     (time) =>
-      instant(day, time) > Date.now() + 7200000 &&
-      !store.closed.includes(`${c.id}|${day}|${time}`) &&
+      instant(day, time) > now() + cfg.notice * 3600000 &&
+      !store.closed.some((k) => {
+        const [id, d, t] = k.split("|");
+        return (
+          id === c.id &&
+          d === day &&
+          overlap(time, offer?.duration ?? 60, t, 30)
+        );
+      }) &&
+      !cfg.blocks.some(
+        (b) =>
+          b.day === day &&
+          overlap(
+            time,
+            offer?.duration ?? 60,
+            b.start,
+            mins(b.end) - mins(b.start),
+          ),
+      ) &&
       (!offer || (offer.active && offer.coach === c.id)) &&
       (!offer ||
         offer.kind !== "Groupe" ||
         remaining(offer, day, time, store) > 0) &&
       !groups.some(
         (g) =>
-          overlap(time, offer?.duration ?? 60, g.time, g.offer.duration) &&
-          !(offer?.id === g.offer.id && time === g.time),
+          overlap(
+            time,
+            (offer?.duration ?? 60) + cfg.buffer,
+            g.time,
+            g.offer.duration + cfg.buffer,
+          ) && !(offer?.id === g.offer.id && time === g.time),
       ) &&
       !store.bookings.some(
         (b) =>
           b.coach === c.id &&
           b.day === day &&
           b.status === "confirmed" &&
-          overlap(time, offer?.duration ?? 60, b.time, b.duration) &&
+          overlap(
+            time,
+            (offer?.duration ?? 60) + cfg.buffer,
+            b.time,
+            b.duration + cfg.buffer,
+          ) &&
           !(
             offer?.kind === "Groupe" &&
             b.offerId === offer.id &&
@@ -256,7 +314,7 @@ export function reserve(store: Store, draft: Booking): Store {
   if (!store.account || store.account.role !== "client")
     throw Error("Connectez-vous pour retrouver votre séance.");
   if (store.bookings.some((b) => b.id === draft.id)) return store;
-  const c = seedCoaches.find((c) => c.id === draft.coach);
+  const c = allCoaches(store).find((c) => c.id === draft.coach);
   const current = store.offers.find(
     (o) => o.id === draft.offerId && o.coach === draft.coach && o.active,
   );
@@ -289,7 +347,13 @@ export function reserve(store: Store, draft: Booking): Store {
     ...draft,
     clientId: store.account.id,
     clientName: store.account.name,
-    price: o.price * (o.kind === "Groupe" ? draft.seats : 1),
+    price: quotePrice(store, draft, o),
+    paid: quotePrice(store, draft, o),
+    refunded: 0,
+    cancelHours: group?.cancelHours ?? configFor(store, c.id).cancelHours,
+    preparation: {
+      ...(group?.preparation ?? configFor(store, c.id).preparation),
+    },
     duration: o.duration,
     kind: o.kind,
     serviceName: o.name,
@@ -302,6 +366,7 @@ export function reserve(store: Store, draft: Booking): Store {
     notices: [
       ...store.notices,
       {
+        category: "booking" as const,
         id: `${b.id}:coach`,
         recipient: "coach-" + c.id,
         body: "Une nouvelle séance a été réservée.",
@@ -309,6 +374,7 @@ export function reserve(store: Store, draft: Booking): Store {
         booking: b.id,
       },
       {
+        category: "booking" as const,
         id: `${b.id}:client`,
         recipient: b.clientId,
         body: "Votre séance est confirmée.",
@@ -323,7 +389,7 @@ export function cancel(store: Store, id: string): Store {
   if (!b || b.clientId !== store.account?.id)
     throw Error("Cette réservation ne vous appartient pas.");
   if (b.status === "cancelled") return store;
-  if (instant(b.day, b.time) < Date.now() + 86400000)
+  if (instant(b.day, b.time) < now() + 86400000)
     throw Error(
       "La limite d’annulation gratuite est dépassée. Contactez le coach.",
     );
@@ -366,23 +432,45 @@ export function openGroup(store: Store, group: GroupSession): Store {
     !/^\d{4}-\d{2}-\d{2}$/.test(group.day) ||
     !/^([01]\d|2[0-3]):[0-5]\d$/.test(group.time) ||
     !Number.isFinite(instant(group.day, group.time)) ||
-    instant(group.day, group.time) < Date.now() + 7200000 ||
+    instant(group.day, group.time) < now() + 7200000 ||
     !group.address.trim()
   )
     throw Error("Vérifiez la date, l’heure et le lieu du cours.");
+  const cfg = configFor(store, o.coach);
+  if (
+    group.day >= addDays(today(), cfg.horizon) ||
+    !intervalFits(cfg, group.day, group.time, o.duration) ||
+    cfg.blocks.some(
+      (b) =>
+        b.day === group.day &&
+        overlap(group.time, o.duration, b.start, mins(b.end) - mins(b.start)),
+    )
+  )
+    throw Error("Le cours doit respecter vos horaires et indisponibilités.");
   if (
     (store.groups ?? []).some(
       (g) =>
+        !g.cancelled &&
         g.offer.coach === o.coach &&
         g.day === group.day &&
-        overlap(g.time, g.offer.duration, group.time, o.duration),
+        overlap(
+          g.time,
+          g.offer.duration + cfg.buffer,
+          group.time,
+          o.duration + cfg.buffer,
+        ),
     ) ||
     store.bookings.some(
       (b) =>
         b.coach === o.coach &&
         b.day === group.day &&
         b.status === "confirmed" &&
-        overlap(b.time, b.duration, group.time, o.duration),
+        overlap(
+          b.time,
+          b.duration + cfg.buffer,
+          group.time,
+          o.duration + cfg.buffer,
+        ),
     ) ||
     store.closed.some((k) => {
       const [c, d, t] = k.split("|");
@@ -396,7 +484,16 @@ export function openGroup(store: Store, group: GroupSession): Store {
     throw Error("Votre agenda est déjà occupé à ce moment.");
   return {
     ...store,
-    groups: [...(store.groups ?? []), { ...group, offer: { ...o } }],
+    groups: [
+      ...(store.groups ?? []),
+      {
+        ...group,
+        offer: { ...o },
+        cancelHours: cfg.cancelHours,
+        preparation: { ...cfg.preparation },
+        level: group.level ?? o.level ?? "Tous niveaux",
+      },
+    ],
   };
 }
 export function switchAccount(store: Store, account: Account | null): Store {
@@ -415,5 +512,155 @@ export function switchAccount(store: Store, account: Account | null): Store {
     accounts,
     preferences: { ...next.preferences },
     favorites: [...next.favorites],
+  };
+}
+
+export function allCoaches(store: Store): Coach[] {
+  return [...seedCoaches, ...(store.extraCoaches ?? [])].map((c) => ({
+    ...c,
+    ...store.coachOverrides?.[c.id],
+  }));
+}
+export function configFor(store: Store, id: string): CoachSettings {
+  const existing = store.settings?.[id];
+  if (existing) return existing;
+  const c = allCoaches(store).find((c) => c.id === id) ?? seedCoaches[0];
+  return {
+    published: id === "0" ? store.published : true,
+    weeklyConfigured: false,
+    week: Array.from({ length: 7 }, (_, d) =>
+      d === 6 ? [] : [["09:00", "21:00"]],
+    ),
+    exceptions: {},
+    blocks: [],
+    buffer: 0,
+    notice: 2,
+    horizon: 90,
+    cancelHours: 24,
+    studio: c.place,
+    studioAddress: c.address,
+    radius: 3,
+    travelFee: 0,
+    preparation: {
+      provided: "Le matériel nécessaire à la séance est fourni.",
+      bring: "Une tenue confortable, une bouteille d’eau et une serviette.",
+      meeting:
+        "Retrouvez-moi quelques minutes avant le début au point de rendez-vous.",
+      weather: "En cas de météo défavorable, nous échangeons avant la séance.",
+    },
+    notifications: {
+      booking: true,
+      changes: true,
+      reminder: true,
+      marketing: false,
+    },
+    business: {
+      name: c.name,
+      status: "Entreprise individuelle",
+      email: c.name.split(" ")[0].toLowerCase() + "@example.test",
+      address: c.address,
+    },
+    payoutReady: true,
+    dossier: {
+      status: "approved",
+      documents: [
+        "identite-test.pdf",
+        "diplome-test.pdf",
+        "carte-test.pdf",
+        "assurance-test.pdf",
+      ],
+      expires: addDays(today(), 365),
+      reason: "Profil de démonstration initial.",
+      history: [],
+    },
+    clientNotes: {},
+  };
+}
+export function intervalsFor(cfg: CoachSettings, day: string): Interval[] {
+  return (
+    cfg.exceptions[day] ??
+    cfg.week[(new Date(day + "T12:00:00Z").getUTCDay() + 6) % 7]
+  );
+}
+export function intervalFits(
+  cfg: CoachSettings,
+  day: string,
+  time: string,
+  duration: number,
+) {
+  return intervalsFor(cfg, day).some(
+    ([a, b]) => mins(time) >= mins(a) && mins(time) + duration <= mins(b),
+  );
+}
+export function generatedTimes(
+  cfg: CoachSettings,
+  day: string,
+  duration: number,
+) {
+  const times: string[] = [];
+  for (const [a, b] of intervalsFor(cfg, day))
+    for (let t = mins(a); t + duration <= mins(b); t += 30)
+      times.push(endTime("00:00", t));
+  return times;
+}
+export function validateIntervals(list: Interval[]) {
+  if (list.length > 3) throw Error("Trois plages maximum par jour.");
+  const sorted = [...list].sort((a, b) => mins(a[0]) - mins(b[0]));
+  for (let i = 0; i < sorted.length; i++) {
+    const [a, b] = sorted[i];
+    if (
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(a) ||
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(b) ||
+      mins(a) >= mins(b) ||
+      (i > 0 && mins(a) < mins(sorted[i - 1][1]))
+    )
+      throw Error(
+        "Vérifiez les horaires : les plages ne doivent pas se chevaucher.",
+      );
+  }
+  return sorted;
+}
+export function quotePrice(store: Store, b: Booking, o: Offer) {
+  return (
+    Math.round(
+      (o.price * (o.kind === "Groupe" ? b.seats : 1) +
+        (o.kind !== "Groupe" && b.format === "Domicile"
+          ? configFor(store, b.coach).travelFee
+          : 0)) *
+        100,
+    ) / 100
+  );
+}
+export const coachAccountId = (store: Store) =>
+  store.account?.coachId ?? store.account?.id.replace(/^coach-/, "") ?? "0";
+
+export function newPreviewStore(): Store {
+  const c = seedCoaches[1],
+    o = seedOffers.find((o) => o.coach === "1" && o.kind === "Individuel")!;
+  return {
+    ...initialStore,
+    bookings: [
+      {
+        id: "past-sarah",
+        coach: "1",
+        clientId: "alex@example.test",
+        clientName: "Alex",
+        day: addDays(today(), -5),
+        time: "18:00",
+        duration: 60,
+        offerId: o.id,
+        serviceName: o.name,
+        kind: "Individuel",
+        format: "Studio",
+        seats: 1,
+        price: 45,
+        paid: 45,
+        refunded: 0,
+        goal: "Retrouver de la mobilité",
+        address: c.address,
+        status: "completed",
+        cancelHours: 24,
+      },
+    ],
   };
 }

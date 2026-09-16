@@ -14,10 +14,15 @@ import {
   Store,
   today,
   switchAccount,
+  allCoaches,
+  newPreviewStore,
+  configFor,
 } from "./model";
 import { Session } from "@supabase/supabase-js";
 export function useMarketplace(live: boolean) {
-  const [store, setStore] = useState<Store>(initialStore);
+  const [store, setStore] = useState<Store>(() =>
+    live ? initialStore : newPreviewStore(),
+  );
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [coaches, setCoaches] = useState<Coach[]>(live ? [] : seedCoaches);
@@ -371,7 +376,30 @@ export function useMarketplace(live: boolean) {
     setError,
     coaches: live
       ? coaches
-      : seedCoaches.map((c) => ({ ...c, ...store.coachOverrides?.[c.id] })),
+      : allCoaches(store).map((c) => {
+          const reviews =
+            store.reviews?.filter((r) => r.coach === c.id && !r.hidden) ?? [];
+          const cfg = configFor(store, c.id);
+          return {
+            ...c,
+            price:
+              store.offers.find((o) => o.coach === c.id && o.active)?.price ??
+              c.price,
+            verified:
+              cfg.dossier.status === "approved" &&
+              cfg.dossier.expires >= today(),
+            ...(reviews.length
+              ? {
+                  rating: (
+                    reviews.reduce((n, r) => n + r.rating, 0) / reviews.length
+                  )
+                    .toFixed(1)
+                    .replace(".", ","),
+                  reviews: reviews.length,
+                }
+              : {}),
+          };
+        }),
     live,
     times,
     refresh,
