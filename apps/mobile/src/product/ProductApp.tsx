@@ -1,3 +1,5 @@
+import { AgendaTools } from "./AgendaToolsScreen";
+import { setupSteps } from "./agendaTools";
 import Slider from "@react-native-community/slider";
 import * as W from "./workflows";
 import { CompleteFlows, BookingExtras } from "./CompleteFlows";
@@ -9,6 +11,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
+  KeyboardAvoidingView,
   Linking,
   Platform,
   Pressable,
@@ -46,6 +49,8 @@ import {
   now,
   setDemoClock,
   quotePrice,
+  offerFormats,
+  offerAddress,
   openGroup,
   switchAccount,
   instant,
@@ -127,7 +132,18 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const desktop = Platform.OS === "web" && width > 740;
   const pageWidth = desktop ? (width > 900 ? 430 : 410) : Math.min(width, 740);
   const [screen, setScreen] = useState("welcome");
-  const history = useRef<{ screen: string; focus: string }[]>([]);
+  const history = useRef<
+    {
+      screen: string;
+      focus: string;
+      config: string;
+      coachTab: string;
+      day: string;
+      coachId: string;
+      offerId: string;
+      selectedBooking: string;
+    }[]
+  >([]);
   const [focus, setFocus] = useState("");
   const [attemptId, setAttemptId] = useState("");
   const [sessionKind, setSessionKind] = useState("Tous");
@@ -158,6 +174,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const [coachId, setCoachId] = useState("0");
   const [offerId, setOfferId] = useState("");
   const [draft, setDraft] = useState<Booking | null>(null);
+  const [editBookingOffer, setEditBookingOffer] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState("");
   const [bookingTab, setBookingTab] = useState("upcoming");
   const [pendingCheckout, setPendingCheckout] = useState(false);
@@ -166,6 +183,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const [sectorLimit, setSectorLimit] = useState(15);
   const [coachTab, setCoachTab] = useState("agenda");
   const [agendaOfferId, setAgendaOfferId] = useState("");
+  const configSave = useRef<(() => void) | null>(null);
   const [config, setConfig] = useState("profile");
   const [message, setMessage] = useState("");
   const [configName, setConfigName] = useState("Thomas Martin");
@@ -179,7 +197,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const [paymentResult, setPaymentResult] = useState("");
   const [groupOffer, setGroupOffer] = useState("");
   const [groupDay, setGroupDay] = useState(addDays(today(), 1));
-  const [groupTime, setGroupTime] = useState("18:00");
+  const [groupTime, setGroupTime] = useState("");
+  const [groupFormat, setGroupFormat] = useState("");
+  const [changeTarget, setChangeTarget] = useState<{
+    day: string;
+    time: string;
+  } | null>(null);
   const [groupAddress, setGroupAddress] = useState(
     reference.coaches[0].address,
   );
@@ -253,7 +276,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   }, [notice]);
   useEffect(() => {
     scroll.current?.scrollTo({ y: 0, animated: false });
-  }, [screen, step]);
+  }, [screen, step, config]);
   useEffect(() => {
     setDemoClock(live ? 0 : (store.clockHours ?? 0));
     if (!live && market.ready) setStore((s) => W.maintain(s));
@@ -288,11 +311,37 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     }
   }, [screen, selectedBooking]);
   function go(next: string, target = "") {
+    if (next === "groups-saved") {
+      while (
+        history.current.length &&
+        !(
+          history.current.at(-1)?.screen === "config" &&
+          history.current.at(-1)?.config === "groups"
+        )
+      )
+        history.current.pop();
+      history.current.pop();
+      setConfig("groups");
+      setScreen("config");
+      setFocus("");
+      setModal("");
+      return;
+    }
+
     if (next === "config-native") {
       setConfig(target);
       next = "config";
     }
-    history.current.push({ screen, focus });
+    history.current.push({
+      screen,
+      focus,
+      config,
+      coachTab,
+      day,
+      coachId,
+      offerId,
+      selectedBooking,
+    });
     setFocus(target);
     setScreen(next);
     setModal("");
@@ -303,7 +352,18 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       return;
     }
     const previous = history.current.pop();
-    setScreen(previous?.screen ?? "explore");
+    setScreen(
+      previous?.screen ??
+        (store.account?.role === "coach" ? "coach" : "explore"),
+    );
+    if (previous) {
+      setConfig(previous.config);
+      setCoachTab(previous.coachTab);
+      setDay(previous.day);
+      setCoachId(previous.coachId);
+      setOfferId(previous.offerId);
+      setSelectedBooking(previous.selectedBooking);
+    }
     setFocus(previous?.focus ?? "");
     setModal("");
   }
@@ -345,6 +405,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       candidates.find(
         (o) =>
           o.price <= budget &&
+          (format === "Tous" || offerFormats(c, o).includes(format)) &&
           market
             .times(c, day, o)
             .some(
@@ -357,7 +418,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   }
   function available(c: Coach, o?: Offer) {
     const selected = o ?? primary(c);
-    if (!selected) return [];
+    if (
+      !selected ||
+      (format !== "Tous" && !offerFormats(c, selected).includes(format))
+    )
+      return [];
     return market
       .times(c, day, selected)
       .filter(
@@ -409,7 +474,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           o.active &&
           market.times(c, selectedDay, o).includes(time),
       );
-    if (!selected) return;
+    if (!selected || (!live && !offerFormats(c, selected).length)) {
+      setNotice(
+        "Les lieux de cette prestation doivent être configurés par le coach.",
+      );
+      return;
+    }
     const real = market.remoteSlots.find(
       (s) =>
         s.coach_id === c.id &&
@@ -423,7 +493,14 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     );
     setCoachId(c.id);
     setOfferId(selected.id);
-    setDraft({
+    setEditBookingOffer(false);
+    const chosenFormat =
+      group?.format ??
+      (offerFormats(c, selected).includes(format)
+        ? format
+        : offerFormats(c, selected)[0]) ??
+      "";
+    const nextDraft: Booking = {
       id: Crypto.randomUUID(),
       coach: c.id,
       clientId: store.account?.id ?? "",
@@ -434,18 +511,33 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       offerId: selected.id,
       serviceName: selected.name,
       kind: selected.kind,
-      format: c.formats[0] ?? "Parc",
+      format: chosenFormat,
       seats: selected.kind === "Duo" ? 2 : 1,
       price: group?.offer.price ?? selected.price,
       goal: pref.goal,
-      address: real?.location ?? group?.address ?? c.address,
+      address:
+        real?.location ??
+        group?.address ??
+        offerAddress(store, c, chosenFormat),
       status: "confirmed",
       slotId: real?.id,
-    });
+    };
+    if (!live)
+      nextDraft.price = quotePrice(store, nextDraft, group?.offer ?? selected);
+    setDraft(nextDraft);
     go("setup");
   }
   function chooseOffer(o: Offer) {
     setOfferId(o.id);
+    setEditBookingOffer(false);
+    if (o.kind === "Groupe") {
+      go("profile");
+      setOfferId(o.id);
+      setNotice(
+        "Choisissez le cours collectif auquel vous souhaitez participer.",
+      );
+      return;
+    }
     if (draft)
       setDraft({
         ...draft,
@@ -453,7 +545,19 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         serviceName: o.name,
         kind: o.kind,
         duration: o.duration,
-        price: o.price,
+        price: live
+          ? o.price
+          : quotePrice(
+              store,
+              {
+                ...draft,
+                format: offerFormats(coach, o)[0] ?? "",
+                seats: o.kind === "Duo" ? 2 : 1,
+              },
+              o,
+            ),
+        format: offerFormats(coach, o)[0] ?? "",
+        address: offerAddress(store, coach, offerFormats(coach, o)[0] ?? ""),
         seats: o.kind === "Duo" ? 2 : 1,
         time: market.times(coach, draft.day, o).includes(draft.time)
           ? draft.time
@@ -1489,16 +1593,77 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           ) : results.length ? (
             results.map(card)
           ) : (
-            empty(
-              !pref.city.startsWith("Paris")
-                ? "Pas encore de coach dans ce secteur"
-                : "Aucun coach sur ce créneau",
-              !pref.city.startsWith("Paris")
-                ? "Les profils fictifs de la démo sont à Paris. Votre secteur est enregistré ; vous pouvez rechercher une séance en visio."
-                : "Essayez une autre heure, un budget plus large ou une séance en visio.",
-              "Élargir ma recherche",
-              resetFilters,
-            )
+            <Section>
+              <H2>
+                {!pref.city.startsWith("Paris")
+                  ? "Pas encore de coach dans ce secteur"
+                  : "Aucun coach sur ce créneau"}
+              </H2>
+              <P muted style={{ marginVertical: 16 }}>
+                Gardez vos préférences et explorez une autre possibilité.
+              </P>
+              {!live &&
+                pref.city.startsWith("Paris") &&
+                Array.from({ length: 7 }, (_, i) => addDays(day, i + 1))
+                  .map((d) => {
+                    const match = coaches.find(
+                      (c) =>
+                        (sport === "Tout" ||
+                          [c.sport, ...c.tags].includes(sport)) &&
+                        fold(
+                          [c.name, c.sport, c.area, ...c.tags].join(" "),
+                        ).includes(fold(query)) &&
+                        (format === "Visio" ||
+                          c.dist === null ||
+                          c.dist <= distance) &&
+                        store.offers.some(
+                          (o) =>
+                            o.coach === c.id &&
+                            o.active &&
+                            o.price <= budget &&
+                            (sessionKind === "Tous" ||
+                              o.kind === sessionKind) &&
+                            (format === "Tous" ||
+                              offerFormats(c, o).includes(format)) &&
+                            market
+                              .times(c, d, o)
+                              .some(
+                                (time) =>
+                                  (!hour || time === hour) &&
+                                  (period !== "evening" || time >= "18:00"),
+                              ),
+                        ),
+                    );
+                    return match ? (
+                      <Setting
+                        key={d}
+                        title={dayLabel(d)}
+                        description={`${match.name} · mêmes filtres`}
+                        onPress={() => setDay(d)}
+                      />
+                    ) : null;
+                  })
+                  .filter(Boolean)
+                  .slice(0, 2)}
+              {hour && (
+                <Button light onPress={() => setHour("")}>
+                  Voir les autres heures de cette journée
+                </Button>
+              )}
+              {!pref.city.startsWith("Paris") && (
+                <Button light onPress={() => setFormat("Visio")}>
+                  Chercher en visio
+                </Button>
+              )}
+              {!live && (
+                <TextButton onPress={() => go("new-alert")}>
+                  Me prévenir d’une disponibilité
+                </TextButton>
+              )}
+              <TextButton onPress={resetFilters}>
+                Élargir ma recherche
+              </TextButton>
+            </Section>
           )}
           <P
             small
@@ -1556,6 +1721,22 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           <P muted>
             {coach.sport} · {coach.area}
           </P>
+          {offer &&
+            (() => {
+              const next = Array.from(
+                { length: Math.min(14, configFor(store, coach.id).horizon) },
+                (_, i) => addDays(today(), i),
+              )
+                .map((d) => ({ d, time: market.times(coach, d, offer)[0] }))
+                .find((x) => x.time);
+              return next ? (
+                <Setting
+                  title={`Prochain départ · ${dayLabel(next.d, true)} à ${next.time}`}
+                  description={`${offer.name} · ${euro(offer.price)}${offer.kind === "Groupe" ? " / personne" : ""}`}
+                  onPress={() => chooseTime(coach, next.time, offer, next.d)}
+                />
+              ) : null;
+            })()}
           {!!coach.quote && (
             <H2 style={{ fontSize: 22, marginTop: 22, marginBottom: 12 }}>
               « {coach.quote} »
@@ -1743,16 +1924,23 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         <H2 style={{ marginTop: 24, marginBottom: 14 }}>
           Votre accompagnement
         </H2>
-        {offers.map((o) => (
-          <Choice
-            key={o.id}
-            active={draft.offerId === o.id}
-            title={o.name}
-            description={`${o.kind} · ${o.duration} minutes`}
-            price={euro(o.price)}
-            onPress={() => chooseOffer(o)}
-          />
-        ))}
+        <Setting
+          title={draft.serviceName}
+          description={`${draft.kind} · ${draft.duration} min · ${euro(draft.price)}`}
+          onPress={() => setEditBookingOffer(!editBookingOffer)}
+          right={<P small>Modifier</P>}
+        />
+        {editBookingOffer &&
+          offers.map((o) => (
+            <Choice
+              key={o.id}
+              active={draft.offerId === o.id}
+              title={o.name}
+              description={`${o.kind} · ${o.duration} minutes`}
+              price={euro(o.price)}
+              onPress={() => chooseOffer(o)}
+            />
+          ))}
         <Setting
           title={draft.time ? dayLabel(draft.day) : "Choisir un créneau"}
           description={`${draft.time ? draft.time + " – " + endTime(draft.time, draft.duration) : "La durée a changé : choisissez votre heure"} · ${draft.duration} min`}
@@ -1761,44 +1949,46 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         />
         <H2 style={{ marginTop: 24, marginBottom: 14 }}>Où on se retrouve ?</H2>
         {draft.kind === "Groupe" && <Note>{draft.address}</Note>}
-        {(draft.kind === "Groupe" ? [] : coach.formats).map((f) => (
-          <Choice
-            key={f}
-            active={draft.format === f}
-            title={
-              f === "Domicile"
-                ? "Chez vous"
-                : f === "Visio"
-                  ? "En visio"
-                  : f === "Parc"
-                    ? "En extérieur"
-                    : "Au studio"
-            }
-            description={
-              f === "Domicile"
-                ? `Rayon de ${configFor(store, coach.id).radius} km · ${configFor(store, coach.id).travelFee ? euro(configFor(store, coach.id).travelFee) + " de déplacement" : "déplacement inclus"}`
-                : coach.place
-            }
-            onPress={() => {
-              const cfg = configFor(store, draft.coach);
-              setDraft({
-                ...draft,
-                format: f,
-                address:
-                  f === "Studio"
-                    ? cfg.studioAddress
+        {(draft.kind === "Groupe" ? [] : offerFormats(coach, offer)).map(
+          (f) => (
+            <Choice
+              key={f}
+              active={draft.format === f}
+              title={
+                f === "Domicile"
+                  ? "Chez vous"
+                  : f === "Visio"
+                    ? "En visio"
                     : f === "Parc"
-                      ? coach.address
-                      : f === "Visio"
-                        ? "Lien de visioconférence transmis dans la conversation"
-                        : "",
-                price: offer
-                  ? quotePrice(store, { ...draft, format: f }, offer)
-                  : draft.price,
-              });
-            }}
-          />
-        ))}
+                      ? "En extérieur"
+                      : "Au studio"
+              }
+              description={
+                f === "Domicile"
+                  ? `Rayon de ${configFor(store, coach.id).radius} km · ${configFor(store, coach.id).travelFee ? euro(configFor(store, coach.id).travelFee) + " de déplacement" : "déplacement inclus"}`
+                  : coach.place
+              }
+              onPress={() => {
+                const cfg = configFor(store, draft.coach);
+                setDraft({
+                  ...draft,
+                  format: f,
+                  address:
+                    f === "Studio"
+                      ? cfg.studioAddress
+                      : f === "Parc"
+                        ? coach.address
+                        : f === "Visio"
+                          ? "Lien de visioconférence transmis dans la conversation"
+                          : "",
+                  price: offer
+                    ? quotePrice(store, { ...draft, format: f }, offer)
+                    : draft.price,
+                });
+              }}
+            />
+          ),
+        )}
         {draft.format === "Domicile" && (
           <Field
             label="Adresse fictive du rendez-vous"
@@ -1839,7 +2029,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         )}
         <View style={{ marginTop: 24 }}>
           <Field
-            label="Votre objectif pour cette séance"
+            label="Votre objectif pour cette séance (facultatif)"
             value={draft.goal}
             onChange={(goal) => setDraft({ ...draft, goal })}
             multiline
@@ -2879,32 +3069,49 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   live ? setModal("checklist") : go("checklist-native")
                 }
               />
-              {reference.coachSections.map(([id, icon, title, description]) => (
-                <Setting
-                  key={id}
-                  title={title}
-                  description={description}
-                  icon={icon}
-                  onPress={() => {
-                    setConfig(id);
-                    if (coachSelf) {
-                      setConfigName(coachSelf.name);
-                      setConfigBio(coachSelf.bio);
-                    }
-                    go("config");
-                  }}
-                />
+              {[
+                { title: "Mon offre", ids: ["profile", "offers", "places"] },
+                {
+                  title: "Mon organisation",
+                  ids: ["schedule", "rules", "calendars"],
+                },
+                {
+                  title: "Mon compte professionnel",
+                  ids: ["documents", "payout", "notifications"],
+                },
+              ].map((group) => (
+                <View key={group.title}>
+                  <Eyebrow style={{ marginTop: 28, marginBottom: 8 }}>
+                    {group.title.toUpperCase()}
+                  </Eyebrow>
+                  {reference.coachSections
+                    .filter(([id]) => group.ids.includes(id))
+                    .map(([id, icon, title, description]) => (
+                      <Setting
+                        key={id}
+                        title={title}
+                        description={description}
+                        icon={icon}
+                        onPress={() => {
+                          if (coachSelf) {
+                            setConfigName(coachSelf.name);
+                            setConfigBio(coachSelf.bio);
+                          }
+                          go("config-native", id);
+                        }}
+                      />
+                    ))}
+                  {group.title === "Mon organisation" && !live && (
+                    <Setting
+                      title="Préparer vos clients"
+                      description="Matériel, accès et météo"
+                      onPress={() => go("config-native", "preparation")}
+                    />
+                  )}
+                </View>
               ))}
               {!live && (
                 <>
-                  <Setting
-                    title="Préparer vos clients"
-                    description="Matériel, accès et météo"
-                    onPress={() => {
-                      setConfig("preparation");
-                      go("config");
-                    }}
-                  />
                   <Setting
                     title="Mon compte & mes données"
                     onPress={() => go("account-native")}
@@ -2950,9 +3157,52 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   + Indisponibilité
                 </TextButton>
               </Row>
+              {!live &&
+                coachSelf &&
+                !configFor(store, coachSelf.id).published && (
+                  <Note style={{ marginBottom: 20 }}>
+                    <P bold>Préparons votre première réservation.</P>
+                    <P>
+                      {
+                        setupSteps(store, coachSelf.id).filter((s) => s.done)
+                          .length
+                      }{" "}
+                      / 6 étapes terminées
+                    </P>
+                    <Button
+                      light
+                      style={{ marginTop: 12 }}
+                      onPress={() => go("checklist-native")}
+                    >
+                      Continuer ma mise en ligne
+                    </Button>
+                  </Note>
+                )}
               {dateStrip()}
+              {!live && (
+                <TextButton onPress={() => go("external-session-native")}>
+                  + Rendez-vous pris directement
+                </TextButton>
+              )}
               <Row between style={{ marginTop: 24 }}>
-                <P bold>{todayBookings.length} rendez-vous au planning</P>
+                <P bold>
+                  {live
+                    ? todayBookings.length
+                    : todayBookings.filter((b) => b.kind !== "Groupe").length +
+                      (store.groups ?? []).filter(
+                        (g) =>
+                          g.offer.coach === activeCoach &&
+                          g.day === day &&
+                          !g.cancelled,
+                      ).length +
+                      (store.externalSessions ?? []).filter(
+                        (b) =>
+                          b.coach === activeCoach &&
+                          b.day === day &&
+                          !b.cancelled,
+                      ).length}{" "}
+                  rendez-vous au planning
+                </P>
                 <TextButton
                   onPress={() => {
                     setConfig("schedule");
@@ -2962,37 +3212,71 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   Configurer
                 </TextButton>
               </Row>
-              {todayBookings.map((b) => (
-                <Pressable
-                  accessibilityRole="button"
-                  key={b.id}
-                  onPress={() => {
-                    setSelectedBooking(b.id);
-                    go("bookingDetail");
-                  }}
-                  style={{
-                    backgroundColor: t.ink,
-                    borderRadius: 12,
-                    padding: 16,
-                    marginTop: 12,
-                  }}
-                >
-                  <Row>
-                    <P bold style={{ color: "#fff" }}>
-                      {b.time}
-                    </P>
-                    <View style={{ flex: 1 }}>
+              {!live &&
+                (store.externalSessions ?? [])
+                  .filter(
+                    (b) =>
+                      b.coach === activeCoach && b.day === day && !b.cancelled,
+                  )
+                  .sort((a, b) => a.time.localeCompare(b.time))
+                  .map((b) => (
+                    <Setting
+                      key={b.id}
+                      title={`${b.time} · ${b.name}`}
+                      description={`${b.serviceName} · Hors Partant · ${b.address}`}
+                      onPress={() => go("external-session-native", b.id)}
+                    />
+                  ))}
+              {!live &&
+                (store.groups ?? [])
+                  .filter(
+                    (g) =>
+                      g.offer.coach === activeCoach &&
+                      g.day === day &&
+                      !g.cancelled,
+                  )
+                  .sort((a, b) => a.time.localeCompare(b.time))
+                  .map((g) => (
+                    <Setting
+                      key={g.id}
+                      title={`${g.time} · ${g.offer.name}`}
+                      description={`${g.offer.capacity - remaining(g.offer, g.day, g.time, store)} / ${g.offer.capacity} places réservées · ${g.address}`}
+                      onPress={() => go("group-manage", g.id)}
+                    />
+                  ))}
+              {todayBookings
+                .filter((b) => live || b.kind !== "Groupe")
+                .map((b) => (
+                  <Pressable
+                    accessibilityRole="button"
+                    key={b.id}
+                    onPress={() => {
+                      setSelectedBooking(b.id);
+                      go("bookingDetail");
+                    }}
+                    style={{
+                      backgroundColor: t.ink,
+                      borderRadius: 12,
+                      padding: 16,
+                      marginTop: 12,
+                    }}
+                  >
+                    <Row>
                       <P bold style={{ color: "#fff" }}>
-                        {b.clientName}
+                        {b.time}
                       </P>
-                      <P small style={{ color: "#ccc" }}>
-                        {b.serviceName} · {b.format}
-                      </P>
-                    </View>
-                    <Icon name="chevron" color="#fff" />
-                  </Row>
-                </Pressable>
-              ))}
+                      <View style={{ flex: 1 }}>
+                        <P bold style={{ color: "#fff" }}>
+                          {b.clientName}
+                        </P>
+                        <P small style={{ color: "#ccc" }}>
+                          {b.serviceName} · {b.format}
+                        </P>
+                      </View>
+                      <Icon name="chevron" color="#fff" />
+                    </Row>
+                  </Pressable>
+                ))}
               <Setting
                 title="Mes cours en groupe"
                 description="Dates, inscriptions et places disponibles"
@@ -3005,6 +3289,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               <H2 style={{ fontSize: 18, marginTop: 24, marginBottom: 14 }}>
                 Disponibilités proposées
               </H2>
+              {!live && (
+                <TextButton onPress={() => go("availability-help-native")}>
+                  Pourquoi une heure n’est-elle pas disponible ?
+                </TextButton>
+              )}
               {agendaOffer && (
                 <Select
                   label="Voir les créneaux de"
@@ -3111,12 +3400,30 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   );
                 },
               )}
+              {!live &&
+                (store.externalSessions ?? [])
+                  .filter((b) => b.coach === activeCoach && !b.cancelled)
+                  .map((b) => (
+                    <Setting
+                      key={b.id}
+                      title={b.name}
+                      description={`${b.serviceName} · Rendez-vous direct`}
+                      onPress={() => go("external-session-native", b.id)}
+                    />
+                  ))}
               {!ownBookings.length && (
                 <P muted>Vos nouveaux clients réservés apparaîtront ici.</P>
               )}
             </>
           ) : (
             <>
+              {!live && (
+                <Setting
+                  title="Mon compte de versement"
+                  description="Coordonnées professionnelles et statut des versements"
+                  onPress={() => go("config-native", "payout")}
+                />
+              )}
               <Eyebrow>NET COACH PRÉVISIONNEL</Eyebrow>
               <P bold style={{ fontSize: 42, lineHeight: 50, marginTop: 16 }}>
                 {euro(ownBookings.reduce((n, b) => n + W.net(b) * 0.85, 0))}
@@ -3406,6 +3713,17 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                       o.active,
                   )?.id ?? "",
                 );
+                const groupO = store.offers.find(
+                  (o) =>
+                    o.coach === activeCoach && o.kind === "Groupe" && o.active,
+                );
+                const coachSelf = coaches.find((c) => c.id === activeCoach);
+                if (coachSelf && groupO) {
+                  const f = offerFormats(coachSelf, groupO)[0] ?? "";
+                  setGroupFormat(f);
+                  setGroupAddress(offerAddress(store, coachSelf, f));
+                }
+                setGroupTime("");
                 setModal("open-group");
               }}
             >
@@ -3445,7 +3763,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                 }}
               />
             ))}
-            <TextButton onPress={() => setConfig("offers")}>
+            <TextButton onPress={() => go("config-native", "offers")}>
               Gérer mes offres
             </TextButton>
           </>
@@ -3575,7 +3893,16 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               o.id,
               `${o.name} · ${euro(o.price)}/pers. · ${o.capacity} places`,
             ])}
-          onChange={setGroupOffer}
+          onChange={(id) => {
+            setGroupOffer(id);
+            const o = store.offers.find((o) => o.id === id),
+              c = coaches.find((c) => c.id === activeCoach);
+            if (c) {
+              const f = offerFormats(c, o)[0] ?? "";
+              setGroupFormat(f);
+              setGroupAddress(offerAddress(store, c, f));
+            }
+          }}
         />
         {!groupOffer && (
           <Note>Créez d’abord une offre Groupe dans Séances & tarifs.</Note>
@@ -3594,6 +3921,26 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           value={groupTime}
           onChange={setGroupTime}
         />
+        {!live && (
+          <Select
+            label="Format du lieu"
+            value={groupFormat}
+            items={offerFormats(
+              coaches.find((c) => c.id === activeCoach)!,
+              store.offers.find((o) => o.id === groupOffer),
+            )}
+            onChange={(f) => {
+              setGroupFormat(f);
+              setGroupAddress(
+                offerAddress(
+                  store,
+                  coaches.find((c) => c.id === activeCoach)!,
+                  f,
+                ),
+              );
+            }}
+          />
+        )}
         <Field
           label="Lieu du cours"
           value={groupAddress}
@@ -3631,6 +3978,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                     day: groupDay,
                     time: groupTime,
                     address: groupAddress,
+                    format: groupFormat,
                   }),
                 );
               setModal("");
@@ -3808,28 +4156,8 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                             return;
                           }
                           if (!booked) return;
-                          if (live) {
-                            const target = market.remoteSlots.find(
-                              (s) =>
-                                s.offer_id === booked.offerId &&
-                                s.day === day &&
-                                s.time === time,
-                            );
-                            if (!target)
-                              throw Error("Ce créneau n’est plus disponible.");
-                            const { error } = await supabase.rpc(
-                              "change_booking",
-                              { p_booking: booked.id, p_target: target.id },
-                            );
-                            if (error) throw error;
-                            await market.refresh();
-                          } else {
-                            setStore(W.reschedule(store, booked.id, day, time));
-                          }
-                          setModal("");
-                          setNotice(
-                            "Séance modifiée. Le coach a reçu une notification.",
-                          );
+                          setChangeTarget({ day, time });
+                          setModal("confirm-change");
                         })
                       }
                     >
@@ -3844,6 +4172,58 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             </P>
           </>
         )}
+      </>
+    );
+  if (modal === "confirm-change" && booked && changeTarget)
+    modalBody = (
+      <>
+        <H2>Votre nouvelle séance</H2>
+        <P muted style={{ marginTop: 16 }}>
+          Actuellement : {dayLabel(booked.day)} à {booked.time}
+        </P>
+        <P bold style={{ marginTop: 12 }}>
+          Nouveau : {dayLabel(changeTarget.day)} à {changeTarget.time}
+        </P>
+        <P style={{ marginTop: 12 }}>
+          {booked.serviceName} · {booked.duration} min · {booked.address}
+        </P>
+        <Note style={{ marginVertical: 20 }}>
+          Prix conservé : {euro(booked.price)}. Aucun supplément. Le coach
+          recevra une notification et l’ancien créneau sera libéré.
+        </Note>
+        <Button
+          disabled={busy}
+          onPress={() =>
+            run(async () => {
+              const { day, time } = changeTarget;
+              if (!booked) return;
+              if (live) {
+                const target = market.remoteSlots.find(
+                  (s) =>
+                    s.offer_id === booked.offerId &&
+                    s.day === day &&
+                    s.time === time,
+                );
+                if (!target) throw Error("Ce créneau n’est plus disponible.");
+                const { error } = await supabase.rpc("change_booking", {
+                  p_booking: booked.id,
+                  p_target: target.id,
+                });
+                if (error) throw error;
+                await market.refresh();
+              } else {
+                setStore(W.reschedule(store, booked.id, day, time));
+              }
+              setModal("");
+              setNotice("Séance modifiée. Le coach a reçu une notification.");
+            })
+          }
+        >
+          Confirmer la modification
+        </Button>
+        <TextButton onPress={() => setModal("change-booking")}>
+          Choisir une autre heure
+        </TextButton>
       </>
     );
   if (modal === "sort")
@@ -3934,6 +4314,31 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     modalBody = (
       <>
         <P>Votre séance sera annulée et les places seront libérées.</P>
+        {booked && !live && (
+          <Note style={{ marginTop: 16 }}>
+            <P>
+              {booked.serviceName} · {dayLabel(booked.day)} à {booked.time}
+            </P>
+            <P bold style={{ marginTop: 12 }}>
+              Remboursement :{" "}
+              {euro(
+                store.account?.role === "coach" ||
+                  instant(booked.day, booked.time) - now() >=
+                    (booked.cancelHours ?? 24) * 3600000
+                  ? W.net(booked)
+                  : 0,
+              )}
+            </P>
+            <P small>
+              Annulation gratuite jusqu’à {booked.cancelHours ?? 24} h avant.{" "}
+              {store.account?.role !== "coach" &&
+              instant(booked.day, booked.time) - now() <
+                (booked.cancelHours ?? 24) * 3600000
+                ? "Ce délai est dépassé : le montant déjà payé reste dû."
+                : "Aucun montant supplémentaire à régler."}
+            </P>
+          </Note>
+        )}
         <Note style={{ marginVertical: 20 }}>
           {live
             ? "Aucun paiement n’a été encaissé."
@@ -4090,7 +4495,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       <>
         <H1>Faisons place{"\n"}à vos prochains clients.</H1>
         <P muted style={{ marginTop: 16 }}>
-          Avancez à votre rythme : tout est enregistré.
+          Avancez à votre rythme et enregistrez chaque étape.
         </P>
         {[
           ["profile", "Présentez-vous"],
@@ -4180,10 +4585,38 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       } as Record<string, string>
     )[screen];
   }
+  if (
+    !live &&
+    [
+      "external-session-native",
+      "availability-help-native",
+      "repeat-group-native",
+    ].includes(screen)
+  ) {
+    content = (
+      <Section>
+        <AgendaTools
+          key={`${screen}:${focus}`}
+          {...flowProps}
+          screen={screen}
+        />
+      </Section>
+    );
+    barTitle[screen] =
+      screen === "external-session-native"
+        ? "Rendez-vous direct"
+        : screen === "repeat-group-native"
+          ? "Dupliquer un cours"
+          : "Mon planning";
+  }
   if (!live && screen === "config" && config !== "groups")
     content = (
       <Section>
-        <CoachConfiguration {...flowProps} section={config} />
+        <CoachConfiguration
+          {...flowProps}
+          section={config}
+          saveAction={configSave}
+        />
       </Section>
     );
   if (!live && screen === "setup" && draft?.kind === "Groupe" && offer) {
@@ -4216,6 +4649,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             setDraft({
               ...draft,
               seats: Number(v),
+              participantNames: Array.from(
+                { length: Number(v) },
+                (_, i) =>
+                  draft.participantNames?.[i] ??
+                  (i === 0 ? (store.account?.name ?? "") : ""),
+              ),
               price: (g?.offer.price ?? offer.price) * Number(v),
             })
           }
@@ -4224,6 +4663,34 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           Vous réservez pour vous et vos accompagnants. Vous êtes le contact de
           cette réservation.
         </P>
+        {Array.from({ length: draft.seats }, (_, i) => (
+          <Field
+            key={i}
+            label={`Prénom du participant ${i + 1} (facultatif)`}
+            value={
+              draft.participantNames?.[i] ??
+              (i === 0 ? (store.account?.name ?? "") : "")
+            }
+            onChange={(v) => {
+              const names = Array.from(
+                { length: draft.seats },
+                (_, j) =>
+                  draft.participantNames?.[j] ??
+                  (j === 0 ? (store.account?.name ?? "") : ""),
+              );
+              names[i] = v;
+              setDraft({ ...draft, participantNames: names });
+            }}
+          />
+        ))}
+        <TextButton
+          onPress={() => {
+            setDay(draft.day);
+            go("profile");
+          }}
+        >
+          Choisir un autre cours
+        </TextButton>
         <View style={{ marginVertical: 20 }}>
           <Field
             label="Un objectif ou une précision facultative"
@@ -4326,6 +4793,18 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         </Section>
       </>
     );
+  if (
+    !live &&
+    screen === "config" &&
+    ["schedule", "rules", "preparation", "notifications"].includes(config)
+  )
+    sticky = (
+      <View style={styles.sticky}>
+        <Button onPress={() => configSave.current?.()}>
+          Enregistrer les réglages
+        </Button>
+      </View>
+    );
   const body = (
     <View
       style={[
@@ -4377,15 +4856,24 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           }
         />
       )}
-      <ScrollView
-        ref={scroll}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ flexGrow: 1 }}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        {market.ready ? content : <ActivityIndicator style={{ margin: 50 }} />}
-      </ScrollView>
-      {sticky}
+        <ScrollView
+          ref={scroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ flexGrow: 1 }}
+        >
+          {market.ready ? (
+            content
+          ) : (
+            <ActivityIndicator style={{ margin: 50 }} />
+          )}
+        </ScrollView>
+        {sticky}
+      </KeyboardAvoidingView>
       {(bottom || coachBottom) && (
         <View style={styles.bottomNav}>
           {(coachBottom ? coachTabs : navItems).map(([id, icon, title]) => (
@@ -4398,10 +4886,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               }}
               key={id}
               onPress={() => {
+                history.current = [];
+                setModal("");
                 if (coachBottom) {
                   setCoachTab(id);
-                  if (screen !== "coach") go("coach");
-                } else go(id);
+                  setScreen("coach");
+                } else setScreen(id);
               }}
               style={styles.navItem}
             >

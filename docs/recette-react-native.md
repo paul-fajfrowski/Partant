@@ -49,3 +49,7 @@ Une seule logique de disponibilités, sans mode « heures fixes ». Une nouvelle
 Le premier départ est l’heure de début saisie par le coach, par exemple 9 h 10. Par défaut, les départs suivants suivent la durée de l’offre et la pause choisie par le coach ; il peut renseigner un autre espacement en minutes. L’aperçu affiche le résultat avant sauvegarde. Les réservations et occupations enlèvent ensuite les créneaux incompatibles. Ce réglage n’est pas une seconde catégorie de planning.
 
 Tester 9 h 10–13 h 10 avec une offre d’une heure et 15 min de pause : départs à 9 h 10, 10 h 25 et 11 h 40. Vérifier un intervalle personnalisé de 20 min, puis la recherche côté client : les heures réellement configurées doivent être sélectionnables, y compris 18 h 10. Les cours collectifs gardent leur date et leur heure choisies par le coach.
+
+## Version 6 — nouveaux parcours
+
+Suivre les neuf scénarios de [la recette des améliorations produit](ameliorations-produit-6.md#recette-à-effectuer-sur-téléphone), notamment la persistance des brouillons, les copies et exceptions, les rendez-vous directs et leur incidence sur les créneaux clients, les doublons de cours, puis les confirmations de modification et d’annulation. Les horaires doivent rester entièrement décidés par le coach.

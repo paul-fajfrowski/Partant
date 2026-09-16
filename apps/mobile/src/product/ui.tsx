@@ -389,6 +389,13 @@ export function Field({
   numeric?: boolean;
   secure?: boolean;
 }) {
+  const [blurred, setBlurred] = React.useState(false);
+  const expectsTime = placeholder?.toLowerCase() === "hh:mm";
+  const invalidTime =
+    expectsTime &&
+    blurred &&
+    !!value &&
+    !/^([01]\d|2[0-3]):[0-5]\d$/.test(value);
   return (
     <View style={{ gap: 8, marginBottom: 18 }}>
       <Text style={s.label}>{label}</Text>
@@ -397,6 +404,7 @@ export function Field({
         placeholder={placeholder}
         value={value}
         onChangeText={onChange}
+        onBlur={() => setBlurred(true)}
         multiline={multiline}
         secureTextEntry={secure}
         keyboardType={
@@ -411,9 +419,15 @@ export function Field({
         }
         style={[
           s.input,
+          invalidTime && { borderWidth: 2, borderColor: t.ink },
           multiline && { minHeight: 100, textAlignVertical: "top" },
         ]}
       />
+      {invalidTime && (
+        <Text accessibilityLiveRegion="polite" style={s.label}>
+          Saisissez une heure entre 00:00 et 23:59, au format HH:mm.
+        </Text>
+      )}
     </View>
   );
 }

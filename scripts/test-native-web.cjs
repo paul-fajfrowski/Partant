@@ -232,7 +232,7 @@ function input(label, value) {
   );
   await click('Gérer mes offres');input('Nom de la séance','Renforcement collectif');await click('Format : Individuel');await click('Groupe');input('Prix par personne (€)','20');input('Nombre maximum de participants','6');await wait();await click('Enregistrer l’offre');
   ok(d.body.textContent.includes('Renforcement collectif'),'Coach creates a group offer');
-  await click('Retour');await click('Mes cours en groupe');await click('Planifier un cours');await click('Ouvrir ce cours');
+  await click('Retour');await click('Planifier un cours');input('Horaire (HH:MM)','18:00');await wait();await click('Ouvrir ce cours');
   ok(d.body.textContent.includes('6 places maximum'),'Dated class retains coach capacity');
   await click('Retour');await click('Réglages');await click('Me déconnecter');
   await click('Explorer d’abord');await click('Demain');await click('Voir le profil de Thomas Martin');await click('Renforcement collectif · 20 €');

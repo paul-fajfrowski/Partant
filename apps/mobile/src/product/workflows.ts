@@ -290,6 +290,14 @@ export function saveCoach(s: Store, id: string, changes: Partial<Coach>) {
   return next;
 }
 export function saveOffer(s: Store, o: Offer) {
+  const coach = allCoaches(s).find((c) => c.id === o.coach);
+  if (
+    o.formats !== undefined &&
+    (!o.formats.length || o.formats.some((f) => !coach?.formats.includes(f)))
+  )
+    throw Error(
+      "Choisissez au moins un lieu autorisé dans Lieux & déplacements.",
+    );
   if (s.account?.role !== "coach" || o.coach !== coachAccountId(s))
     throw Error("Offre inaccessible.");
   if (
@@ -383,6 +391,7 @@ export function partialCancel(s: Store, id: string, seats: number) {
           ? {
               ...x,
               seats,
+              participantNames: x.participantNames?.slice(0, seats),
               price: money(unit * seats),
               refunded: money((x.refunded ?? 0) + amount),
               changes: [
@@ -1036,6 +1045,18 @@ export function accountExport(s: Store) {
     ),
     notifications: s.notices.filter((n) => n.recipient === s.account!.id),
     payments: s.attempts?.filter((p) => p.owner === s.account!.id),
+    externalSessions:
+      s.account.role === "coach"
+        ? s.externalSessions?.filter((b) => b.coach === coachAccountId(s))
+        : [],
+    drafts:
+      s.account.role === "coach"
+        ? Object.fromEntries(
+            Object.entries(s.coachDrafts ?? {}).filter(([k]) =>
+              k.startsWith(coachAccountId(s) + ":"),
+            ),
+          )
+        : {},
   };
 }
 export function deleteAccount(s: Store) {
@@ -1044,9 +1065,27 @@ export function deleteAccount(s: Store) {
     throw Error("Traitez vos séances confirmées avant de supprimer ce compte.");
   const id = s.account.id,
     coach = s.account.role === "coach" ? coachAccountId(s) : null;
+  if (
+    coach &&
+    (s.externalSessions ?? []).some(
+      (b) =>
+        b.coach === coach && !b.cancelled && instant(b.day, b.time) > now(),
+    )
+  )
+    throw Error(
+      "Traitez vos rendez-vous directs avant de supprimer ce compte.",
+    );
   let next = {
     ...s,
     identities: identities(s).filter((a) => a.id !== id),
+    externalSessions: (s.externalSessions ?? []).filter(
+      (b) => b.coach !== coach,
+    ),
+    coachDrafts: Object.fromEntries(
+      Object.entries(s.coachDrafts ?? {}).filter(
+        ([key]) => coach === null || !key.startsWith(coach + ":"),
+      ),
+    ),
     deletedAccounts: [
       ...((s as Store & { deletedAccounts?: string[] }).deletedAccounts ?? []),
       id,
@@ -1059,6 +1098,7 @@ export function deleteAccount(s: Store) {
         ? {
             ...b,
             clientName: "Compte supprimé",
+            participantNames: undefined,
             goal: "",
             address: b.format === "Domicile" ? "Adresse supprimée" : b.address,
           }

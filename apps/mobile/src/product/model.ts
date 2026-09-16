@@ -25,6 +25,7 @@ export type Coach = {
   verified: boolean;
 };
 export type Offer = {
+  formats?: string[]; // undefined: inherit coach locations; explicit list: this offer only
   level?: string;
   id: string;
   coach: string;
@@ -36,6 +37,7 @@ export type Offer = {
   capacity: number;
 };
 export type Booking = {
+  participantNames?: string[];
   id: string;
   coach: string;
   clientId: string;
@@ -87,6 +89,7 @@ export type Notice = {
   booking: string;
 };
 export type GroupSession = {
+  format?: string;
   id: string;
   offer: Offer;
   day: string;
@@ -98,6 +101,37 @@ export type GroupSession = {
   level?: string;
 };
 export type Store = ExtendedStore & {
+  coachDrafts?: Record<
+    string,
+    {
+      cfg: Partial<CoachSettings>;
+      profile?: Coach;
+      edit?: Offer;
+      form?: {
+        exceptionDay: string;
+        exceptionClosed: boolean;
+        exception: Interval[];
+        blockDay: string;
+        blockStart: string;
+        blockEnd: string;
+        blockTitle: string;
+      };
+    }
+  >;
+  externalSessions?: {
+    id: string;
+    coach: string;
+    name: string;
+    day: string;
+    time: string;
+    duration: number;
+    offerId: string;
+    serviceName: string;
+    address: string;
+    format: string;
+    price: number;
+    cancelled?: boolean;
+  }[];
   groups?: GroupSession[];
   accounts?: Record<string, { preferences: Preferences; favorites: string[] }>;
   coachOverrides?: Record<string, Partial<Coach>>;
@@ -215,6 +249,8 @@ export function slotsFor(
   offer?: Offer,
 ): string[] {
   const cfg = configFor(store, c.id);
+  if (offer && offer.kind !== "Groupe" && !offerFormats(c, offer).length)
+    return [];
   if (
     !cfg.published ||
     cfg.dossier.status !== "approved" ||
@@ -247,6 +283,18 @@ export function slotsFor(
           overlap(time, offer?.duration ?? 60, t, 30)
         );
       }) &&
+      !(store.externalSessions ?? []).some(
+        (b) =>
+          !b.cancelled &&
+          b.coach === c.id &&
+          b.day === day &&
+          overlap(
+            time,
+            (offer?.duration ?? 60) + cfg.buffer,
+            b.time,
+            b.duration + cfg.buffer,
+          ),
+      ) &&
       !cfg.blocks.some(
         (b) =>
           b.day === day &&
@@ -343,6 +391,12 @@ export function reserve(store: Store, draft: Booking): Store {
     )
   )
     throw Error("Une autre séance est déjà prévue à cette heure.");
+  if (o.kind !== "Groupe" && !offerFormats(c, o).includes(draft.format))
+    throw Error(
+      "Ce lieu n’est pas proposé pour cette séance. Modifiez votre sélection.",
+    );
+  if (draft.participantNames && draft.participantNames.length !== draft.seats)
+    throw Error("Vérifiez la liste des participants.");
   const b = {
     ...draft,
     clientId: store.account.id,
@@ -437,7 +491,23 @@ export function openGroup(store: Store, group: GroupSession): Store {
   )
     throw Error("Vérifiez la date, l’heure et le lieu du cours.");
   const cfg = configFor(store, o.coach);
+  const coach = allCoaches(store).find((c) => c.id === o.coach)!;
+  const groupFormat = group.format ?? offerFormats(coach, o)[0];
+  if (!groupFormat || !offerFormats(coach, o).includes(groupFormat))
+    throw Error("Ce lieu n’est pas autorisé pour cette prestation.");
   if (
+    (store.externalSessions ?? []).some(
+      (b) =>
+        !b.cancelled &&
+        b.coach === o.coach &&
+        b.day === group.day &&
+        overlap(
+          group.time,
+          o.duration + cfg.buffer,
+          b.time,
+          b.duration + cfg.buffer,
+        ),
+    ) ||
     group.day >= addDays(today(), cfg.horizon) ||
     !intervalFits(cfg, group.day, group.time, o.duration, o.id) ||
     cfg.blocks.some(
@@ -489,6 +559,7 @@ export function openGroup(store: Store, group: GroupSession): Store {
       {
         ...group,
         offer: { ...o },
+        format: groupFormat,
         cancelHours: cfg.cancelHours,
         preparation: { ...cfg.preparation },
         level: group.level ?? o.level ?? "Tous niveaux",
@@ -692,4 +763,19 @@ export function newPreviewStore(): Store {
       },
     ],
   };
+}
+
+export function offerFormats(c: Coach, o?: Offer): string[] {
+  return o?.formats === undefined
+    ? c.formats
+    : o.formats.filter((f) => c.formats.includes(f));
+}
+export function offerAddress(store: Store, c: Coach, format: string) {
+  return format === "Studio"
+    ? configFor(store, c.id).studioAddress
+    : format === "Visio"
+      ? "Lien de visioconférence transmis dans la conversation"
+      : format === "Domicile"
+        ? ""
+        : c.address;
 }

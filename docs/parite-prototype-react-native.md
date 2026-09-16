@@ -78,3 +78,9 @@ Validation : 26 assertions métier ciblées, 10 assertions DOM de configuration 
 Aucun mode distinct « heures fixes ». Le coach renseigne ses horaires sans heure préremplie sur les nouvelles plages. La cadence universelle de 30 min est retirée : la durée de ses offres et sa pause déterminent les départs, avec un espacement personnalisable. Un aperçu rend ces choix visibles. Les nouveaux comptes coach n’ont aucune plage ouverte par défaut ; les comptes fictifs gardent leurs horaires de démonstration. La recherche client intègre les horaires précis disponibles.
 
 Les réservations existantes restent conservées. Cette évolution porte sur le moteur local ; les règles avancées restent à raccorder au serveur. Contrôles : 35 assertions métier de disponibilités, tests DOM de configuration/réservation, TypeScript et exports natifs/web.
+
+## Version 6 — cohérence et outils quotidiens
+
+La livraison est détaillée dans [Améliorations produit 6](ameliorations-produit-6.md). Elle ajoute les brouillons de réglages et leur abandon confirmé, les retours contextualisés, l’édition explicite des exceptions, la copie de journées, les lieux par prestation, les rendez-vous directs, le diagnostic des disponibilités, la duplication de cours, les noms facultatifs des participants, les progrès de mise en ligne et les confirmations de changements de réservation. Les réglages coach sont regroupés ; les sélections client sont conservées.
+
+Ces évolutions sont locales. Les nouveaux champs et contrôles n’ont pas été déployés sur le serveur. Les paiements et communications externes restent différés. Le HTML archivé est inchangé.

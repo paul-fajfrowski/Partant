@@ -2,7 +2,8 @@ import {
   AvailabilityIntervals,
   intervalSummary,
 } from "./AvailabilityIntervals";
-import React, { useEffect, useState } from "react";
+import { copyDay } from "./agendaTools";
+import React, { useEffect, useRef, useState } from "react";
 import { Pressable, View, Switch } from "react-native";
 import {
   Store,
@@ -16,6 +17,7 @@ import {
   validateIntervals,
   mins,
   overlap,
+  offerFormats,
 } from "./model";
 import type { CoachSettings, Interval } from "./extendedTypes";
 import {
@@ -79,50 +81,194 @@ export type FlowProps = {
   openCoach: (id: string) => void;
   choose: (coach: Coach, day: string, time: string, offer: Offer) => void;
 };
-export function CoachConfiguration({
+const sectionFields: Record<string, (keyof CoachSettings)[]> = {
+  schedule: [
+    "week",
+    "weeklyConfigured",
+    "exceptions",
+    "buffer",
+    "departureStep",
+  ],
+  rules: ["buffer", "notice", "horizon", "cancelHours"],
+  places: ["studio", "studioAddress", "radius", "travelFee"],
+  documents: ["dossier", "published"],
+  payout: ["business", "payoutReady"],
+  notifications: ["notifications"],
+  preparation: ["preparation"],
+  calendars: ["blocks"],
+  blocks: ["blocks"],
+};
+export function CoachConfiguration(
+  props: FlowProps & {
+    section: string;
+    saveAction?: React.MutableRefObject<(() => void) | null>;
+  },
+) {
+  const key = `${coachAccountId(props.store)}:${props.section}`;
+  const [revision, setRevision] = useState(0),
+    [discard, setDiscard] = useState(false);
+  useEffect(() => setDiscard(false), [key]);
+  return (
+    <>
+      <Note style={{ marginBottom: 20 }}>
+        Vos modifications restent en brouillon sur cet appareil. Utilisez «
+        Enregistrer » pour les appliquer.
+      </Note>
+      {props.store.coachDrafts?.[key] && (
+        <>
+          <TextButton onPress={() => setDiscard(true)}>
+            Abandonner le brouillon
+          </TextButton>
+          {discard && (
+            <Note style={{ marginBottom: 20 }}>
+              <P>Revenir aux réglages enregistrés de cette rubrique ?</P>
+              <Button
+                style={{ marginTop: 12 }}
+                onPress={() => {
+                  props.setStore((s) => {
+                    const drafts = { ...s.coachDrafts };
+                    delete drafts[key];
+                    return { ...s, coachDrafts: drafts };
+                  });
+                  setRevision((v) => v + 1);
+                  setDiscard(false);
+                }}
+              >
+                Confirmer l’abandon
+              </Button>
+              <TextButton onPress={() => setDiscard(false)}>
+                Continuer à modifier
+              </TextButton>
+            </Note>
+          )}
+        </>
+      )}
+      <ConfigurationEditor key={`${key}:${revision}`} {...props} />
+    </>
+  );
+}
+function ConfigurationEditor({
   store,
   setStore,
   coachId,
   section,
   message,
   go,
-}: FlowProps & { section: string }) {
+  saveAction,
+}: FlowProps & {
+  section: string;
+  saveAction?: React.MutableRefObject<(() => void) | null>;
+}) {
   const actual = coachAccountId(store),
     c = allCoaches(store).find((c) => c.id === actual)!;
-  const [cfg, setCfg] = useState<CoachSettings>(() => configFor(store, actual));
-  const [profile, setProfile] = useState<Coach>(c);
+  const draftKey = `${actual}:${section}`;
+  const savedDraft = store.coachDrafts?.[draftKey];
+  const [cfg, setCfg] = useState<CoachSettings>(() => ({
+    ...configFor(store, actual),
+    ...savedDraft?.cfg,
+  }));
+  const [profile, setProfile] = useState<Coach>(savedDraft?.profile ?? c);
   const [expanded, setExpanded] = useState(0);
-  const [exceptionDay, setExceptionDay] = useState(addDays(today(), 1));
-  const [exceptionClosed, setExceptionClosed] = useState(false);
-  const [exception, setException] = useState<Interval[]>([["", ""]]);
-  const [blockDay, setBlockDay] = useState(addDays(today(), 1));
-  const [blockStart, setBlockStart] = useState("14:00"),
-    [blockEnd, setBlockEnd] = useState("15:00"),
-    [blockTitle, setBlockTitle] = useState("Rendez-vous personnel");
-  const [edit, setEdit] = useState<Offer>({
-    id: uid(),
-    coach: actual,
-    name: "",
-    kind: "Individuel",
-    duration: 60,
-    price: 50,
-    capacity: 1,
-    active: true,
-  });
+  const [error, setError] = useState("");
+  const [copyTargets, setCopyTargets] = useState<number[]>([]);
+  const [copyConfirm, setCopyConfirm] = useState(false);
+  const [deleteException, setDeleteException] = useState(false);
+  const [exceptionDay, setExceptionDay] = useState(
+    savedDraft?.form?.exceptionDay ?? addDays(today(), 1),
+  );
+  const [exceptionClosed, setExceptionClosed] = useState(
+    savedDraft?.form?.exceptionClosed ?? false,
+  );
+  const [exception, setException] = useState<Interval[]>(
+    savedDraft?.form?.exception ?? [["", ""]],
+  );
+  const [blockDay, setBlockDay] = useState(
+    savedDraft?.form?.blockDay ?? addDays(today(), 1),
+  );
+  const [blockStart, setBlockStart] = useState(
+      savedDraft?.form?.blockStart ?? "",
+    ),
+    [blockEnd, setBlockEnd] = useState(savedDraft?.form?.blockEnd ?? ""),
+    [blockTitle, setBlockTitle] = useState(
+      savedDraft?.form?.blockTitle ?? "Rendez-vous personnel",
+    );
+  const [edit, setEdit] = useState<Offer>(
+    savedDraft?.edit ?? {
+      id: uid(),
+      coach: actual,
+      name: "",
+      kind: "Individuel",
+      duration: 60,
+      price: 50,
+      capacity: 1,
+      active: true,
+    },
+  );
+  const form = {
+    exceptionDay,
+    exceptionClosed,
+    exception,
+    blockDay,
+    blockStart,
+    blockEnd,
+    blockTitle,
+  };
+  const initialDraft = useRef(JSON.stringify({ cfg, profile, edit, form }));
   useEffect(() => {
-    setCfg(configFor(store, actual));
-    setProfile(allCoaches(store).find((c) => c.id === actual)!);
-  }, [section, actual]);
+    const signature = JSON.stringify({ cfg, profile, edit, form });
+    if (signature === initialDraft.current) return;
+    const fields = sectionFields[section] ?? [];
+    const partial = Object.fromEntries(fields.map((k) => [k, cfg[k]]));
+    setStore((s) => ({
+      ...s,
+      coachDrafts: {
+        ...s.coachDrafts,
+        [draftKey]: {
+          cfg: partial,
+          form,
+          ...(["profile", "places"].includes(section) ? { profile } : {}),
+          ...(section === "offers" ? { edit } : {}),
+        },
+      },
+    }));
+  }, [
+    cfg,
+    profile,
+    edit,
+    exceptionDay,
+    exceptionClosed,
+    exception,
+    blockDay,
+    blockStart,
+    blockEnd,
+    blockTitle,
+  ]);
+  const commit = (next: Store) => {
+    const drafts = { ...next.coachDrafts };
+    delete drafts[draftKey];
+    initialDraft.current = JSON.stringify({ cfg, profile, edit, form });
+    setStore({ ...next, coachDrafts: drafts });
+    setError("");
+  };
   const run = (fn: () => void) => {
     try {
+      setError("");
       fn();
     } catch (e) {
+      setError(e instanceof Error ? e.message : "Vérifiez vos informations.");
       message(e instanceof Error ? e.message : "Vérifiez vos informations.");
     }
   };
   const save = (next = cfg) =>
     run(() => {
-      setStore(saveSettings(store, actual, next));
+      const fields = sectionFields[section] ?? [];
+      const merged = {
+        ...configFor(store, actual),
+        ...Object.fromEntries(fields.map((k) => [k, next[k]])),
+      };
+      initialDraft.current = JSON.stringify({ cfg: next, profile, edit, form });
+      commit(saveSettings(store, actual, merged));
+      initialDraft.current = JSON.stringify({ cfg: next, profile, edit, form });
       message(
         "Réglages enregistrés. Les réservations confirmées sont conservées.",
       );
@@ -156,9 +302,21 @@ export function CoachConfiguration({
     const d = addDays(today(), i);
     return [d, d] as [string, string];
   });
+  useEffect(() => {
+    if (saveAction)
+      saveAction.current = () =>
+        save(section === "schedule" ? { ...cfg, weeklyConfigured: true } : cfg);
+    return () => {
+      if (saveAction) saveAction.current = null;
+    };
+  });
+  const feedback = error ? (
+    <Note style={{ marginVertical: 16 }}>{error}</Note>
+  ) : null;
   if (section === "profile")
     return (
       <>
+        {feedback}
         <Eyebrow>VOS RÉGLAGES</Eyebrow>
         <View style={{ height: 20 }} />
         {text("Nom public", "name")}
@@ -227,7 +385,8 @@ export function CoachConfiguration({
         <Button
           onPress={() =>
             run(() => {
-              setStore(saveCoach(store, actual, profile));
+              const { formats, place, address, ...profileFields } = profile;
+              commit(saveCoach(store, actual, profileFields));
               message(
                 "Profil enregistré. Un changement d’identité ou de qualification demande une nouvelle vérification.",
               );
@@ -241,6 +400,7 @@ export function CoachConfiguration({
   if (section === "offers")
     return (
       <>
+        {feedback}
         <P muted style={{ marginVertical: 16 }}>
           Créez une offre par formule : par exemple, renforcement 30 min à 30 €
           et renforcement 60 min à 50 €. Choisissez ensuite leurs plages dans
@@ -331,10 +491,33 @@ export function CoachConfiguration({
             onChange={(level) => setEdit({ ...edit, level })}
           />
         )}
+        <H2 style={{ marginVertical: 16 }}>Où proposer cette séance ?</H2>
+        <P small muted>
+          Choisissez les lieux autorisés pour cette prestation. Les adresses se
+          règlent dans Lieux & déplacements.
+        </P>
+        {c.formats.map((f) => (
+          <Toggle
+            key={f}
+            label={f}
+            value={offerFormats(c, edit).includes(f)}
+            onChange={(checked) =>
+              setEdit({
+                ...edit,
+                formats: checked
+                  ? [...offerFormats(c, edit), f]
+                  : offerFormats(c, edit).filter((x) => x !== f),
+              })
+            }
+          />
+        ))}
+        <TextButton onPress={() => go("config-native", "places")}>
+          Configurer mes lieux
+        </TextButton>
         <Button
           onPress={() =>
             run(() => {
-              setStore(saveOffer(store, edit));
+              commit(saveOffer(store, edit));
               setEdit({ ...edit, id: uid(), name: "" });
               message(
                 "Offre enregistrée. Les cours déjà planifiés gardent leur tarif et capacité.",
@@ -368,6 +551,7 @@ export function CoachConfiguration({
   if (section === "places")
     return (
       <>
+        {feedback}
         <Eyebrow style={{ marginBottom: 20 }}>VOS RÉGLAGES</Eyebrow>
 
         <H2>Formats proposés</H2>
@@ -423,8 +607,25 @@ export function CoachConfiguration({
                 throw Error(
                   "Vérifiez les formats, les adresses et le déplacement.",
                 );
-              setStore({
-                ...saveSettings(store, actual, cfg),
+              if (
+                store.offers.some(
+                  (o) =>
+                    o.coach === actual &&
+                    o.active &&
+                    o.formats?.some((f) => !profile.formats.includes(f)),
+                )
+              )
+                throw Error(
+                  "Modifiez d’abord les prestations qui utilisent le lieu à retirer.",
+                );
+              commit({
+                ...saveSettings(store, actual, {
+                  ...configFor(store, actual),
+                  studio: cfg.studio,
+                  studioAddress: cfg.studioAddress,
+                  radius: cfg.radius,
+                  travelFee: cfg.travelFee,
+                }),
                 coachOverrides: {
                   ...store.coachOverrides,
                   [actual]: {
@@ -446,7 +647,13 @@ export function CoachConfiguration({
   if (section === "schedule")
     return (
       <>
+        {feedback}
         <H1>À votre rythme.</H1>
+        <P small muted style={{ marginTop: 12 }}>
+          Votre semaine se répète automatiquement sur votre période de
+          réservation. Les exceptions datées prennent le relais pour les congés
+          et changements ponctuels.
+        </P>
         <P muted style={{ marginVertical: 20 }}>
           Vous choisissez les jours, l’heure de début et l’heure de fin. Chaque
           plage commence à l’heure que vous saisissez, même à 9 h 10 ou 14 h 20.
@@ -504,7 +711,11 @@ export function CoachConfiguration({
                       .join(" · ")
                   : "Fermé"
               }
-              onPress={() => setExpanded(expanded === i ? -1 : i)}
+              onPress={() => {
+                setExpanded(expanded === i ? -1 : i);
+                setCopyTargets([]);
+                setCopyConfirm(false);
+              }}
             />
             {expanded === i &&
               intervals(cfg.week[i], (v) =>
@@ -515,6 +726,82 @@ export function CoachConfiguration({
               )}
           </View>
         ))}
+        {expanded >= 0 && (
+          <>
+            <H2 style={{ marginVertical: 16 }}>Copier cette journée</H2>
+            <P small muted>
+              Les plages et prestations du jour ouvert seront copiées. Vérifiez
+              les jours à remplacer avant d’enregistrer.
+            </P>
+            <Row wrap style={{ marginVertical: 16 }}>
+              {[
+                "Lundi",
+                "Mardi",
+                "Mercredi",
+                "Jeudi",
+                "Vendredi",
+                "Samedi",
+                "Dimanche",
+              ].map(
+                (label, i) =>
+                  i !== expanded && (
+                    <Chip
+                      key={label}
+                      active={copyTargets.includes(i)}
+                      onPress={() => {
+                        setCopyConfirm(false);
+                        setCopyTargets(
+                          copyTargets.includes(i)
+                            ? copyTargets.filter((x) => x !== i)
+                            : [...copyTargets, i],
+                        );
+                      }}
+                    >
+                      Vers {label.toLowerCase()}
+                    </Chip>
+                  ),
+              )}
+            </Row>
+            <Button
+              light
+              disabled={!copyTargets.length}
+              onPress={() => setCopyConfirm(true)}
+            >
+              Copier vers ces jours
+            </Button>
+            {copyConfirm && (
+              <Note style={{ marginVertical: 16 }}>
+                <P>
+                  Remplacer les horaires de {copyTargets.length} jour(s) par
+                  ceux du jour ouvert ? Les exceptions et réservations sont
+                  conservées.
+                </P>
+                <Button
+                  style={{ marginTop: 12 }}
+                  onPress={() =>
+                    run(() => {
+                      setCfg({
+                        ...cfg,
+                        week: copyDay(cfg.week, expanded, copyTargets),
+                        weeklyConfigured: true,
+                      });
+                      setCopyConfirm(false);
+                      setCopyTargets([]);
+                      message(
+                        "Copie prête. Enregistrez la semaine pour l’appliquer.",
+                      );
+                    })
+                  }
+                >
+                  Confirmer la copie
+                </Button>
+                <TextButton onPress={() => setCopyConfirm(false)}>
+                  Garder les horaires actuels
+                </TextButton>
+              </Note>
+            )}
+          </>
+        )}
         <TextButton onPress={() => go("config-native", "offers")}>
           Gérer mes séances et leurs tarifs
         </TextButton>
@@ -540,10 +827,21 @@ export function CoachConfiguration({
               "Fermé"
             }
             onPress={() => {
-              const next = { ...cfg, exceptions: { ...cfg.exceptions } };
-              delete next.exceptions[d];
-              setCfg(next);
-              save(next);
+              setExceptionDay(d);
+              setExceptionClosed(!list.length);
+              setException(
+                list.length
+                  ? list.map(([a, b, ids]) => [
+                      a,
+                      b,
+                      ids == null ? ids : [...ids],
+                    ])
+                  : [["", ""]],
+              );
+              setDeleteException(false);
+              message(
+                "Exception sélectionnée. Modifiez ses horaires ci-dessous.",
+              );
             }}
           />
         ))}
@@ -551,7 +849,21 @@ export function CoachConfiguration({
           label="Jour de l’exception"
           value={exceptionDay}
           items={dates}
-          onChange={setExceptionDay}
+          onChange={(d) => {
+            setExceptionDay(d);
+            setDeleteException(false);
+            const list = cfg.exceptions[d];
+            setExceptionClosed(list?.length === 0);
+            setException(
+              list?.length
+                ? list.map(([a, b, ids]) => [
+                    a,
+                    b,
+                    ids == null ? ids : [...ids],
+                  ])
+                : [["", ""]],
+            );
+          }}
         />
         <Toggle
           label="Fermer cette journée"
@@ -574,13 +886,44 @@ export function CoachConfiguration({
             })
           }
         >
-          Ajouter une exception
+          {cfg.exceptions[exceptionDay]
+            ? "Enregistrer l’exception"
+            : "Ajouter une exception"}
         </Button>
+        {cfg.exceptions[exceptionDay] && (
+          <TextButton onPress={() => setDeleteException(true)}>
+            Supprimer cette exception
+          </TextButton>
+        )}
+        {deleteException && (
+          <Note>
+            <P>
+              Supprimer l’exception du {exceptionDay} ? Les horaires habituels
+              de ce jour s’appliqueront de nouveau.
+            </P>
+            <Button
+              style={{ marginTop: 12 }}
+              onPress={() => {
+                const next = { ...cfg, exceptions: { ...cfg.exceptions } };
+                delete next.exceptions[exceptionDay];
+                setCfg(next);
+                save(next);
+                setDeleteException(false);
+              }}
+            >
+              Confirmer la suppression
+            </Button>
+            <TextButton onPress={() => setDeleteException(false)}>
+              Conserver l’exception
+            </TextButton>
+          </Note>
+        )}
       </>
     );
   if (section === "rules")
     return (
       <>
+        {feedback}
         <Eyebrow style={{ marginBottom: 20 }}>VOS RÉGLAGES</Eyebrow>
         {(
           [
@@ -638,6 +981,7 @@ export function CoachConfiguration({
   if (section === "preparation")
     return (
       <>
+        {feedback}
         <H1>Une rencontre{"\n"}bien préparée.</H1>
         <P muted style={{ marginVertical: 20 }}>
           Ces indications accompagnent vos nouvelles réservations. Les séances
@@ -667,6 +1011,7 @@ export function CoachConfiguration({
   if (section === "documents")
     return (
       <>
+        {feedback}
         <H1>La confiance{"\n"}se construit.</H1>
         <Note style={{ marginVertical: 20 }}>
           {
@@ -768,6 +1113,7 @@ export function CoachConfiguration({
   if (section === "payout")
     return (
       <>
+        {feedback}
         <Eyebrow style={{ marginBottom: 20 }}>VOS RÉGLAGES</Eyebrow>
         {(
           [
@@ -837,6 +1183,7 @@ export function CoachConfiguration({
   if (section === "notifications")
     return (
       <>
+        {feedback}
         <P muted style={{ marginBottom: 20 }}>
           Rester au courant, sans multiplier les sollicitations.
         </P>
@@ -870,6 +1217,7 @@ export function CoachConfiguration({
   if (section === "calendars" || section === "blocks")
     return (
       <>
+        {feedback}
         <H1>
           {section === "calendars"
             ? "Un planning.\nTous vos agendas."

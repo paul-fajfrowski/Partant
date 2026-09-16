@@ -1,3 +1,4 @@
+import { setupSteps } from "./agendaTools";
 import React, { useEffect, useState } from "react";
 import { View, Pressable } from "react-native";
 import {
@@ -962,7 +963,26 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
             : `${bookings.reduce((n, b) => n + b.seats, 0)} / ${g.offer.capacity} places réservées · ${euro(g.offer.price)}/personne`}
         </Note>
         <H2 style={{ marginVertical: 20 }}>Les participants</H2>
-        {bookings.map(appointment)}
+        {bookings.map((b) => (
+          <View key={b.id}>
+            {appointment(b)}
+            <P small muted style={{ marginBottom: 14 }}>
+              {Array.from(
+                { length: b.seats },
+                (_, i) =>
+                  b.participantNames?.[i]?.trim() ||
+                  (i === 0 ? b.clientName : `Accompagnant ${i}`),
+              ).join(" · ")}
+            </P>
+          </View>
+        ))}
+        <Button
+          light
+          style={{ marginVertical: 20 }}
+          onPress={() => go("repeat-group-native", g.id)}
+        >
+          Dupliquer ou répéter ce cours
+        </Button>
         {!g.cancelled && (
           <>
             {field("Motif d’annulation", "reason", "", true)}
@@ -1255,21 +1275,35 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
         <H1 style={{ marginVertical: 20 }}>
           Faisons place{"\n"}à vos prochains clients.
         </H1>
-        <P muted>Avancez à votre rythme : tout est enregistré.</P>
-        {[
-          ["profile", "Présentez-vous"],
-          ["offers", "Créez votre offre"],
-          ["places", "Choisissez vos lieux"],
-          ["schedule", "Ouvrez votre planning"],
-          ["documents", "Vérifiez votre profil"],
-          ["payout", "Activez vos versements"],
-        ].map(([id, title], i) => (
+        <P muted>
+          {setupSteps(s, active).filter((x) => x.done).length} / 6 étapes
+          terminées. Les brouillons sont conservés sur cet appareil ;
+          enregistrez chaque étape pour l’appliquer.
+        </P>
+        {setupSteps(s, active).find((x) => !x.done) && (
+          <Button
+            style={{ marginVertical: 20 }}
+            onPress={() =>
+              go(
+                "config-native",
+                setupSteps(s, active).find((x) => !x.done)!.id,
+              )
+            }
+          >
+            Continuer : {setupSteps(s, active).find((x) => !x.done)!.title}
+          </Button>
+        )}
+        {setupSteps(s, active).map(({ id, title, done }, i) => (
           <Setting
             key={id}
             title={`${i + 1} · ${title}`}
+            description={done ? "Terminé" : "À compléter"}
             onPress={() => go("config-native", id)}
           />
         ))}
+        <TextButton onPress={() => openCoach(active)}>
+          Prévisualiser mon profil avant publication
+        </TextButton>
         {!!issues.length && (
           <Note style={{ marginVertical: 20 }}>{issues.join("\n")}</Note>
         )}
