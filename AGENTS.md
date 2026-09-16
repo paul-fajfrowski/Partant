@@ -10,3 +10,5 @@
 - Consigne utilisateur confirmée : le prototype est la référence stricte. Reproduire ses écrans et parcours en React Native ; aucune refonte implicite. Lire docs/parite-prototype-react-native.md avant de poursuivre le portage. Ne pas déclarer la parité complète sur la seule base de tests TypeScript/DOM.
 
 - Planning confirmé par l’utilisateur : une seule logique de disponibilités définies par le coach. Aucun mode « heures fixes » ni cadence imposée par Partant. Le coach renseigne ses plages et les offres associées. Pause et espacement ont été retirés à sa demande : les départs suivent le début de plage et la durée de chaque prestation. Les anciennes valeurs sont neutralisées ; les intervalles libres se définissent entre les plages. Tout nouveau coach commence sans horaires ouverts.
+
+- Livraison 9 : chaque plage autorise aussi des lieux. Lire docs/connected-product-9.md. Le mode connecté utilise product-api et le domaine TypeScript partagé ; régénérer scripts/build-server-domain.cjs et redéployer après toute évolution métier. Ne pas réactiver les anciens points d’écriture du pilote SQL. Les étapes 3/4/5 de cette dernière priorisation restent reportées.

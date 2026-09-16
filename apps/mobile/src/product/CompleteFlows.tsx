@@ -25,7 +25,7 @@ import {
 import * as W from "./workflows";
 import type { CoachSettings, AvailabilityAlert } from "./extendedTypes";
 import { FlowProps, Toggle, euro } from "./CoachConfiguration";
-import { exportFile } from "./deviceFiles";
+import { exportFile, openDocument } from "./deviceFiles";
 import {
   Button,
   Chip,
@@ -257,7 +257,11 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
       <>
         <H1 style={{ marginBottom: 20 }}>Vos informations.</H1>
         {field("Prénom / nom public", "name", me.name)}
-        {field("Adresse e-mail fictive", "email", me.email)}
+        {s.connected ? (
+          <Note>E-mail de connexion · {me.email}</Note>
+        ) : (
+          field("Adresse e-mail fictive", "email", me.email)
+        )}
         {field("Téléphone facultatif", "phone", info.phone)}
         <Toggle
           label="Rappels avant mes séances"
@@ -311,7 +315,11 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
           Enregistrer
         </Button>
         <Setting
-          title="Exporter mes données locales"
+          title={
+            s.connected
+              ? "Exporter mes données"
+              : "Exporter mes données locales"
+          }
           onPress={() =>
             run(() =>
               exportFile(
@@ -330,13 +338,17 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
           }}
         />
         <Setting
-          title="Supprimer mon compte de démonstration"
+          title={
+            s.connected
+              ? "Supprimer mon compte"
+              : "Supprimer mon compte de démonstration"
+          }
           onPress={() => setConfirm(true)}
         />
         {confirm && (
           <Note>
             <P>
-              Votre profil local et vos messages seront anonymisés. Les
+              Votre profil et vos messages seront anonymisés. Les
               références des séances restent chez vos interlocuteurs.
             </P>
             <Button
@@ -769,7 +781,7 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
       </>
     );
   if (screen === "team") {
-    if (!s.testMode)
+    if (!s.testMode && !s.staff)
       return (
         <Note>
           Activez le mode Test pour accéder à cet espace de démonstration.
@@ -780,7 +792,7 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
         <Eyebrow>LES COULISSES DE LA RENCONTRE</Eyebrow>
         <H1 style={{ marginVertical: 20 }}>Chaque demande{"\n"}a une suite.</H1>
         <Note>
-          Équipe Partant · simulation. Aucun contrôle documentaire réel.
+          {s.connected ? "Espace réservé à l’équipe habilitée. Chaque décision est enregistrée et notifiée au coach." : "Équipe Partant · simulation. Aucun contrôle documentaire réel."}
         </Note>
         <H2 style={{ marginVertical: 20 }}>Dossiers coach</H2>
         {allCoaches(s)
@@ -795,7 +807,20 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
               {selection === c.id && (
                 <>
                   <Note>
-                    {configFor(s, c.id).dossier.documents.join(" · ")}
+                    {s.connected
+                      ? configFor(s, c.id).dossier.documents.map((path, i) => (
+                          <TextButton
+                            key={path}
+                            onPress={() =>
+                              openDocument(path).catch((e) =>
+                                message(e.message),
+                              )
+                            }
+                          >
+                            Ouvrir le justificatif {i + 1}
+                          </TextButton>
+                        ))
+                      : configFor(s, c.id).dossier.documents.join(" · ")}
                   </Note>
                   {select(
                     "Décision",
@@ -1149,7 +1174,16 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
           <>
             {select("Nouvelle date", "day", dates, b.day)}
             {field("Horaire", "time", b.time)}
-            {field("Adresse du rendez-vous", "address", b.address)}
+            {b.format === "Domicile" ? (
+              field("Adresse du rendez-vous", "address", b.address)
+            ) : (
+              <Note>
+                {b.locationName} · {b.address}
+                <P small muted>
+                  Choisissez un horaire où ce lieu est proposé.
+                </P>
+              </Note>
+            )}
           </>
         )}
         {field("Message au client", "reason", "", true)}
@@ -1273,7 +1307,7 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
         </H1>
         <P muted>
           {setupSteps(s, active).filter((x) => x.done).length} / 6 étapes
-          terminées. Les brouillons sont conservés sur cet appareil ;
+          terminées. Les brouillons sont conservés dans votre espace ;
           enregistrez chaque étape pour l’appliquer.
         </P>
         {setupSteps(s, active).find((x) => !x.done) && (

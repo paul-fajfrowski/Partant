@@ -31,7 +31,7 @@ import {
   uid,
   publicationIssues,
 } from "./workflows";
-import { choosePhoto } from "./deviceFiles";
+import { choosePhoto, chooseDocument, openDocument } from "./deviceFiles";
 import {
   Button,
   Chip,
@@ -109,7 +109,7 @@ export function CoachConfiguration(
   return (
     <>
       <Note style={{ marginBottom: 20 }}>
-        Vos modifications restent en brouillon sur cet appareil. Utilisez «
+        Vos modifications restent en brouillon dans votre espace. Utilisez «
         Enregistrer » pour les appliquer.
       </Note>
       {props.store.coachDrafts?.[key] && (
@@ -292,7 +292,10 @@ function ConfigurationEditor({
     <AvailabilityIntervals
       list={list}
       offers={ownOffers}
-      settings={cfg}
+      settings={{
+        ...cfg,
+        locations: cfg.locations ?? coachLocations(store, c),
+      }}
       onChange={change}
     />
   );
@@ -358,7 +361,9 @@ function ConfigurationEditor({
           light
           onPress={async () => {
             try {
-              const uri = await choosePhoto();
+              const uri = await choosePhoto(
+                store.connected ? actual : undefined,
+              );
               if (uri) setProfile({ ...profile, photoUri: uri });
             } catch (e) {
               message((e as Error).message);
@@ -622,7 +627,7 @@ function ConfigurationEditor({
               description={
                 cfg.week[i].length
                   ? cfg.week[i]
-                      .map((x) => intervalSummary(x, ownOffers))
+                      .map((x) => intervalSummary(x, ownOffers, cfg.locations))
                       .join(" · ")
                   : "Fermé"
               }
@@ -645,8 +650,8 @@ function ConfigurationEditor({
           <>
             <H2 style={{ marginVertical: 16 }}>Copier cette journée</H2>
             <P small muted>
-              Les plages et prestations du jour ouvert seront copiées. Vérifiez
-              les jours à remplacer avant d’enregistrer.
+              Les plages, séances et lieux du jour ouvert seront copiés.
+              Vérifiez les jours à remplacer avant d’enregistrer.
             </P>
             <Row wrap style={{ marginVertical: 16 }}>
               {[
@@ -738,8 +743,9 @@ function ConfigurationEditor({
             key={d}
             title={d}
             description={
-              list.map((x) => intervalSummary(x, ownOffers)).join(" · ") ||
-              "Fermé"
+              list
+                .map((x) => intervalSummary(x, ownOffers, cfg.locations))
+                .join(" · ") || "Fermé"
             }
             onPress={() => {
               setExceptionDay(d);
@@ -940,24 +946,72 @@ function ConfigurationEditor({
               "Qualification / diplôme",
               "Carte professionnelle ou justification",
               "Assurance professionnelle",
-            ].map((label, i) => (
-              <Field
-                key={label}
-                label={label}
-                value={cfg.dossier.documents[i] ?? ""}
-                onChange={(v) =>
-                  setCfg({
-                    ...cfg,
-                    dossier: {
-                      ...cfg.dossier,
-                      documents: Array.from({ length: 4 }, (_, j) =>
-                        j === i ? v : (cfg.dossier.documents[j] ?? ""),
-                      ),
-                    },
-                  })
-                }
-              />
-            ))}
+            ].map((label, i) =>
+              store.connected ? (
+                <View key={label} style={{ marginVertical: 12 }}>
+                  <P bold>{label}</P>
+                  <P small muted>
+                    {cfg.dossier.documents[i]
+                      ? "Document ajouté · espace privé"
+                      : "PDF ou image · 10 Mo maximum"}
+                  </P>
+                  <Button
+                    light
+                    onPress={async () => {
+                      try {
+                        const path = await chooseDocument(actual);
+                        if (path)
+                          setCfg({
+                            ...cfg,
+                            dossier: {
+                              ...cfg.dossier,
+                              documents: Array.from({ length: 4 }, (_, j) =>
+                                j === i
+                                  ? path
+                                  : (cfg.dossier.documents[j] ?? ""),
+                              ),
+                            },
+                          });
+                      } catch (e) {
+                        message((e as Error).message);
+                      }
+                    }}
+                  >
+                    {cfg.dossier.documents[i]
+                      ? "Remplacer le document"
+                      : "Ajouter le document"}
+                  </Button>
+                  {!!cfg.dossier.documents[i] && (
+                    <TextButton
+                      onPress={() =>
+                        openDocument(cfg.dossier.documents[i]).catch((e) =>
+                          message(e.message),
+                        )
+                      }
+                    >
+                      Ouvrir le document
+                    </TextButton>
+                  )}
+                </View>
+              ) : (
+                <Field
+                  key={label}
+                  label={label}
+                  value={cfg.dossier.documents[i] ?? ""}
+                  onChange={(v) =>
+                    setCfg({
+                      ...cfg,
+                      dossier: {
+                        ...cfg.dossier,
+                        documents: Array.from({ length: 4 }, (_, j) =>
+                          j === i ? v : (cfg.dossier.documents[j] ?? ""),
+                        ),
+                      },
+                    })
+                  }
+                />
+              ),
+            )}
             <Field
               label="Date de fin de validité (AAAA-MM-JJ)"
               value={cfg.dossier.expires}
@@ -982,8 +1036,9 @@ function ConfigurationEditor({
                     dossier: {
                       ...cfg.dossier,
                       status: "pending",
-                      reason:
-                        "Votre dossier fictif attend une décision de l’équipe.",
+                      reason: store.connected
+                        ? "Votre dossier attend une décision de l’équipe."
+                        : "Votre dossier fictif attend une décision de l’équipe.",
                       history: [
                         ...cfg.dossier.history,
                         {
@@ -999,7 +1054,9 @@ function ConfigurationEditor({
                 })
               }
             >
-              Soumettre le dossier fictif
+              {store.connected
+                ? "Soumettre mon dossier"
+                : "Soumettre le dossier fictif"}
             </Button>
           </>
         )}
@@ -1012,8 +1069,9 @@ function ConfigurationEditor({
           </P>
         ))}
         <P small muted style={{ marginTop: 20 }}>
-          Références fictives uniquement. Aucun document personnel ni contrôle
-          réel.
+          {store.connected
+            ? "Documents privés, accessibles uniquement à vous et à l’équipe de vérification."
+            : "Références fictives uniquement. Aucun document personnel ni contrôle réel."}
         </P>
       </>
     );

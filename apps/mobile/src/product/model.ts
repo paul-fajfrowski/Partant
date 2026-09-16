@@ -1,3 +1,4 @@
+import { recorded } from "./commands";
 import type { ExtendedStore, CoachSettings, Interval } from "./extendedTypes";
 import reference from "../reference/prototype.json";
 export type Coach = {
@@ -105,6 +106,17 @@ export type GroupSession = {
   level?: string;
 };
 export type Store = ExtendedStore & {
+  connected?: boolean;
+  staff?: boolean;
+  busyTimes?: {
+    coach: string;
+    day: string;
+    time: string;
+    duration: number;
+    offerId?: string;
+    seats?: number;
+    kind?: string;
+  }[];
   coachDrafts?: Record<
     string,
     {
@@ -279,6 +291,9 @@ export function slotsFor(
   return base.filter(
     (time) =>
       instant(day, time) > now() + cfg.notice * 3600000 &&
+      (!offer ||
+        offer.kind === "Groupe" ||
+        formatsAt(store, c, offer, day, time).length > 0) &&
       !store.closed.some((k) => {
         const [id, d, t] = k.split("|");
         return (
@@ -322,6 +337,17 @@ export function slotsFor(
             g.offer.duration + cfg.buffer,
           ) && !(offer?.id === g.offer.id && time === g.time),
       ) &&
+      !(store.busyTimes ?? []).some(
+        (b) =>
+          b.coach === c.id &&
+          b.day === day &&
+          overlap(time, offer?.duration ?? 60, b.time, b.duration) &&
+          !(
+            offer?.kind === "Groupe" &&
+            b.offerId === offer.id &&
+            time === b.time
+          ),
+      ) &&
       !store.bookings.some(
         (b) =>
           b.coach === c.id &&
@@ -359,10 +385,13 @@ export function remaining(
           b.time === time &&
           b.status === "confirmed",
       )
-      .reduce((n, b) => n + b.seats, 0)
+      .reduce((n, b) => n + b.seats, 0) -
+    (store.busyTimes ?? [])
+      .filter((b) => b.offerId === offer.id && b.day === day && b.time === time)
+      .reduce((n, b) => n + (b.seats ?? 0), 0)
   );
 }
-export function reserve(store: Store, draft: Booking): Store {
+function _reserve(store: Store, draft: Booking): Store {
   if (!store.account || store.account.role !== "client")
     throw Error("Connectez-vous pour retrouver votre séance.");
   if (store.bookings.some((b) => b.id === draft.id)) return store;
@@ -395,7 +424,10 @@ export function reserve(store: Store, draft: Booking): Store {
     )
   )
     throw Error("Une autre séance est déjà prévue à cette heure.");
-  if (o.kind !== "Groupe" && !offerFormats(c, o).includes(draft.format))
+  if (
+    o.kind !== "Groupe" &&
+    !formatsAt(store, c, o, draft.day, draft.time).includes(draft.format)
+  )
     throw Error(
       "Ce lieu n’est pas proposé pour cette séance. Modifiez votre sélection.",
     );
@@ -414,6 +446,7 @@ export function reserve(store: Store, draft: Booking): Store {
     },
     duration: o.duration,
     kind: o.kind,
+    format: group?.format ?? draft.format,
     serviceName: o.name,
     address:
       group?.address ??
@@ -435,7 +468,7 @@ export function reserve(store: Store, draft: Booking): Store {
       {
         category: "booking" as const,
         id: `${b.id}:coach`,
-        recipient: "coach-" + c.id,
+        recipient: coachRecipient(store, c.id),
         body: "Une nouvelle séance a été réservée.",
         read: false,
         booking: b.id,
@@ -469,7 +502,7 @@ export function cancel(store: Store, id: string): Store {
       ...store.notices,
       {
         id: `${id}:cancel:coach`,
-        recipient: "coach-" + b.coach,
+        recipient: coachRecipient(store, b.coach),
         body: "Une réservation a été annulée.",
         read: false,
         booking: id,
@@ -485,14 +518,14 @@ export function cancel(store: Store, id: string): Store {
   };
 }
 
-export function openGroup(store: Store, group: GroupSession): Store {
+function _openGroup(store: Store, group: GroupSession): Store {
   const o = store.offers.find(
     (o) => o.id === group.offer.id && o.active && o.kind === "Groupe",
   );
   if (
     !o ||
-    store.account?.id !== "coach-" + o.coach ||
-    store.account.role !== "coach"
+    coachAccountId(store) !== o.coach ||
+    store.account?.role !== "coach"
   )
     throw Error("Connectez-vous au compte de ce coach.");
   if (
@@ -522,7 +555,7 @@ export function openGroup(store: Store, group: GroupSession): Store {
         ),
     ) ||
     group.day >= addDays(today(), cfg.horizon) ||
-    !intervalFits(cfg, group.day, group.time, o.duration, o.id) ||
+    !intervalFits(cfg, group.day, group.time, o.duration, o.id, groupFormat) ||
     cfg.blocks.some(
       (b) =>
         b.day === group.day &&
@@ -603,7 +636,10 @@ export function switchAccount(store: Store, account: Account | null): Store {
 }
 
 export function allCoaches(store: Store): Coach[] {
-  return [...seedCoaches, ...(store.extraCoaches ?? [])].map((c) => ({
+  return [
+    ...(store.connected ? [] : seedCoaches),
+    ...(store.extraCoaches ?? []),
+  ].map((c) => ({
     ...c,
     ...store.coachOverrides?.[c.id],
   }));
@@ -613,10 +649,10 @@ export function configFor(store: Store, id: string): CoachSettings {
   if (existing) return { ...existing, buffer: 0, departureStep: null };
   const c = allCoaches(store).find((c) => c.id === id) ?? seedCoaches[0];
   return {
-    published: id === "0" ? store.published : true,
-    weeklyConfigured: false,
+    published: store.connected ? false : id === "0" ? store.published : true,
+    weeklyConfigured: !!store.connected,
     week: Array.from({ length: 7 }, (_, d) =>
-      d === 6 ? [] : [["09:00", "21:00"]],
+      store.connected || d === 6 ? [] : [["09:00", "21:00"]],
     ),
     exceptions: {},
     blocks: [],
@@ -648,17 +684,21 @@ export function configFor(store: Store, id: string): CoachSettings {
       email: c.name.split(" ")[0].toLowerCase() + "@example.test",
       address: c.address,
     },
-    payoutReady: true,
+    payoutReady: !store.connected,
     dossier: {
-      status: "approved",
-      documents: [
-        "identite-test.pdf",
-        "diplome-test.pdf",
-        "carte-test.pdf",
-        "assurance-test.pdf",
-      ],
+      status: store.connected ? "draft" : "approved",
+      documents: store.connected
+        ? ["", "", "", ""]
+        : [
+            "identite-test.pdf",
+            "diplome-test.pdf",
+            "carte-test.pdf",
+            "assurance-test.pdf",
+          ],
       expires: addDays(today(), 365),
-      reason: "Profil de démonstration initial.",
+      reason: store.connected
+        ? "Complétez votre dossier."
+        : "Profil de démonstration initial.",
       history: [],
     },
     clientNotes: {},
@@ -676,12 +716,32 @@ export function intervalFits(
   time: string,
   duration: number,
   offerId?: string,
+  locationId?: string,
 ) {
   return intervalsFor(cfg, day).some(
-    ([a, b, ids]) =>
+    ([a, b, ids, places]) =>
+      (locationId === undefined ||
+        places == null ||
+        places.includes(locationId)) &&
       (offerId === undefined || ids == null || ids.includes(offerId)) &&
       mins(time) >= mins(a) &&
       mins(time) + duration <= mins(b),
+  );
+}
+/** An offer's venues restricted to the coach's range containing this departure. */
+export function formatsAt(
+  store: Store,
+  c: Coach,
+  o: Offer | undefined,
+  day: string,
+  time: string,
+): string[] {
+  const formats = offerFormats(c, o);
+  if (!o || !time) return formats;
+  const cfg = configFor(store, c.id);
+  if (!cfg.weeklyConfigured && !cfg.exceptions[day]) return formats;
+  return formats.filter((f) =>
+    intervalFits(cfg, day, time, o.duration, o.id, f),
   );
 }
 export function generatedTimes(
@@ -715,7 +775,15 @@ export function generatedTimes(
 export function validateIntervals(list: Interval[]) {
   const sorted = [...list].sort((a, b) => mins(a[0]) - mins(b[0]));
   for (let i = 0; i < sorted.length; i++) {
-    const [a, b, ids] = sorted[i];
+    const [a, b, ids, places] = sorted[i];
+    if (
+      places != null &&
+      (!Array.isArray(places) ||
+        !places.length ||
+        places.some((id) => typeof id !== "string") ||
+        new Set(places).size !== places.length)
+    )
+      throw Error("Choisissez au moins un lieu pour chaque plage.");
     if (
       ids != null &&
       (!Array.isArray(ids) ||
@@ -748,6 +816,8 @@ export function quotePrice(store: Store, b: Booking, o: Offer) {
     ) / 100
   );
 }
+export const coachRecipient = (s: Store, id: string) =>
+  s.connected ? id : "coach-" + id;
 export const coachAccountId = (store: Store) =>
   store.account?.coachId ?? store.account?.id.replace(/^coach-/, "") ?? "0";
 
@@ -872,3 +942,7 @@ export function locationsReady(store: Store, c?: Coach) {
     );
   });
 }
+
+export const reserve = recorded("reserve", _reserve);
+
+export const openGroup = recorded("openGroup", _openGroup);

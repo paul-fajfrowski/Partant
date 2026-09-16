@@ -2,27 +2,15 @@
 
 État : 16 septembre 2026. Cible décidée : **React Native + TypeScript + Expo**. Voir [la décision persistante](decisions/001-react-native.md).
 
-## Ce qui est réellement en place
+## État actuel — 17 septembre 2026
 
-| Élément | État vérifié | Limite actuelle |
-|---|---|---|
-| Prototype HTML A1–A9 | Réalisé, revue visuelle mobile validée par l’utilisateur | Les données du HTML restent locales ; il n’est pas raccordé au backend. |
-| Application React Native / Expo | Sources dans `apps/mobile`, compilation TypeScript et export web réussis | Parcours produit et configurations avancées repris en démonstration locale. Revue visuelle native et tests sur appareils encore nécessaires. |
-| Supabase | Projet `jhhsysjdeyqsuztjtgea` réellement modifié | Environnement de développement, pas de production. |
-| Base et droits | Profils privés, profils coach publics, offres, créneaux, réservations, notifications et métadonnées d’agendas | Reprise progressive du modèle complet du prototype encore nécessaire. |
-| Réservation serveur | Prix et capacité calculés côté serveur ; individuel, duo, groupe ; idempotence | Confirmation de test sans encaissement, aucune promesse de paiement. |
-| Modification / annulation | Changement vers même offre/même tarif, annulation à plus de 24 h ; notification aux deux parties | Politique fixe de développement ; pas encore toutes les politiques configurables du prototype. |
-| Concurrence | Deux requêtes simultanées, une seule place : une confirmation et un refus `SLOT_FULL` | Test SQL réel sous rôles authentifiés ; pas encore un test UI de bout en bout avec deux vrais comptes OAuth. |
-| Photos / justificatifs | Buckets créés ; photos publiques, documents privés par propriétaire ; limites de format et taille | Interface d’import et revue équipe à raccorder. Ne pas envoyer de vrais justificatifs pendant ces premiers essais. |
-| Notifications internes | Écrites dans la transaction, Realtime activé et abonné dans l’app | Pas de SMS/e-mail/push externes. |
-| Géocodage | Recherche IGN/BAN réelle, coordonnées, distance à vol d’oiseau | Ce n’est pas un temps de trajet. Rayon côté recherche ; zones de déplacement métier à finaliser côté serveur. |
-| Carte | Carte OpenStreetMap intégrée au lieu/secteur choisi | Pas encore une carte multi-coachs avec filtres et grappes de marqueurs. |
-| Google / Apple login | Client PKCE préparé, boutons explicitement en préparation | Fournisseurs Supabase non activés ; identifiants et retours à configurer. |
-| Google Calendar / Outlook | Adaptateurs serveur de lecture, pagination, normalisation UTC/DST et 12 tests | OAuth, stockage chiffré des jetons, orchestration, synchronisation périodique et écriture des événements restent à raccorder. Aucune synchronisation active. |
-| Protection agenda externe | Toute connexion enregistrée périmée/non connectée bloque les nouvelles réservations | Tant qu’aucune connexion n’existe, agenda Partant à gérer manuellement. |
-| Paiement / SMS | Reportés par décision utilisateur | Étapes 4 et 5, non démarrées. |
+Les deux points autorisés dans cette itération sont intégrés : **lieux par plage** et **parcours avancés partagés sur Supabase**. Voir [la matrice détaillée, la méthode de validation et les limites](connected-product-9.md).
 
-**Le prototype est terminé pour le périmètre A1–A9, le MVP connecté ne l’est pas. Les étapes 1–3 ont commencé mais ne sont pas achevées.**
+Le client React Native utilise désormais `product-api` pour les réglages, brouillons, offres, groupes, réservations, modifications, messages, notifications internes, avis et assistance. Photos et justificatifs ont leur interface d’import. Les contrôles d’accès et les dernières places ont été vérifiés via Auth et HTTP réels.
+
+Le pilote SQL initial reste documenté ci-dessous comme historique ; ses anciens points d’écriture sont retirés. Les données métier de développement sont privées, traitées par des commandes serveur et une révision transactionnelle. La validation de volume et la normalisation avant exploitation commerciale restent nécessaires.
+
+Les intégrations Google/Apple, carte multi-coachs et calendriers externes sont **reportées au point 3**. Aucun agenda externe n’est synchronisé. Paiements, communications externes et exploitation commerciale constituent le **point 4**. La recette exhaustive sur appareils est le **point 5**. Ces trois points ne sont pas annoncés comme réalisés.
 
 ## Ouvrir l’application
 

@@ -1,3 +1,4 @@
+import { recorded } from "./commands";
 import { validateLocations } from "./locations";
 import {
   Account,
@@ -9,6 +10,7 @@ import {
   allCoaches,
   configFor,
   coachAccountId,
+  coachRecipient,
   initialPreferences,
   seedCoaches,
   addDays,
@@ -25,6 +27,8 @@ import {
   quotePrice,
   locationsReady,
   matchesLocation,
+  formatsAt,
+  offerAddress,
 } from "./model";
 import type {
   CoachSettings,
@@ -55,21 +59,23 @@ export const infoFor = (s: Store, id: string): AccountInfo =>
 export function identities(s: Store): Account[] {
   return [
     ...(s.identities ?? []),
-    ...[
-      {
-        id: "alex@example.test",
-        email: "alex@example.test",
-        name: "Alex",
-        role: "client" as const,
-      },
-      {
-        id: "nina@example.test",
-        email: "nina@example.test",
-        name: "Nina",
-        role: "client" as const,
-      },
-    ],
-    ...seedCoaches.map((c) => ({
+    ...(s.connected
+      ? []
+      : [
+          {
+            id: "alex@example.test",
+            email: "alex@example.test",
+            name: "Alex",
+            role: "client" as const,
+          },
+          {
+            id: "nina@example.test",
+            email: "nina@example.test",
+            name: "Nina",
+            role: "client" as const,
+          },
+        ]),
+    ...(s.connected ? [] : seedCoaches).map((c) => ({
       id: "coach-" + c.id,
       coachId: c.id,
       name: c.name,
@@ -180,7 +186,7 @@ export function notify(
 function notifyBoth(s: Store, b: Booking, body: string) {
   return notify(
     notify(s, b.clientId, body, b.id),
-    "coach-" + b.coach,
+    coachRecipient(s, b.coach),
     body,
     b.id,
   );
@@ -201,7 +207,7 @@ function future(b: Booking) {
   if (b.status !== "confirmed" || instant(b.day, b.time) <= now())
     throw Error("Cette séance n’est plus modifiable.");
 }
-export function saveSettings(s: Store, id: string, cfg: CoachSettings): Store {
+function _saveSettings(s: Store, id: string, cfg: CoachSettings): Store {
   // Legacy timing preferences no longer influence public availability.
   cfg = { ...cfg, buffer: 0, departureStep: null };
   if (s.account?.role !== "coach" || coachAccountId(s) !== id)
@@ -214,6 +220,11 @@ export function saveSettings(s: Store, id: string, cfg: CoachSettings): Store {
   );
   for (const ranges of [...cfg.week, ...Object.values(cfg.exceptions)]) {
     validateIntervals(ranges);
+    const places = Object.keys(cfg.locations ?? {});
+    if (ranges.some(([, , , ids]) => ids?.some((f) => !places.includes(f))))
+      throw Error(
+        "Un lieu de cette plage a été retiré. Modifiez les lieux de la plage avant d’enregistrer.",
+      );
     if (
       ranges.some(([, , ids]) =>
         ids?.some((offerId) => !ownOffers.has(offerId)),
@@ -256,7 +267,7 @@ export function publicationIssues(s: Store, id: string) {
     !cfg.payoutReady ? "Activez vos versements de test." : "",
   ].filter(Boolean);
 }
-export function publish(s: Store, id: string) {
+function _publish(s: Store, id: string) {
   const cfg = configFor(s, id);
   if (!cfg.published) {
     const issues = publicationIssues(s, id);
@@ -264,7 +275,7 @@ export function publish(s: Store, id: string) {
   }
   return saveSettings(s, id, { ...cfg, published: !cfg.published });
 }
-export function saveCoach(s: Store, id: string, changes: Partial<Coach>) {
+function _saveCoach(s: Store, id: string, changes: Partial<Coach>) {
   const old = allCoaches(s).find((c) => c.id === id);
   if (!old || s.account?.role !== "coach" || coachAccountId(s) !== id)
     throw Error("Profil inaccessible.");
@@ -295,7 +306,7 @@ export function saveCoach(s: Store, id: string, changes: Partial<Coach>) {
   }
   return next;
 }
-export function saveOffer(s: Store, o: Offer) {
+function _saveOffer(s: Store, o: Offer) {
   const coach = allCoaches(s).find((c) => c.id === o.coach);
   if (
     o.formats !== undefined &&
@@ -339,7 +350,7 @@ function refund(s: Store, b: Booking, amount: number): Store {
     ],
   };
 }
-export function cancelSession(s: Store, id: string, reason: string) {
+function _cancelSession(s: Store, id: string, reason: string) {
   const b = owned(s, id);
   if (b.status === "cancelled") return s;
   future(b);
@@ -372,7 +383,7 @@ export function cancelSession(s: Store, id: string, reason: string) {
     `Séance annulée. ${amount} € de remboursement simulé. ${reason}`,
   );
 }
-export function partialCancel(s: Store, id: string, seats: number) {
+function _partialCancel(s: Store, id: string, seats: number) {
   const b = owned(s, id);
   future(b);
   if (
@@ -444,7 +455,7 @@ export function transferCandidates(s: Store, b: Booking) {
       !clientConflict(s, b, g.day, g.time, g.offer.duration),
   );
 }
-export function transfer(
+function _transfer(
   s: Store,
   id: string,
   groupId: string,
@@ -503,7 +514,7 @@ export function transfer(
     "Votre réservation a été transférée. Actualisez votre calendrier.",
   );
 }
-export function reschedule(
+function _reschedule(
   s: Store,
   id: string,
   day: string,
@@ -538,6 +549,23 @@ export function reschedule(
     clientConflict(s, b, day, time, b.duration)
   )
     throw Error("Le nouveau créneau n’est plus disponible.");
+  if (!formatsAt(s, c, o, day, time).includes(b.format))
+    throw Error(
+      "Ce lieu n’est pas proposé à cet horaire. Choisissez une plage compatible.",
+    );
+  const nextAddress =
+    b.format === "Domicile" || !configFor(s, c.id).locations
+      ? (address ?? b.address)
+      : offerAddress(s, c, b.format);
+  if (
+    address &&
+    configFor(s, c.id).locations &&
+    b.format !== "Domicile" &&
+    address !== nextAddress
+  )
+    throw Error(
+      "L’adresse doit correspondre au lieu configuré pour cette plage.",
+    );
   return notifyBoth(
     {
       ...s,
@@ -547,7 +575,7 @@ export function reschedule(
               ...x,
               day,
               time,
-              address: address ?? x.address,
+              address: nextAddress,
               changes: [
                 ...(x.changes ?? []),
                 `${b.day} ${b.time} → ${day} ${time}`,
@@ -560,7 +588,7 @@ export function reschedule(
     `Séance modifiée : ${b.day} ${b.time} → ${day} ${time}.`,
   );
 }
-export function closeGroup(s: Store, id: string, reason: string) {
+function _closeGroup(s: Store, id: string, reason: string) {
   const g = s.groups?.find((g) => g.id === id);
   if (!g || g.offer.coach !== coachAccountId(s) || s.account?.role !== "coach")
     throw Error("Cours inaccessible.");
@@ -634,7 +662,7 @@ export function paymentResult(
     ),
   };
 }
-export function addProposal(
+function _addProposal(
   s: Store,
   id: string,
   target: Proposal["target"],
@@ -679,7 +707,7 @@ export function addProposal(
   };
   return notify(next, b.clientId, "Votre coach propose un changement.", id);
 }
-export function answerProposal(
+function _answerProposal(
   s: Store,
   id: string,
   answer: "accepted" | "declined" | "withdrawn",
@@ -735,7 +763,7 @@ export function answerProposal(
         : "Proposition retirée.",
   );
 }
-export function saveReview(s: Store, id: string, rating: number, text: string) {
+function _saveReview(s: Store, id: string, rating: number, text: string) {
   const b = owned(s, id);
   if (b.clientId !== s.account?.id || b.status !== "completed" || b.noShow)
     throw Error("Un avis suit une séance terminée.");
@@ -761,12 +789,12 @@ export function saveReview(s: Store, id: string, rating: number, text: string) {
         },
       ],
     },
-    "coach-" + b.coach,
+    coachRecipient(s, b.coach),
     "Un nouvel avis a été publié.",
     id,
   );
 }
-export function replyReview(s: Store, id: string, text: string) {
+function _replyReview(s: Store, id: string, text: string) {
   const r = s.reviews?.find((r) => r.id === id);
   if (
     !r ||
@@ -785,7 +813,7 @@ export function replyReview(s: Store, id: string, text: string) {
     r.booking,
   );
 }
-export function report(s: Store, values: Partial<Ticket>) {
+function _report(s: Store, values: Partial<Ticket>) {
   if (!s.account || !values.body?.trim())
     throw Error("Connectez-vous et précisez votre demande.");
   if (values.booking) owned(s, values.booking);
@@ -804,13 +832,13 @@ export function report(s: Store, values: Partial<Ticket>) {
     ],
   };
 }
-export function resolveTicket(
+function _resolveTicket(
   s: Store,
   id: string,
   response: string,
   decision: string,
 ) {
-  if (!s.testMode)
+  if (!s.testMode && !s.staff)
     throw Error("L’espace équipe est réservé au mode Test de démonstration.");
   const ticket = s.tickets?.find((t) => t.id === id && t.status === "open");
   if (!ticket || !response.trim()) throw Error("Indiquez une réponse motivée.");
@@ -857,13 +885,13 @@ export function resolveTicket(
     ticket.booking,
   );
 }
-export function reviewDossier(
+function _reviewDossier(
   s: Store,
   id: string,
   status: "approved" | "correction" | "rejected",
   reason: string,
 ) {
-  if (!s.testMode || !reason.trim())
+  if ((!s.testMode && !s.staff) || !reason.trim())
     throw Error("Ajoutez une décision motivée en mode Test.");
   const cfg = configFor(s, id);
   if (cfg.dossier.status !== "pending")
@@ -888,7 +916,7 @@ export function reviewDossier(
         },
       },
     },
-    "coach-" + id,
+    coachRecipient(s, id),
     "Votre dossier : " + reason,
   );
 }
@@ -919,6 +947,9 @@ export function alertMatches(s: Store, a: AvailabilityAlert) {
             (g) => g.offer.id === o.id && g.day === a.day && g.time === time,
           ),
           price = g?.offer.price ?? o.price;
+        const places = g?.format ? [g.format] : formatsAt(s, c, o, a.day, time);
+        if (!matchesLocation(s, c, { ...o, formats: places }, a.format))
+          continue;
         if (
           time < a.from ||
           time > a.to ||
@@ -981,10 +1012,11 @@ export function maintain(s: Store): Store {
   for (const b of next.bookings) {
     if (b.status !== "confirmed" || instant(b.day, b.time) - now() > 86400000)
       continue;
-    for (const recipient of [b.clientId, "coach-" + b.coach]) {
-      const enabled = recipient.startsWith("coach-")
-        ? configFor(next, b.coach).notifications.reminder
-        : infoFor(next, recipient).reminders;
+    for (const recipient of [b.clientId, coachRecipient(s, b.coach)]) {
+      const enabled =
+        recipient === coachRecipient(next, b.coach)
+          ? configFor(next, b.coach).notifications.reminder
+          : infoFor(next, recipient).reminders;
       if (enabled)
         next = notify(
           next,
@@ -1054,6 +1086,12 @@ export function accountExport(s: Store) {
       Object.entries(s.messages).filter(([id]) => ids.has(id)),
     ),
     notifications: s.notices.filter((n) => n.recipient === s.account!.id),
+    favorites: s.favorites,
+    alerts: s.alerts?.filter((a) => a.owner === s.account!.id),
+    reviews: s.reviews?.filter((r) => r.owner === s.account!.id),
+    tickets: s.tickets?.filter((t) => t.owner === s.account!.id),
+    proposals: s.proposals?.filter((p) => ids.has(p.booking)),
+    refunds: s.refunds?.filter((r) => ids.has(r.booking)),
     payments: s.attempts?.filter((p) => p.owner === s.account!.id),
     externalSessions:
       s.account.role === "coach"
@@ -1069,7 +1107,7 @@ export function accountExport(s: Store) {
         : {},
   };
 }
-export function deleteAccount(s: Store) {
+function _deleteAccount(s: Store) {
   if (!s.account) throw Error("Connectez-vous.");
   if (s.bookings.some((b) => canRead(s, b) && b.status === "confirmed"))
     throw Error("Traitez vos séances confirmées avant de supprimer ce compte.");
@@ -1135,6 +1173,69 @@ export function deleteAccount(s: Store) {
         [coach]: { name: "Compte supprimé", bio: "", photoUri: "" },
       },
     };
+  if (s.connected)
+    next = {
+      ...next,
+      reviews: next.reviews?.map((r) =>
+        r.owner === id
+          ? {
+              ...r,
+              name: "Compte supprimé",
+              text: "Avis retiré par son auteur",
+              hidden: true,
+            }
+          : r,
+      ),
+      tickets: next.tickets?.map((t) =>
+        t.owner === id
+          ? {
+              ...t,
+              body: "Compte supprimé",
+              response: "",
+              status: "resolved" as const,
+            }
+          : t,
+      ),
+      settings: Object.fromEntries(
+        Object.entries(next.settings ?? {}).map(([cid, cfg]) => [
+          cid,
+          {
+            ...cfg,
+            clientNotes: Object.fromEntries(
+              Object.entries(cfg.clientNotes).filter(
+                ([client]) => client !== id,
+              ),
+            ),
+            ...(cid === coach
+              ? {
+                  business: { name: "", email: "", address: "", status: "" },
+                  dossier: {
+                    ...cfg.dossier,
+                    documents: [],
+                    history: [],
+                    reason: "Compte supprimé",
+                  },
+                }
+              : {}),
+          },
+        ]),
+      ),
+      extraCoaches: next.extraCoaches?.map((c) =>
+        c.id === coach
+          ? {
+              ...c,
+              name: "Compte supprimé",
+              bio: "",
+              cert: "",
+              photoUri: "",
+              address: "",
+              quote: "",
+              method: "",
+              formats: [],
+            }
+          : c,
+      ),
+    };
   const out = switchAccount(next, null);
   delete out.accounts?.[id];
   delete out.accountInfo?.[id];
@@ -1164,3 +1265,37 @@ export function sessionICS(b: Booking, coach: string) {
     "",
   ].join("\r\n");
 }
+
+export const saveSettings = recorded("saveSettings", _saveSettings);
+
+export const publish = recorded("publish", _publish);
+
+export const saveCoach = recorded("saveCoach", _saveCoach);
+
+export const saveOffer = recorded("saveOffer", _saveOffer);
+
+export const cancelSession = recorded("cancelSession", _cancelSession);
+
+export const partialCancel = recorded("partialCancel", _partialCancel);
+
+export const transfer = recorded("transfer", _transfer);
+
+export const reschedule = recorded("reschedule", _reschedule);
+
+export const closeGroup = recorded("closeGroup", _closeGroup);
+
+export const addProposal = recorded("addProposal", _addProposal);
+
+export const answerProposal = recorded("answerProposal", _answerProposal);
+
+export const saveReview = recorded("saveReview", _saveReview);
+
+export const replyReview = recorded("replyReview", _replyReview);
+
+export const report = recorded("report", _report);
+
+export const deleteAccount = recorded("deleteAccount", _deleteAccount);
+
+export const reviewDossier = recorded("reviewDossier", _reviewDossier);
+
+export const resolveTicket = recorded("resolveTicket", _resolveTicket);

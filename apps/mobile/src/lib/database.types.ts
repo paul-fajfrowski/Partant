@@ -396,6 +396,21 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      product_commit: {
+        Args: {
+          p_actor?: string;
+          p_digest?: string;
+          p_documents: Json;
+          p_request?: string;
+          p_version: number;
+        };
+        Returns: boolean;
+      };
+      product_load: {
+        Args: { p_actor?: string; p_request?: string };
+        Returns: Json;
+      };
+      product_rate_limit: { Args: { p_actor: string }; Returns: boolean };
       reserve_slot: {
         Args: { p_request: string; p_seats: number; p_slot: string };
         Returns: {

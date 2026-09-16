@@ -28,7 +28,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Crypto from "expo-crypto";
 import reference from "../reference/prototype.json";
 import communes from "../reference/communes-idf.json";
-import { supabase } from "../lib/supabase";
 import { errorMessage } from "../lib/errors";
 import { tokens as t } from "./tokens";
 import {
@@ -51,6 +50,7 @@ import {
   setDemoClock,
   quotePrice,
   offerFormats,
+  formatsAt,
   offerAddress,
   coachLocations,
   locationLabel,
@@ -216,17 +216,16 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const offers = store.offers.filter((o) => o.coach === coach?.id && o.active);
   const offer = offers.find((o) => o.id === offerId) ?? offers[0];
   const booked = store.bookings.find(
-    (b) => b.id === selectedBooking && (live || W.canRead(store, b)),
+    (b) => b.id === selectedBooking && W.canRead(store, b),
   );
-  const activeCoach = live ? store.account?.id : coachAccountId(store);
+  const activeCoach = coachAccountId(store);
   const notifications = store.notices.filter(
     (n) => n.recipient === store.account?.id,
   );
   const unread = notifications.filter(
     (n) =>
       !n.read &&
-      (live ||
-        store.account?.role !== "coach" ||
+      (store.account?.role !== "coach" ||
         configFor(store, activeCoach ?? "0").notifications[
           n.category === "booking"
             ? "booking"
@@ -240,18 +239,16 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       b.clientId === store.account?.id ||
       (store.account?.role === "coach" && b.coach === activeCoach),
   );
-  const unreadMessages = live
-    ? 0
-    : conversations.reduce(
-        (total, b) =>
-          total +
-          (store.messages[b.id] ?? []).filter(
-            (m) =>
-              m.who !== store.account?.id &&
-              !m.readBy?.includes(store.account?.id ?? ""),
-          ).length,
-        0,
-      );
+  const unreadMessages = conversations.reduce(
+    (total, b) =>
+      total +
+      (store.messages[b.id] ?? []).filter(
+        (m) =>
+          m.who !== store.account?.id &&
+          !m.readBy?.includes(store.account?.id ?? ""),
+      ).length,
+    0,
+  );
   const lastIdentity = useRef(store.account?.id);
   useEffect(() => {
     if (lastIdentity.current !== store.account?.id) {
@@ -262,11 +259,13 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   }, [store.account?.id]);
   useEffect(() => {
     if (market.ready && !initial.current) {
-      initial.current = true;
-      if (store.account)
-        setScreen(store.account.role === "coach" ? "coach" : "explore");
+      if (store.account) {
+        initial.current = true;
+        if (screen === "welcome")
+          setScreen(store.account.role === "coach" ? "coach" : "explore");
+      }
     }
-  }, [market.ready]);
+  }, [market.ready, store.account?.id, screen]);
   useEffect(() => {
     if (market.error) {
       setNotice(market.error);
@@ -302,7 +301,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     return () => listener.remove();
   }, [screen, modal, step]);
   useEffect(() => {
-    if (screen === "chat" && booked && !live && W.canRead(store, booked)) {
+    if (screen === "chat" && booked && W.canRead(store, booked)) {
       setStore((s) => ({
         ...s,
         messages: {
@@ -332,7 +331,6 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       setModal("");
       return;
     }
-
     if (next === "config-native") {
       setConfig(target);
       next = "config";
@@ -399,6 +397,16 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     setOfferId("");
     go("profile");
   }
+  function locationAt(c: Coach, o: Offer, day: string, time: string) {
+    if (format === "Tous") return true;
+    const g = store.groups?.find(
+      (g) =>
+        g.offer.id === o.id && g.day === day && g.time === time && !g.cancelled,
+    );
+    return (g?.format ? [g.format] : formatsAt(store, c, o, day, time)).some(
+      (f) => f === format || coachLocations(store, c)[f]?.type === format,
+    );
+  }
   function primary(c: Coach) {
     const candidates = store.offers.filter(
       (o) =>
@@ -415,6 +423,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             .times(c, day, o)
             .some(
               (time) =>
+                locationAt(c, o, day, time) &&
                 (period !== "evening" || time >= "18:00") &&
                 (!hour || time === hour),
             ),
@@ -428,7 +437,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       .times(c, day, selected)
       .filter(
         (time) =>
-          (period !== "evening" || time >= "18:00") && (!hour || time === hour),
+          locationAt(c, selected, day, time) &&
+          (period !== "evening" || time >= "18:00") &&
+          (!hour || time === hour),
       );
   }
   // Preferences rank suggestions; only explicit Explorer controls filter them.
@@ -478,7 +489,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           o.active &&
           market.times(c, selectedDay, o).includes(time),
       );
-    if (!selected || (!live && !offerFormats(c, selected).length)) {
+    if (!selected || !formatsAt(store, c, selected, selectedDay, time).length) {
       setNotice(
         "Les lieux de cette prestation doivent être configurés par le coach.",
       );
@@ -500,10 +511,10 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     setEditBookingOffer(false);
     const chosenFormat =
       group?.format ??
-      offerFormats(c, selected).find(
+      formatsAt(store, c, selected, selectedDay, time).find(
         (id) => id === format || coachLocations(store, c)[id]?.type === format,
       ) ??
-      offerFormats(c, selected)[0] ??
+      formatsAt(store, c, selected, selectedDay, time)[0] ??
       "";
     const nextDraft: Booking = {
       id: Crypto.randomUUID(),
@@ -533,8 +544,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       status: "confirmed",
       slotId: real?.id,
     };
-    if (!live)
-      nextDraft.price = quotePrice(store, nextDraft, group?.offer ?? selected);
+    nextDraft.price = quotePrice(store, nextDraft, group?.offer ?? selected);
     setDraft(nextDraft);
     go("setup");
   }
@@ -549,48 +559,29 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       );
       return;
     }
-    if (draft)
-      setDraft({
+    if (draft) {
+      const time = market.times(coach, draft.day, o).includes(draft.time)
+        ? draft.time
+        : "";
+      const format = formatsAt(store, coach, o, draft.day, time)[0] ?? "";
+      const next = {
         ...draft,
         offerId: o.id,
         serviceName: o.name,
         kind: o.kind,
         duration: o.duration,
-        price: live
-          ? o.price
-          : quotePrice(
-              store,
-              {
-                ...draft,
-                format: offerFormats(coach, o)[0] ?? "",
-                locationName: locationLabel(
-                  store,
-                  coach,
-                  offerFormats(coach, o)[0] ?? "",
-                ),
-                locationInstructions:
-                  coachLocations(store, coach)[offerFormats(coach, o)[0]]
-                    ?.instructions ?? "",
-                seats: o.kind === "Duo" ? 2 : 1,
-              },
-              o,
-            ),
-        format: offerFormats(coach, o)[0] ?? "",
-        locationName: locationLabel(
-          store,
-          coach,
-          offerFormats(coach, o)[0] ?? "",
-        ),
+        format,
+        time,
+        locationName: locationLabel(store, coach, format),
         locationInstructions:
-          coachLocations(store, coach)[offerFormats(coach, o)[0]]
-            ?.instructions ?? "",
-        address: offerAddress(store, coach, offerFormats(coach, o)[0] ?? ""),
+          coachLocations(store, coach)[format]?.instructions ?? "",
+        address: offerAddress(store, coach, format),
         seats: o.kind === "Duo" ? 2 : 1,
-        time: market.times(coach, draft.day, o).includes(draft.time)
-          ? draft.time
-          : "",
-      });
+      };
+      setDraft({ ...next, price: quotePrice(store, next, o) });
+    }
   }
+
   async function toCheckout() {
     if (!draft?.time) {
       setModal("date");
@@ -604,7 +595,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       go("login");
       return;
     }
-    if (!live && draft) {
+    if (draft) {
       const o = store.offers.find((o) => o.id === draft.offerId);
       if (o) {
         const g = store.groups?.find(
@@ -1034,9 +1025,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             Explorer d’abord
           </TextButton>
           <P small muted style={{ textAlign: "center", marginTop: 12 }}>
-            {live
-              ? "Environnement de développement · Supabase"
-              : "Prototype · aucune authentification réelle"}
+            {"Prototype · aucune authentification réelle"}
           </P>
         </Section>
       </>
@@ -1261,13 +1250,6 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               if (step < 2) {
                 setStep(step + 1);
                 return;
-              }
-              if (live && store.account) {
-                const { error } = await supabase
-                  .from("profiles")
-                  .update({ preferences: { ...pref } })
-                  .eq("id", store.account.id);
-                if (error) throw error;
               }
               resetFilters();
               go("explore");
@@ -1554,7 +1536,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               </Pressable>
             </Row>
           )}
-          {map && live ? (
+          {map && false ? (
             <Section>
               <Note>
                 La carte des coachs connectés reste à raccorder. Les résultats
@@ -1633,8 +1615,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               <P muted style={{ marginVertical: 16 }}>
                 Gardez vos préférences et explorez une autre possibilité.
               </P>
-              {!live &&
-                pref.city.startsWith("Paris") &&
+              {pref.city.startsWith("Paris") &&
                 Array.from({ length: 7 }, (_, i) => addDays(day, i + 1))
                   .map((d) => {
                     const match = coaches.find(
@@ -1685,11 +1666,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   Chercher en visio
                 </Button>
               )}
-              {!live && (
+              {
                 <TextButton onPress={() => go("new-alert")}>
                   Me prévenir d’une disponibilité
                 </TextButton>
-              )}
+              }
               <TextButton onPress={resetFilters}>
                 Élargir ma recherche
               </TextButton>
@@ -1707,9 +1688,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             }}
           >
             Des coachs indépendants. Du temps pour vous.{"\n\n"}
-            {live
-              ? "Développement · disponibilités Supabase"
-              : "Démo · profils et créneaux fictifs"}
+            {"Démo · profils et créneaux fictifs"}
           </P>
         </View>
       </>
@@ -1738,11 +1717,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               </P>
             )}
             {coach.rating && (
-              <TextButton
-                onPress={() =>
-                  live ? setModal("reviews") : go("reviews-native", coach.id)
-                }
-              >
+              <TextButton onPress={() => go("reviews-native", coach.id)}>
                 ★ {coach.rating} · {coach.reviews} avis
               </TextButton>
             )}
@@ -1782,7 +1757,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             ))}
           </Row>
           <Row between style={{ marginVertical: 24 }}>
-            {!live && (
+            {
               <>
                 <View>
                   <H2>{coach.years} ans</H2>
@@ -1797,7 +1772,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   </P>
                 </View>
               </>
-            )}
+            }
             <View>
               <H2>{euro(offer?.price ?? coach.price)}</H2>
               <P small muted>
@@ -1830,22 +1805,21 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               </Chip>
             ))}
           </ScrollView>
-          {!live &&
-            (store.groups ?? [])
-              .filter(
-                (g) =>
-                  g.offer.coach === coach.id &&
-                  !g.cancelled &&
-                  instant(g.day, g.time) > now(),
-              )
-              .map((g) => (
-                <Setting
-                  key={g.id}
-                  title={g.offer.name}
-                  description={`${dayLabel(g.day, true)} · ${g.time} · ${remaining(g.offer, g.day, g.time, store)} places restantes · ${euro(g.offer.price)}/pers.`}
-                  onPress={() => go("group-details-native", g.id)}
-                />
-              ))}
+          {(store.groups ?? [])
+            .filter(
+              (g) =>
+                g.offer.coach === coach.id &&
+                !g.cancelled &&
+                instant(g.day, g.time) > now(),
+            )
+            .map((g) => (
+              <Setting
+                key={g.id}
+                title={g.offer.name}
+                description={`${dayLabel(g.day, true)} · ${g.time} · ${remaining(g.offer, g.day, g.time, store)} places restantes · ${euro(g.offer.price)}/pers.`}
+                onPress={() => go("group-details-native", g.id)}
+              />
+            ))}
           <H2>Votre prochain moment</H2>
           <View style={{ marginTop: 22 }}>{dateStrip()}</View>
           <P small muted style={{ marginTop: 16, marginBottom: 10 }}>
@@ -1873,7 +1847,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               </P>
             </View>
           ))}
-          {!live && (
+          {
             <>
               <Rule />
               <H2 style={{ marginBottom: 14 }}>Entre de bonnes mains</H2>
@@ -1893,13 +1867,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                 Les vérifications et avis de ce prototype sont fictifs.
               </P>
             </>
-          )}
+          }
           <Rule />
           <H2 style={{ marginBottom: 14 }}>Réserver l’esprit libre</H2>
           <P muted>
-            Annulation gratuite jusqu’à{" "}
-            {live ? 24 : configFor(store, coach.id).cancelHours} h avant la
-            séance.
+            Annulation gratuite jusqu’à {configFor(store, coach.id).cancelHours}{" "}
+            h avant la séance.
           </P>
         </Section>
       </>
@@ -1963,30 +1936,31 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         />
         <H2 style={{ marginTop: 24, marginBottom: 14 }}>Où on se retrouve ?</H2>
         {draft.kind === "Groupe" && <Note>{draft.address}</Note>}
-        {(draft.kind === "Groupe" ? [] : offerFormats(coach, offer)).map(
-          (f) => (
-            <Choice
-              key={f}
-              active={draft.format === f}
-              title={locationLabel(store, coach, f)}
-              description={locationDescription(store, coach, f)}
-              onPress={() => {
-                const cfg = configFor(store, draft.coach);
-                setDraft({
-                  ...draft,
-                  format: f,
-                  address: offerAddress(store, coach, f),
-                  locationName: locationLabel(store, coach, f),
-                  locationInstructions:
-                    coachLocations(store, coach)[f]?.instructions ?? "",
-                  price: offer
-                    ? quotePrice(store, { ...draft, format: f }, offer)
-                    : draft.price,
-                });
-              }}
-            />
-          ),
-        )}
+        {(draft.kind === "Groupe"
+          ? []
+          : formatsAt(store, coach, offer, draft.day, draft.time)
+        ).map((f) => (
+          <Choice
+            key={f}
+            active={draft.format === f}
+            title={locationLabel(store, coach, f)}
+            description={locationDescription(store, coach, f)}
+            onPress={() => {
+              const cfg = configFor(store, draft.coach);
+              setDraft({
+                ...draft,
+                format: f,
+                address: offerAddress(store, coach, f),
+                locationName: locationLabel(store, coach, f),
+                locationInstructions:
+                  coachLocations(store, coach)[f]?.instructions ?? "",
+                price: offer
+                  ? quotePrice(store, { ...draft, format: f }, offer)
+                  : draft.price,
+              });
+            }}
+          />
+        ))}
         {draft.format === "Domicile" && (
           <Field
             label="Adresse fictive du rendez-vous"
@@ -2001,9 +1975,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             items={Array.from(
               {
                 length: offer
-                  ? live
-                    ? (market.counts[draft.slotId ?? ""] ?? 0)
-                    : remaining(offer, draft.day, draft.time, store)
+                  ? remaining(offer, draft.day, draft.time, store)
                   : 1,
               },
               (_, i) => String(i + 1),
@@ -2039,7 +2011,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         </P>
         <Note style={{ marginTop: 24 }}>
           Annulation gratuite jusqu’à{" "}
-          {live ? 24 : configFor(store, draft.coach).cancelHours} h avant.
+          {configFor(store, draft.coach).cancelHours} h avant.
         </Note>
       </Section>
     );
@@ -2516,7 +2488,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           description={`${dayLabel(b.day)} · ${b.time} – ${endTime(b.time, b.duration)}`}
           icon="calendar"
           onPress={() =>
-            !live && b.kind === "Groupe" && b.clientId === store.account?.id
+            b.kind === "Groupe" && b.clientId === store.account?.id
               ? go("transfer-native")
               : setModal(
                   b.clientId === store.account?.id
@@ -2553,7 +2525,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         </Button>
         <TextButton
           onPress={() => {
-            if (!live && store.account?.role === "client") {
+            if (store.account?.role === "client") {
               go("repeat-native");
               return;
             }
@@ -2572,7 +2544,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           <>
             <TextButton
               onPress={() =>
-                !live && b.kind === "Groupe"
+                b.kind === "Groupe"
                   ? go("transfer-native")
                   : setModal("change-booking")
               }
@@ -2586,9 +2558,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         )}
         <P small muted style={{ marginTop: 24 }}>
           Annulation gratuite jusqu’à {b.cancelHours ?? 24} h avant.{" "}
-          {live
-            ? "Aucun paiement encaissé."
-            : "Paiement et remboursement simulés."}
+          {"Paiement et remboursement simulés."}
         </P>
       </Section>
     );
@@ -2651,21 +2621,19 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             Ajuster mes préférences
           </TextButton>
         </View>
-        {!live && (
+        {
           <Setting
             title="Mes alertes de disponibilité"
             icon="calendar"
             description="Les créneaux que vous souhaitez retrouver"
             onPress={() => go("alerts-native")}
           />
-        )}
+        }
         <Setting
           title="Compte & notifications"
           icon="user"
           description="Coordonnées, rappels et données personnelles"
-          onPress={() =>
-            live ? setModal("account-settings") : go("account-native")
-          }
+          onPress={() => go("account-native")}
         />
         <Eyebrow style={{ marginTop: 28, marginBottom: 6 }}>
           AIDE & CONFIANCE
@@ -2674,7 +2642,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           title="Aide & mes demandes"
           icon="message"
           description="Une question, un imprévu ou une annulation"
-          onPress={() => (live ? setModal("help") : go("support-native"))}
+          onPress={() => go("support-native")}
         />
         <Setting
           title="Confiance & sécurité"
@@ -2723,20 +2691,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                 icon="calendar"
                 onPress={() =>
                   run(async () => {
-                    if (live) {
-                      const { error } = await supabase
-                        .from("notifications")
-                        .update({ read_at: new Date().toISOString() })
-                        .eq("id", n.id);
-                      if (error) throw error;
-                      await market.refresh();
-                    } else
-                      setStore((s) => ({
-                        ...s,
-                        notices: s.notices.map((x) =>
-                          x.id === n.id ? { ...x, read: true } : x,
-                        ),
-                      }));
+                    setStore((s) => ({
+                      ...s,
+                      notices: s.notices.map((x) =>
+                        x.id === n.id ? { ...x, read: true } : x,
+                      ),
+                    }));
                     if (n.booking) {
                       setSelectedBooking(n.booking);
                       go("bookingDetail");
@@ -2775,7 +2735,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                 ? b.clientName
                 : (coaches.find((c) => c.id === b.coach)?.name ?? "Votre coach")
             }
-            description={`${dayLabel(b.day, true)} · ${b.time}${!live && (store.messages[b.id] ?? []).some((m) => m.who !== store.account?.id && !m.readBy?.includes(store.account?.id ?? "")) ? " · Nouveau message" : ""}`}
+            description={`${dayLabel(b.day, true)} · ${b.time}${(store.messages[b.id] ?? []).some((m) => m.who !== store.account?.id && !m.readBy?.includes(store.account?.id ?? "")) ? " · Nouveau message" : ""}`}
             icon="message"
             onPress={() => {
               setSelectedBooking(b.id);
@@ -2806,12 +2766,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       <Section>
         {summary(booked)}
         <Rule />
-        {live ? (
-          <Note>
-            La messagerie partagée reste à raccorder. Aucun message ne sera
-            envoyé depuis cet écran pour le moment.
-          </Note>
-        ) : (
+        {
           <>
             {(store.messages[booked.id] ?? []).map((m, i) => (
               <View
@@ -2873,10 +2828,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               Envoyer
             </Button>
             <P small muted style={{ marginTop: 16 }}>
-              Conversation de démonstration conservée sur cet appareil.
+              {live
+                ? "Conversation privée, partagée avec votre interlocuteur."
+                : "Conversation de démonstration conservée sur cet appareil."}
             </P>
           </>
-        )}
+        }
       </Section>
     );
   if (screen === "coach") {
@@ -3008,39 +2965,18 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             <>
               <Setting
                 title={
-                  (
-                    live
-                      ? store.published
-                      : configFor(store, activeCoach ?? "0").published
-                  )
+                  configFor(store, activeCoach ?? "0").published
                     ? "Votre profil est en ligne"
                     : "Votre profil est en pause"
                 }
                 description={
-                  (
-                    live
-                      ? store.published
-                      : configFor(store, activeCoach ?? "0").published
-                  )
+                  configFor(store, activeCoach ?? "0").published
                     ? "Les clients peuvent réserver vos disponibilités"
                     : "Les nouvelles réservations sont suspendues"
                 }
                 onPress={() =>
                   run(async () => {
-                    if (live && store.account) {
-                      const { error } = await supabase
-                        .from("coaches")
-                        .update({
-                          published: !(live
-                            ? store.published
-                            : configFor(store, activeCoach ?? "0").published),
-                        })
-                        .eq("id", store.account.id);
-                      if (error) throw error;
-                      await market.refresh();
-                    }
-                    if (!live) setStore(W.publish(store, activeCoach ?? "0"));
-                    else setStore((s) => ({ ...s, published: !s.published }));
+                    setStore(W.publish(store, activeCoach ?? "0"));
                   })
                 }
                 right={
@@ -3049,11 +2985,8 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                       width: 44,
                       height: 27,
                       borderRadius: 99,
-                      backgroundColor: (
-                        live
-                          ? store.published
-                          : configFor(store, activeCoach ?? "0").published
-                      )
+                      backgroundColor: configFor(store, activeCoach ?? "0")
+                        .published
                         ? t.ink
                         : "#bbb",
                       padding: 3,
@@ -3065,11 +2998,8 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                         height: 21,
                         borderRadius: 20,
                         backgroundColor: "#fff",
-                        alignSelf: (
-                          live
-                            ? store.published
-                            : configFor(store, activeCoach ?? "0").published
-                        )
+                        alignSelf: configFor(store, activeCoach ?? "0")
+                          .published
                           ? "flex-end"
                           : "flex-start",
                       }}
@@ -3079,9 +3009,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               />
               <Setting
                 title="Ma checklist de mise en ligne"
-                onPress={() =>
-                  live ? setModal("checklist") : go("checklist-native")
-                }
+                onPress={() => go("checklist-native")}
               />
               {[
                 { title: "Mon offre", ids: ["profile", "offers", "places"] },
@@ -3103,7 +3031,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                     .map(([id, icon, title, description]) => (
                       <Setting
                         key={id}
-                        title={title}
+                        title={
+                          id === "notifications"
+                            ? "Préférences de notification"
+                            : title
+                        }
                         description={description}
                         icon={icon}
                         onPress={() => {
@@ -3115,7 +3047,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                         }}
                       />
                     ))}
-                  {group.title === "Mon organisation" && !live && (
+                  {group.title === "Mon organisation" && (
                     <Setting
                       title="Préparer vos clients"
                       description="Matériel, accès et météo"
@@ -3124,7 +3056,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   )}
                 </View>
               ))}
-              {!live && (
+              {
                 <>
                   <Setting
                     title="Mon compte & mes données"
@@ -3132,10 +3064,10 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   />
                   <Setting
                     title="À propos de la simulation"
-                    onPress={() => go("tools")}
+                    onPress={() => (live ? setModal("about") : go("tools"))}
                   />
                 </>
-              )}
+              }
               <Button
                 light
                 style={{ marginTop: 24 }}
@@ -3171,50 +3103,46 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   + Indisponibilité
                 </TextButton>
               </Row>
-              {!live &&
-                coachSelf &&
-                !configFor(store, coachSelf.id).published && (
-                  <Note style={{ marginBottom: 20 }}>
-                    <P bold>Préparons votre première réservation.</P>
-                    <P>
-                      {
-                        setupSteps(store, coachSelf.id).filter((s) => s.done)
-                          .length
-                      }{" "}
-                      / 6 étapes terminées
-                    </P>
-                    <Button
-                      light
-                      style={{ marginTop: 12 }}
-                      onPress={() => go("checklist-native")}
-                    >
-                      Continuer ma mise en ligne
-                    </Button>
-                  </Note>
-                )}
+              {coachSelf && !configFor(store, coachSelf.id).published && (
+                <Note style={{ marginBottom: 20 }}>
+                  <P bold>Préparons votre première réservation.</P>
+                  <P>
+                    {
+                      setupSteps(store, coachSelf.id).filter((s) => s.done)
+                        .length
+                    }{" "}
+                    / 6 étapes terminées
+                  </P>
+                  <Button
+                    light
+                    style={{ marginTop: 12 }}
+                    onPress={() => go("checklist-native")}
+                  >
+                    Continuer ma mise en ligne
+                  </Button>
+                </Note>
+              )}
               {dateStrip()}
-              {!live && (
+              {
                 <TextButton onPress={() => go("external-session-native")}>
                   + Rendez-vous pris directement
                 </TextButton>
-              )}
+              }
               <Row between style={{ marginTop: 24 }}>
                 <P bold>
-                  {live
-                    ? todayBookings.length
-                    : todayBookings.filter((b) => b.kind !== "Groupe").length +
-                      (store.groups ?? []).filter(
-                        (g) =>
-                          g.offer.coach === activeCoach &&
-                          g.day === day &&
-                          !g.cancelled,
-                      ).length +
-                      (store.externalSessions ?? []).filter(
-                        (b) =>
-                          b.coach === activeCoach &&
-                          b.day === day &&
-                          !b.cancelled,
-                      ).length}{" "}
+                  {todayBookings.filter((b) => b.kind !== "Groupe").length +
+                    (store.groups ?? []).filter(
+                      (g) =>
+                        g.offer.coach === activeCoach &&
+                        g.day === day &&
+                        !g.cancelled,
+                    ).length +
+                    (store.externalSessions ?? []).filter(
+                      (b) =>
+                        b.coach === activeCoach &&
+                        b.day === day &&
+                        !b.cancelled,
+                    ).length}{" "}
                   rendez-vous au planning
                 </P>
                 <TextButton
@@ -3226,40 +3154,38 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   Configurer
                 </TextButton>
               </Row>
-              {!live &&
-                (store.externalSessions ?? [])
-                  .filter(
-                    (b) =>
-                      b.coach === activeCoach && b.day === day && !b.cancelled,
-                  )
-                  .sort((a, b) => a.time.localeCompare(b.time))
-                  .map((b) => (
-                    <Setting
-                      key={b.id}
-                      title={`${b.time} · ${b.name}`}
-                      description={`${b.serviceName} · Hors Partant · ${b.address}`}
-                      onPress={() => go("external-session-native", b.id)}
-                    />
-                  ))}
-              {!live &&
-                (store.groups ?? [])
-                  .filter(
-                    (g) =>
-                      g.offer.coach === activeCoach &&
-                      g.day === day &&
-                      !g.cancelled,
-                  )
-                  .sort((a, b) => a.time.localeCompare(b.time))
-                  .map((g) => (
-                    <Setting
-                      key={g.id}
-                      title={`${g.time} · ${g.offer.name}`}
-                      description={`${g.offer.capacity - remaining(g.offer, g.day, g.time, store)} / ${g.offer.capacity} places réservées · ${g.address}`}
-                      onPress={() => go("group-manage", g.id)}
-                    />
-                  ))}
+              {(store.externalSessions ?? [])
+                .filter(
+                  (b) =>
+                    b.coach === activeCoach && b.day === day && !b.cancelled,
+                )
+                .sort((a, b) => a.time.localeCompare(b.time))
+                .map((b) => (
+                  <Setting
+                    key={b.id}
+                    title={`${b.time} · ${b.name}`}
+                    description={`${b.serviceName} · Hors Partant · ${b.address}`}
+                    onPress={() => go("external-session-native", b.id)}
+                  />
+                ))}
+              {(store.groups ?? [])
+                .filter(
+                  (g) =>
+                    g.offer.coach === activeCoach &&
+                    g.day === day &&
+                    !g.cancelled,
+                )
+                .sort((a, b) => a.time.localeCompare(b.time))
+                .map((g) => (
+                  <Setting
+                    key={g.id}
+                    title={`${g.time} · ${g.offer.name}`}
+                    description={`${g.offer.capacity - remaining(g.offer, g.day, g.time, store)} / ${g.offer.capacity} places réservées · ${g.address}`}
+                    onPress={() => go("group-manage", g.id)}
+                  />
+                ))}
               {todayBookings
-                .filter((b) => live || b.kind !== "Groupe")
+                .filter((b) => b.kind !== "Groupe")
                 .map((b) => (
                   <Pressable
                     accessibilityRole="button"
@@ -3334,17 +3260,13 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                           ? setNotice(
                               "Gérez ce cours dans Mes cours en groupe.",
                             )
-                          : live
-                            ? setNotice(
-                                "La fermeture d’un créneau serveur reste à raccorder.",
-                              )
-                            : setStore((s) => ({
-                                ...s,
-                                closed: [
-                                  ...s.closed,
-                                  `${activeCoach}|${day}|${time}`,
-                                ],
-                              }))
+                          : setStore((s) => ({
+                              ...s,
+                              closed: [
+                                ...s.closed,
+                                `${activeCoach}|${day}|${time}`,
+                              ],
+                            }))
                       }
                       style={styles.slot}
                     >
@@ -3386,9 +3308,8 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                     {agendaOffer
                       ? `${agendaOffer.duration} min · ${euro(agendaOffer.price)}${agendaOffer.kind === "Groupe" ? "/personne" : "/séance"}`
                       : "Créez votre première séance"}{" "}
-                    · réservation{" "}
-                    {live ? 24 : configFor(store, activeCoach ?? "0").notice} h
-                    minimum à l’avance.
+                    · réservation {configFor(store, activeCoach ?? "0").notice}{" "}
+                    h minimum à l’avance.
                   </P>
                 </Row>
               </Note>
@@ -3405,7 +3326,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                       description={b.goal || "Son prochain mouvement"}
                       icon="user"
                       onPress={() => {
-                        if (!live) {
+                        {
                           go("client-native", b.clientId);
                           return;
                         }
@@ -3416,30 +3337,29 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   );
                 },
               )}
-              {!live &&
-                (store.externalSessions ?? [])
-                  .filter((b) => b.coach === activeCoach && !b.cancelled)
-                  .map((b) => (
-                    <Setting
-                      key={b.id}
-                      title={b.name}
-                      description={`${b.serviceName} · Rendez-vous direct`}
-                      onPress={() => go("external-session-native", b.id)}
-                    />
-                  ))}
+              {(store.externalSessions ?? [])
+                .filter((b) => b.coach === activeCoach && !b.cancelled)
+                .map((b) => (
+                  <Setting
+                    key={b.id}
+                    title={b.name}
+                    description={`${b.serviceName} · Rendez-vous direct`}
+                    onPress={() => go("external-session-native", b.id)}
+                  />
+                ))}
               {!ownBookings.length && (
                 <P muted>Vos nouveaux clients réservés apparaîtront ici.</P>
               )}
             </>
           ) : (
             <>
-              {!live && (
+              {
                 <Setting
                   title="Mon compte de versement"
                   description="Coordonnées professionnelles et statut des versements"
                   onPress={() => go("config-native", "payout")}
                 />
-              )}
+              }
               <Eyebrow>NET COACH PRÉVISIONNEL</Eyebrow>
               <P bold style={{ fontSize: 42, lineHeight: 50, marginTop: 16 }}>
                 {euro(ownBookings.reduce((n, b) => n + W.net(b) * 0.85, 0))}
@@ -3545,18 +3465,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               disabled={busy}
               onPress={() =>
                 run(async () => {
-                  if (live && store.account) {
-                    const { error } = await supabase
-                      .from("coaches")
-                      .update({
-                        display_name: configName.trim(),
-                        bio: configBio,
-                      })
-                      .eq("id", store.account.id);
-                    if (error) throw error;
-                    await market.refresh();
-                    setNotice("Profil enregistré.");
-                  } else {
+                  {
                     setStore((s) => ({
                       ...s,
                       coachOverrides: {
@@ -3586,20 +3495,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   description={`${o.kind} · ${o.duration} min · ${euro(o.price)}`}
                   onPress={() =>
                     run(async () => {
-                      if (live) {
-                        const { error } = await supabase
-                          .from("offers")
-                          .update({ active: !o.active })
-                          .eq("id", o.id);
-                        if (error) throw error;
-                        await market.refresh();
-                      } else
-                        setStore((s) => ({
-                          ...s,
-                          offers: s.offers.map((x) =>
-                            x.id === o.id ? { ...x, active: !x.active } : x,
-                          ),
-                        }));
+                      setStore((s) => ({
+                        ...s,
+                        offers: s.offers.map((x) =>
+                          x.id === o.id ? { ...x, active: !x.active } : x,
+                        ),
+                      }));
                     })
                   }
                   right={<P small>{o.active ? "Active" : "En pause"}</P>}
@@ -3670,40 +3571,22 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                     throw Error(
                       "Vérifiez le nom, le prix, la durée et le nombre de participants.",
                     );
-                  if (live && store.account) {
-                    const { error } = await supabase.from("offers").insert({
-                      coach_id: store.account.id,
-                      title: offerName,
-                      sport: "Coaching sportif",
-                      format:
-                        offerKind === "Groupe"
-                          ? "group"
-                          : offerKind === "Duo"
-                            ? "duo"
-                            : "individual",
-                      duration_minutes: duration,
-                      price_cents: Math.round(price * 100),
-                      capacity,
-                    });
-                    if (error) throw error;
-                    await market.refresh();
-                  } else
-                    setStore((s) => ({
-                      ...s,
-                      offers: [
-                        ...s.offers,
-                        {
-                          id: Crypto.randomUUID(),
-                          coach: activeCoach ?? "0",
-                          name: offerName,
-                          kind: offerKind,
-                          duration,
-                          price,
-                          active: true,
-                          capacity,
-                        },
-                      ],
-                    }));
+                  setStore((s) => ({
+                    ...s,
+                    offers: [
+                      ...s.offers,
+                      {
+                        id: Crypto.randomUUID(),
+                        coach: activeCoach ?? "0",
+                        name: offerName,
+                        kind: offerKind,
+                        duration,
+                        price,
+                        active: true,
+                        capacity,
+                      },
+                    ],
+                  }));
                   setOfferName("");
                   setNotice("Offre enregistrée. Ouvrez ensuite ses créneaux.");
                 })
@@ -3745,40 +3628,24 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             >
               Planifier un cours
             </Button>
-            {(live
-              ? market.remoteSlots
-                  .filter(
-                    (x) =>
-                      x.coach_id === activeCoach &&
-                      store.offers.find((o) => o.id === x.offer_id)?.kind ===
-                        "Groupe",
-                  )
-                  .map((x) => ({
-                    id: x.id,
-                    offer: store.offers.find((o) => o.id === x.offer_id)!,
-                    day: x.day,
-                    time: x.time,
-                    address: x.location,
-                  }))
-              : (store.groups ?? []).filter(
-                  (g) => g.offer.coach === activeCoach,
-                )
-            ).map((g) => (
-              <Setting
-                key={g.id}
-                title={`${dayLabel(g.day, true)} · ${g.time}`}
-                description={`${g.offer.name} · ${g.offer.capacity} places maximum · ${g.address}`}
-                onPress={() => {
-                  if (!live) {
-                    go("group-manage", g.id);
-                    return;
-                  }
-                  setDay(g.day);
-                  setCoachTab("agenda");
-                  go("coach");
-                }}
-              />
-            ))}
+            {(store.groups ?? [])
+              .filter((g) => g.offer.coach === activeCoach)
+              .map((g) => (
+                <Setting
+                  key={g.id}
+                  title={`${dayLabel(g.day, true)} · ${g.time}`}
+                  description={`${g.offer.name} · ${g.offer.capacity} places maximum · ${g.address}`}
+                  onPress={() => {
+                    {
+                      go("group-manage", g.id);
+                      return;
+                    }
+                    setDay(g.day);
+                    setCoachTab("agenda");
+                    go("coach");
+                  }}
+                />
+              ))}
             <TextButton onPress={() => go("config-native", "offers")}>
               Gérer mes offres
             </TextButton>
@@ -3937,7 +3804,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           value={groupTime}
           onChange={setGroupTime}
         />
-        {!live && (
+        {
           <Select
             label="Format du lieu"
             value={groupFormat}
@@ -3963,7 +3830,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               );
             }}
           />
-        )}
+        }
         <Field
           label="Lieu du cours"
           value={groupAddress}
@@ -3980,30 +3847,16 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             run(async () => {
               const o = store.offers.find((o) => o.id === groupOffer);
               if (!o) throw Error("Choisissez une offre.");
-              if (live) {
-                if (
-                  !/^([01]\d|2[0-3]):[0-5]\d$/.test(groupTime) ||
-                  !groupAddress.trim()
-                )
-                  throw Error("Vérifiez l’heure et le lieu.");
-                const { error } = await supabase.rpc("open_slot", {
-                  p_offer: o.id,
-                  p_start: new Date(instant(groupDay, groupTime)).toISOString(),
-                  p_location: groupAddress,
-                });
-                if (error) throw error;
-                await market.refresh();
-              } else
-                setStore(
-                  openGroup(store, {
-                    id: Crypto.randomUUID(),
-                    offer: o,
-                    day: groupDay,
-                    time: groupTime,
-                    address: groupAddress,
-                    format: groupFormat,
-                  }),
-                );
+              setStore(
+                openGroup(store, {
+                  id: Crypto.randomUUID(),
+                  offer: o,
+                  day: groupDay,
+                  time: groupTime,
+                  address: groupAddress,
+                  format: groupFormat,
+                }),
+              );
               setModal("");
               setNotice("Votre cours est ouvert aux réservations.");
             })
@@ -4166,6 +4019,18 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                       ? store.offers.find((o) => o.id === booked?.offerId)
                       : offer,
                   )
+                  .filter(
+                    (time) =>
+                      modal !== "change-booking" ||
+                      !booked ||
+                      formatsAt(
+                        store,
+                        coaches.find((c) => c.id === booked.coach)!,
+                        store.offers.find((o) => o.id === booked.offerId),
+                        day,
+                        time,
+                      ).includes(booked.format),
+                  )
                   .map((time) => (
                     <Pressable
                       accessibilityRole="button"
@@ -4174,7 +4039,40 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                       onPress={() =>
                         run(async () => {
                           if (modal === "booking-date" && draft) {
-                            setDraft({ ...draft, day, time });
+                            const allowed = formatsAt(
+                              store,
+                              coach,
+                              offer,
+                              day,
+                              time,
+                            );
+                            const f = allowed.includes(draft.format)
+                              ? draft.format
+                              : allowed[0];
+                            if (!f)
+                              throw Error(
+                                "Aucun lieu compatible avec cet horaire.",
+                              );
+                            const next = {
+                              ...draft,
+                              day,
+                              time,
+                              format: f,
+                              address:
+                                f === draft.format
+                                  ? draft.address
+                                  : offerAddress(store, coach, f),
+                              locationName: locationLabel(store, coach, f),
+                              locationInstructions:
+                                coachLocations(store, coach)[f]?.instructions ??
+                                "",
+                            };
+                            setDraft({
+                              ...next,
+                              price: offer
+                                ? quotePrice(store, next, offer)
+                                : next.price,
+                            });
                             setModal("");
                             return;
                           }
@@ -4220,21 +4118,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             run(async () => {
               const { day, time } = changeTarget;
               if (!booked) return;
-              if (live) {
-                const target = market.remoteSlots.find(
-                  (s) =>
-                    s.offer_id === booked.offerId &&
-                    s.day === day &&
-                    s.time === time,
-                );
-                if (!target) throw Error("Ce créneau n’est plus disponible.");
-                const { error } = await supabase.rpc("change_booking", {
-                  p_booking: booked.id,
-                  p_target: target.id,
-                });
-                if (error) throw error;
-                await market.refresh();
-              } else {
+              {
                 setStore(W.reschedule(store, booked.id, day, time));
               }
               setModal("");
@@ -4339,7 +4223,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     modalBody = (
       <>
         <P>Votre séance sera annulée et les places seront libérées.</P>
-        {booked && !live && (
+        {booked && (
           <Note style={{ marginTop: 16 }}>
             <P>
               {booked.serviceName} · {dayLabel(booked.day)} à {booked.time}
@@ -4365,20 +4249,16 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           </Note>
         )}
         <Note style={{ marginVertical: 20 }}>
-          {live
-            ? "Aucun paiement n’a été encaissé."
-            : "Le remboursement est simulé. Aucun mouvement bancaire réel."}
+          {"Le remboursement est simulé. Aucun mouvement bancaire réel."}
         </Note>
         <Button
           disabled={busy}
           onPress={() =>
             run(async () => {
               if (!booked) return;
-              if (live) await market.cancelBooking(booked.id);
-              else
-                setStore(
-                  W.cancelSession(store, booked.id, "Annulation par le client"),
-                );
+              setStore(
+                W.cancelSession(store, booked.id, "Annulation par le client"),
+              );
               setModal("");
               setNotice("Votre séance a été annulée. Le coach est prévenu.");
             })
@@ -4432,20 +4312,10 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                 return;
               }
               if (!name.trim()) throw Error("Indiquez votre nom.");
-              if (live) {
-                const { error } = await supabase
-                  .from("profiles")
-                  .update({ full_name: name.trim() })
-                  .eq("id", store.account.id);
-                if (error) throw error;
-                await market.refresh();
-              } else
-                setStore((s) => ({
-                  ...s,
-                  account: s.account
-                    ? { ...s.account, name: name.trim() }
-                    : null,
-                }));
+              setStore((s) => ({
+                ...s,
+                account: s.account ? { ...s.account, name: name.trim() } : null,
+              }));
               setModal("");
               setNotice("Votre compte a été mis à jour.");
             })
@@ -4490,7 +4360,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         </P>
         <P muted style={{ marginTop: 16 }}>
           {live
-            ? "Données partagées Supabase. Paiement et communications externes non connectés."
+            ? "Comptes et données partagés sur le serveur de développement. Réservations sans encaissement ; les paiements et intégrations externes restent à activer."
             : "Comptes, paiements, avis et vérifications fictifs. Données conservées sur cet appareil uniquement."}
         </P>
         <Button
@@ -4580,7 +4450,10 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     "proposal-native",
     "checklist-native",
   ];
-  if (!live && nativeScreens.includes(screen)) {
+  if (
+    nativeScreens.includes(screen) &&
+    (!live || !["tools", "accounts"].includes(screen))
+  ) {
     content = (
       <Section>
         <CompleteFlows {...flowProps} screen={screen} />
@@ -4611,7 +4484,6 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     )[screen];
   }
   if (
-    !live &&
     [
       "external-session-native",
       "availability-help-native",
@@ -4634,7 +4506,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           ? "Dupliquer un cours"
           : "Mon planning";
   }
-  if (!live && screen === "config" && config !== "groups")
+  if (screen === "config" && config !== "groups")
     content = (
       <Section>
         <CoachConfiguration
@@ -4644,7 +4516,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         />
       </Section>
     );
-  if (!live && screen === "setup" && draft?.kind === "Groupe" && offer) {
+  if (screen === "setup" && draft?.kind === "Groupe" && offer) {
     const g = store.groups?.find(
         (g) =>
           g.offer.id === draft.offerId &&
@@ -4743,7 +4615,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       </Section>
     );
   }
-  if (!live && screen === "bookingDetail" && booked)
+  if (screen === "bookingDetail" && booked)
     content = (
       <>
         {content}
@@ -4752,7 +4624,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         </Section>
       </>
     );
-  if (!live && screen === "profile" && coach)
+  if (screen === "profile" && coach)
     content = (
       <>
         {content}
@@ -4769,7 +4641,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         </Section>
       </>
     );
-  if (!live && ["account", "bookings"].includes(screen)) {
+  if (["account", "bookings"].includes(screen)) {
     const attempts =
       store.attempts?.filter(
         (p) => p.owner === store.account?.id && p.status !== "success",
@@ -4811,7 +4683,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         </Section>
       </>
     );
-  if (!live && screen === "explore")
+  if (screen === "explore")
     content = (
       <>
         {content}
@@ -4823,7 +4695,6 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       </>
     );
   if (
-    !live &&
     screen === "config" &&
     ["schedule", "rules", "preparation", "notifications"].includes(config)
   )
@@ -4848,6 +4719,14 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           : { flex: 1, width: "100%" },
       ]}
     >
+      {live && market.pending > 0 && (
+        <View
+          accessibilityLiveRegion="polite"
+          style={{ padding: 8, backgroundColor: t.fog }}
+        >
+          <P small>Enregistrement sur Partant…</P>
+        </View>
+      )}
       {desktop && (
         <Row
           between
@@ -4962,7 +4841,10 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           ))}
         </View>
       )}
-      {!!notice && (
+      {store.staff && screen === "account" && (
+        <TextButton onPress={() => go("team")}>Espace équipe</TextButton>
+      )}
+      {!!notice && (!live || market.pending === 0) && (
         <View pointerEvents="none" style={styles.toast}>
           <P style={{ fontSize: 14, color: "#fff" }}>{notice}</P>
         </View>

@@ -1,3 +1,4 @@
+import { recorded } from "./commands";
 import {
   Store,
   Offer,
@@ -31,13 +32,18 @@ export function copyDay(week: Interval[][], source: number, targets: number[]) {
   return week.map((ranges, i) =>
     targets.includes(i)
       ? week[source].map(
-          ([a, b, ids]): Interval => [a, b, ids == null ? ids : [...ids]],
+          ([a, b, ids, places]): Interval => [
+            a,
+            b,
+            ids == null ? ids : [...ids],
+            places == null ? places : [...places],
+          ],
         )
       : ranges,
   );
 }
 
-export function repeatGroup(
+function _repeatGroup(
   s: Store,
   original: GroupSession,
   days: string[],
@@ -65,7 +71,7 @@ export function repeatGroup(
   }, s);
 }
 
-export function addExternalSession(
+function _addExternalSession(
   s: Store,
   values: {
     name: string;
@@ -146,7 +152,7 @@ export function addExternalSession(
     ],
   };
 }
-export function cancelExternalSession(s: Store, id: string) {
+function _cancelExternalSession(s: Store, id: string) {
   const b = s.externalSessions?.find((b) => b.id === id);
   if (!b || s.account?.role !== "coach" || b.coach !== coachAccountId(s))
     throw Error("Rendez-vous inaccessible.");
@@ -300,3 +306,15 @@ export function setupSteps(s: Store, id: string) {
     },
   ];
 }
+
+export const repeatGroup = recorded("repeatGroup", _repeatGroup);
+
+export const addExternalSession = recorded(
+  "addExternalSession",
+  _addExternalSession,
+);
+
+export const cancelExternalSession = recorded(
+  "cancelExternalSession",
+  _cancelExternalSession,
+);

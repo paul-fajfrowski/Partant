@@ -1,5 +1,7 @@
 # Prototype de référence et version React Native
 
+> **Mise à jour du 17 septembre 2026** : les lieux par plage et les parcours avancés sont désormais raccordés au serveur de développement. Voir [la livraison et ses limites](connected-product-9.md). Les sections ci-dessous conservent l’historique des versions précédentes ; leurs mentions de fonctions « locales uniquement » sont remplacées par ce nouvel état. Les intégrations externes, paiements/communications et la recette complète sur appareils restent à traiter.
+
 État au 16 septembre 2026. **React Native devient la version de travail de Partant.** Les prochaines évolutions se font dans `apps/mobile`. Le HTML A1–A9 est conservé comme référence validée ; sa validation ne vaut pas validation automatique du rendu natif.
 
 ## Référence conservée

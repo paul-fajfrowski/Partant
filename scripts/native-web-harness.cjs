@@ -24,7 +24,7 @@ vc.on("error", (...a) => errors.push(a.join(" ")));
 const dom = new JSDOM(
   html.replace(/<script[^>]*src="[^"]+"[^>]*><\/script>/g, ""),
   {
-    url: "http://127.0.0.1:8081/",
+    url: process.env.PARTANT_QA_URL ?? "http://127.0.0.1:8081/",
     runScripts: "dangerously",
     pretendToBeVisual: true,
     virtualConsole: vc,
@@ -82,6 +82,10 @@ Object.defineProperty(w.document.documentElement, "clientWidth", {
 Object.defineProperty(w.document.documentElement, "clientHeight", {
   get: () => 844,
 });
+if (process.env.PARTANT_QA_SESSION) {
+  const saved=JSON.parse(fs.readFileSync(process.env.PARTANT_QA_SESSION,'utf8'));
+  w.localStorage.setItem(saved.key,JSON.stringify(saved.session));
+}
 for (const script of scripts) w.eval(script);
 const wait = () => new Promise((r) => setTimeout(r, 150));
 let count = 0;

@@ -9,7 +9,7 @@ Marketplace locale de coachs sportifs — prototype mobile interactif, autonome 
 
 Consulter [la décision](docs/decisions/001-react-native.md) et [l’état exact des branchements et réglages à faire](docs/branchements.md). Les fondations Supabase sont déployées ; les étapes 1–3 restent en cours. Google, Apple et Outlook ne sont pas encore activés. Paiement et communications externes sont reportés.
 
-La version native navigable reprend les actifs, les parcours client et les configurations coach du prototype. Voir [le suivi précis de parité](docs/parite-prototype-react-native.md) et [le lancement React Native](apps/mobile/README.md). Les parcours avancés sont disponibles en démonstration locale ; leur raccordement serveur et la validation visuelle native restent à terminer. Voir [la recette native](docs/recette-react-native.md).
+La version native navigable reprend les actifs, les parcours client et les configurations coach du prototype. Voir [le suivi précis de parité](docs/parite-prototype-react-native.md) et [le lancement React Native](apps/mobile/README.md). Les parcours avancés et les lieux par plage sont désormais raccordés au serveur de développement : voir [la livraison 9](docs/connected-product-9.md). Les intégrations externes, paiements/communications et la validation sur appareils restent à traiter. Voir [la recette native](docs/recette-react-native.md).
 
 ## Ouvrir le prototype
 
@@ -34,7 +34,7 @@ Ouvrez ensuite http://localhost:8765/partant.html.
 - Réserver à nouveau, transfert de cours collectif et annulation partielle de places.
 - Assistance et modération de démonstration.
 
-Les priorités 1 et 2 sont incluses. La finalisation A1–A9 est disponible localement ; le MVP connecté B1–B8 reste à réaliser : voir **[l’état des lieux MVP](outputs/MVP-etat-des-lieux.md)**. Voir [la finalisation du prototype](outputs/finalisation-prototype.md). Le point de sauvegarde GitHub antérieur est le commit 992eb4b.
+Les priorités 1 et 2 sont incluses. La finalisation A1–A9 est disponible localement ; le suivi connecté a été actualisé dans [la livraison 9](docs/connected-product-9.md) : voir **[l’état des lieux MVP](outputs/MVP-etat-des-lieux.md)**. Voir [la finalisation du prototype](outputs/finalisation-prototype.md). Le point de sauvegarde GitHub antérieur est le commit 992eb4b.
 
 ## Tester les parcours
 

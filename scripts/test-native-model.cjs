@@ -26,7 +26,10 @@ const {
   addDays,
   instant,
   changeSport,
+  setDemoClock,
 } = require("../apps/mobile/src/product/model.ts");
+// Freeze the weekday: the fixture opens a Saturday, never a closed Sunday.
+setDemoClock((Date.parse("2026-09-16T06:00:00Z") - Date.now()) / 3600000);
 let count = 0;
 const check = (v, label) => {
   assert.ok(v, label);
