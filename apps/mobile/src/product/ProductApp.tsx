@@ -1,3 +1,4 @@
+import { placeTypes } from "./locations";
 import { AgendaTools } from "./AgendaToolsScreen";
 import { setupSteps } from "./agendaTools";
 import Slider from "@react-native-community/slider";
@@ -51,6 +52,10 @@ import {
   quotePrice,
   offerFormats,
   offerAddress,
+  coachLocations,
+  locationLabel,
+  locationDescription,
+  matchesLocation,
   openGroup,
   switchAccount,
   instant,
@@ -405,7 +410,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       candidates.find(
         (o) =>
           o.price <= budget &&
-          (format === "Tous" || offerFormats(c, o).includes(format)) &&
+          matchesLocation(store, c, o, format) &&
           market
             .times(c, day, o)
             .some(
@@ -418,11 +423,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   }
   function available(c: Coach, o?: Offer) {
     const selected = o ?? primary(c);
-    if (
-      !selected ||
-      (format !== "Tous" && !offerFormats(c, selected).includes(format))
-    )
-      return [];
+    if (!selected || !matchesLocation(store, c, selected, format)) return [];
     return market
       .times(c, day, selected)
       .filter(
@@ -437,7 +438,10 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         ? 4
         : 0) +
       ((primary(c)?.price ?? c.price) <= pref.budget ? 2 : 0) +
-      (pref.format !== "Tous" && c.formats.includes(pref.format) ? 1 : 0) +
+      (pref.format !== "Tous" &&
+      matchesLocation(store, c, undefined, pref.format)
+        ? 1
+        : 0) +
       (c.dist !== null && c.dist <= pref.distance ? 1 : 0)
     );
   }
@@ -451,7 +455,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         ) &&
         (primary(c)?.price ?? c.price) <= budget &&
         (format === "Visio" || c.dist === null || c.dist <= distance) &&
-        (format === "Tous" || c.formats.includes(format)) &&
+        matchesLocation(store, c, undefined, format) &&
         available(c).length,
     )
     .sort((a, b) =>
@@ -496,9 +500,10 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     setEditBookingOffer(false);
     const chosenFormat =
       group?.format ??
-      (offerFormats(c, selected).includes(format)
-        ? format
-        : offerFormats(c, selected)[0]) ??
+      offerFormats(c, selected).find(
+        (id) => id === format || coachLocations(store, c)[id]?.type === format,
+      ) ??
+      offerFormats(c, selected)[0] ??
       "";
     const nextDraft: Booking = {
       id: Crypto.randomUUID(),
@@ -512,6 +517,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       serviceName: selected.name,
       kind: selected.kind,
       format: chosenFormat,
+      locationName:
+        group?.locationName ?? locationLabel(store, c, chosenFormat),
+      locationInstructions:
+        group?.locationInstructions ??
+        coachLocations(store, c)[chosenFormat]?.instructions ??
+        "",
       seats: selected.kind === "Duo" ? 2 : 1,
       price: group?.offer.price ?? selected.price,
       goal: pref.goal,
@@ -552,11 +563,27 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               {
                 ...draft,
                 format: offerFormats(coach, o)[0] ?? "",
+                locationName: locationLabel(
+                  store,
+                  coach,
+                  offerFormats(coach, o)[0] ?? "",
+                ),
+                locationInstructions:
+                  coachLocations(store, coach)[offerFormats(coach, o)[0]]
+                    ?.instructions ?? "",
                 seats: o.kind === "Duo" ? 2 : 1,
               },
               o,
             ),
         format: offerFormats(coach, o)[0] ?? "",
+        locationName: locationLabel(
+          store,
+          coach,
+          offerFormats(coach, o)[0] ?? "",
+        ),
+        locationInstructions:
+          coachLocations(store, coach)[offerFormats(coach, o)[0]]
+            ?.instructions ?? "",
         address: offerAddress(store, coach, offerFormats(coach, o)[0] ?? ""),
         seats: o.kind === "Duo" ? 2 : 1,
         time: market.times(coach, draft.day, o).includes(draft.time)
@@ -854,7 +881,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         </Row>
         <Row between style={{ marginTop: 10 }}>
           <P small muted>
-            {c.formats.slice(0, 2).join(" · ")} · Tout compris
+            {c.formats
+              .slice(0, 2)
+              .map((f) => locationLabel(store, c, f))
+              .join(" · ")}{" "}
+            · Tout compris
           </P>
           <Pressable
             accessibilityRole="button"
@@ -1623,8 +1654,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                             o.price <= budget &&
                             (sessionKind === "Tous" ||
                               o.kind === sessionKind) &&
-                            (format === "Tous" ||
-                              offerFormats(c, o).includes(format)) &&
+                            matchesLocation(store, c, o, format) &&
                             market
                               .times(c, d, o)
                               .some(
@@ -1835,30 +1865,14 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           )}
           <Rule />
           <H2 style={{ marginBottom: 14 }}>Où on se retrouve</H2>
-          <Row>
-            <Icon name="pin" />
-            <View style={{ flex: 1 }}>
-              <P bold>{coach.place}</P>
+          {coach.formats.map((key) => (
+            <View key={key} style={{ marginBottom: 18 }}>
+              <P bold>{locationLabel(store, coach, key)}</P>
               <P small muted>
-                {coach.address}
+                {locationDescription(store, coach, key)}
               </P>
             </View>
-          </Row>
-          <Row wrap style={{ marginTop: 24 }}>
-            {coach.formats.map((f) => (
-              <View
-                key={f}
-                style={{
-                  borderRadius: 999,
-                  backgroundColor: "#f3f3f3",
-                  paddingHorizontal: 14,
-                  paddingVertical: 10,
-                }}
-              >
-                <P small>{f}</P>
-              </View>
-            ))}
-          </Row>
+          ))}
           {!live && (
             <>
               <Rule />
@@ -1954,33 +1968,17 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             <Choice
               key={f}
               active={draft.format === f}
-              title={
-                f === "Domicile"
-                  ? "Chez vous"
-                  : f === "Visio"
-                    ? "En visio"
-                    : f === "Parc"
-                      ? "En extérieur"
-                      : "Au studio"
-              }
-              description={
-                f === "Domicile"
-                  ? `Rayon de ${configFor(store, coach.id).radius} km · ${configFor(store, coach.id).travelFee ? euro(configFor(store, coach.id).travelFee) + " de déplacement" : "déplacement inclus"}`
-                  : coach.place
-              }
+              title={locationLabel(store, coach, f)}
+              description={locationDescription(store, coach, f)}
               onPress={() => {
                 const cfg = configFor(store, draft.coach);
                 setDraft({
                   ...draft,
                   format: f,
-                  address:
-                    f === "Studio"
-                      ? cfg.studioAddress
-                      : f === "Parc"
-                        ? coach.address
-                        : f === "Visio"
-                          ? "Lien de visioconférence transmis dans la conversation"
-                          : "",
+                  address: offerAddress(store, coach, f),
+                  locationName: locationLabel(store, coach, f),
+                  locationInstructions:
+                    coachLocations(store, coach)[f]?.instructions ?? "",
                   price: offer
                     ? quotePrice(store, { ...draft, format: f }, offer)
                     : draft.price,
@@ -2085,7 +2083,15 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         </Row>
         <Row style={{ marginTop: 16 }}>
           <Icon name="pin" />
-          <P style={{ flex: 1 }}>{draft.address}</P>
+          <View style={{ flex: 1 }}>
+            <P bold>{draft.locationName}</P>
+            <P>{draft.address}</P>
+            {!!draft.locationInstructions && (
+              <P small muted>
+                {draft.locationInstructions}
+              </P>
+            )}
+          </View>
         </Row>
         <View style={{ gap: 12, marginVertical: 24 }}>
           <Row between>
@@ -2471,7 +2477,13 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                 <View style={{ marginVertical: 16 }}>{summary(b)}</View>
                 <Row between>
                   <P small muted>
-                    {b.format} · {b.duration} min
+                    {b.locationName ??
+                      locationLabel(
+                        store,
+                        coaches.find((c) => c.id === b.coach)!,
+                        b.format,
+                      )}{" "}
+                    · {b.duration} min
                   </P>
                   <P bold>{euro(b.price)}</P>
                 </Row>
@@ -2515,7 +2527,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         />
         <Setting
           title="Lieu de rendez-vous"
-          description={b.address}
+          description={[b.locationName, b.address, b.locationInstructions]
+            .filter(Boolean)
+            .join(" · ")}
           icon="pin"
           onPress={() => setModal("address")}
         />
@@ -3270,7 +3284,13 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                           {b.clientName}
                         </P>
                         <P small style={{ color: "#ccc" }}>
-                          {b.serviceName} · {b.format}
+                          {b.serviceName} ·{" "}
+                          {b.locationName ??
+                            locationLabel(
+                              store,
+                              coaches.find((c) => c.id === b.coach)!,
+                              b.format,
+                            )}
                         </P>
                       </View>
                       <Icon name="chevron" color="#fff" />
@@ -3289,11 +3309,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               <H2 style={{ fontSize: 18, marginTop: 24, marginBottom: 14 }}>
                 Disponibilités proposées
               </H2>
-              {!live && (
-                <TextButton onPress={() => go("availability-help-native")}>
-                  Pourquoi une heure n’est-elle pas disponible ?
-                </TextButton>
-              )}
+
               {agendaOffer && (
                 <Select
                   label="Voir les créneaux de"
@@ -3928,7 +3944,14 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             items={offerFormats(
               coaches.find((c) => c.id === activeCoach)!,
               store.offers.find((o) => o.id === groupOffer),
-            )}
+            ).map((id) => [
+              id,
+              locationLabel(
+                store,
+                coaches.find((c) => c.id === activeCoach)!,
+                id,
+              ),
+            ])}
             onChange={(f) => {
               setGroupFormat(f);
               setGroupAddress(
@@ -4073,7 +4096,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         <Select
           label="Lieu de la séance"
           value={format}
-          items={["Tous", "Parc", "Studio", "Domicile", "Visio"]}
+          items={["Tous", ...placeTypes]}
           onChange={setFormat}
         />
         <Button onPress={() => setModal("")}>Voir les coachs</Button>
@@ -4289,7 +4312,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                 </P>
               )}
               <Rule />
-              <P small>{c.formats.join(" · ")}</P>
+              <P small>
+                {c.formats.map((f) => locationLabel(store, c, f)).join(" · ")}
+              </P>
               <View style={{ marginTop: 16 }}>
                 <Button onPress={() => openProfile(c)}>Voir le profil</Button>
               </View>
@@ -4635,7 +4660,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           <H2>{draft.serviceName}</H2>
           <P>
             {dayLabel(draft.day)} · {draft.time} · {draft.duration} min{"\n"}
+            {draft.locationName ? draft.locationName + " · " : ""}
             {draft.address}
+            {draft.locationInstructions
+              ? "\n" + draft.locationInstructions
+              : ""}
           </P>
         </Note>
         <Select

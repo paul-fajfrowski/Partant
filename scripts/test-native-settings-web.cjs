@@ -71,9 +71,10 @@ async function match(text) {
   );
   await click("Retour");
   await click("Lieux & déplacements");
+  await click("Chez le client");
   input("Supplément déplacement à domicile (€)", "5");
   await wait();
-  await click("Enregistrer");
+  await click("Enregistrer les lieux");
   ok(stored().settings["0"].travelFee === 5, "Travel fee persists");
   await click("Retour");
   await click("Disponibilités");

@@ -22,6 +22,7 @@ import {
   configFor,
   offerFormats,
   offerAddress,
+  locationLabel,
   dayLabel,
   endTime,
 } from "./model";
@@ -292,7 +293,10 @@ export function AgendaTools({
       <Select
         label="Lieu de la séance"
         value={format}
-        items={offerFormats(c, o)}
+        items={offerFormats(c, o).map((id) => [
+          id,
+          locationLabel(store, c, id),
+        ])}
         onChange={(f) => {
           setFormat(f);
           setAddress(offerAddress(store, c, f));

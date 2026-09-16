@@ -1,3 +1,4 @@
+import { validateLocations } from "./locations";
 import {
   Account,
   Booking,
@@ -22,6 +23,8 @@ import {
   switchAccount,
   validateIntervals,
   quotePrice,
+  locationsReady,
+  matchesLocation,
 } from "./model";
 import type {
   CoachSettings,
@@ -201,6 +204,7 @@ function future(b: Booking) {
 export function saveSettings(s: Store, id: string, cfg: CoachSettings): Store {
   if (s.account?.role !== "coach" || coachAccountId(s) !== id)
     throw Error("Connectez-vous à ce compte coach.");
+  if (cfg.locations) validateLocations(cfg.locations);
   if (cfg.week.length !== 7)
     throw Error("Complétez les sept jours de la semaine.");
   const ownOffers = new Set(
@@ -242,7 +246,7 @@ export function publicationIssues(s: Store, id: string) {
     !s.offers.some((o) => o.coach === id && o.active)
       ? "Créez au moins une offre active."
       : "",
-    !c?.formats.length || !c?.address ? "Précisez vos lieux." : "",
+    !locationsReady(s, c) ? "Précisez vos lieux." : "",
     !cfg.week.some((day) => day.length) ? "Ouvrez votre planning." : "",
     cfg.dossier.status !== "approved" || cfg.dossier.expires < today()
       ? "Votre dossier doit être validé et à jour."
@@ -474,6 +478,9 @@ export function transfer(
               offerId: g.offer.id,
               serviceName: g.offer.name,
               address: g.address,
+              locationName: g.locationName,
+              locationInstructions: g.locationInstructions,
+              format: g.format ?? x.format,
               price: money(g.offer.price * b.seats),
               paid: money((x.paid ?? x.price) + Math.max(0, delta)),
               refunded: money((x.refunded ?? 0) + amount),
@@ -896,7 +903,7 @@ export function alertMatches(s: Store, a: AvailabilityAlert) {
     if (
       (a.coach && c.id !== a.coach) ||
       (a.sport !== "Tout" && ![c.sport, ...c.tags].includes(a.sport)) ||
-      (a.format !== "Tous" && !c.formats.includes(a.format))
+      !matchesLocation(s, c, undefined, a.format)
     )
       continue;
     for (const o of s.offers.filter(
@@ -904,6 +911,7 @@ export function alertMatches(s: Store, a: AvailabilityAlert) {
         o.coach === c.id && o.active && (!a.groupOnly || o.kind === "Groupe"),
     )) {
       if (a.seats > 1 && o.kind !== "Groupe") continue;
+      if (!matchesLocation(s, c, o, a.format)) continue;
       for (const time of slotsFor(c, a.day, s, o)) {
         const g = s.groups?.find(
             (g) => g.offer.id === o.id && g.day === a.day && g.time === time,

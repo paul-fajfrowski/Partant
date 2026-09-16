@@ -50,8 +50,9 @@ async function field(label, value) {
   await click("Réglages");
   await click("Disponibilités");
   ok(
-    d.body.textContent.includes("Vous choisissez les jours"),
-    "Explains range versus appointment",
+    !d.body.textContent.includes("À votre rythme.") &&
+      d.body.textContent.includes("Pause entre deux séances"),
+    "Availability opens directly on useful controls",
   );
   await field("Début de plage 1", "09:00");
   await field("Fin de plage 1", "12:00");

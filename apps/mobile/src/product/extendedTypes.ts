@@ -14,7 +14,17 @@ export type Dossier = {
   reason: string;
   history: { date: string; status: string; reason: string }[];
 };
+export type CoachLocation = {
+  type: string;
+  name: string;
+  address: string;
+  instructions: string;
+  sector?: string;
+  radius?: number;
+  travelFee?: number;
+};
 export type CoachSettings = {
+  locations?: Record<string, CoachLocation>;
   published: boolean;
   weeklyConfigured: boolean;
   week: Interval[][];

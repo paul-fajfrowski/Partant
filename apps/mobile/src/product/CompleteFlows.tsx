@@ -1,3 +1,4 @@
+import { placeTypes } from "./locations";
 import { setupSteps } from "./agendaTools";
 import React, { useEffect, useState } from "react";
 import { View, Pressable } from "react-native";
@@ -592,12 +593,7 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
           value={flag}
           onChange={setFlag}
         />
-        {select(
-          "Lieu",
-          "format",
-          ["Tous", "Parc", "Studio", "Domicile", "Visio"],
-          "Tous",
-        )}
+        {select("Lieu", "format", ["Tous", ...placeTypes], "Tous")}
         <Button
           style={{ marginTop: 20 }}
           onPress={() =>

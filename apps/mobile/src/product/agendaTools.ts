@@ -19,6 +19,7 @@ import {
   openGroup,
   offerFormats,
   offerAddress,
+  locationsReady,
 } from "./model";
 import { Interval } from "./extendedTypes";
 import { uid } from "./workflows";
@@ -278,7 +279,7 @@ export function setupSteps(s: Store, id: string) {
     {
       id: "places",
       title: "Choisissez vos lieux",
-      done: !!(c?.formats.length && c.address),
+      done: locationsReady(s, c),
     },
     {
       id: "schedule",

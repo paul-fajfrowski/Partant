@@ -37,6 +37,8 @@ export type Offer = {
   capacity: number;
 };
 export type Booking = {
+  locationName?: string;
+  locationInstructions?: string;
   participantNames?: string[];
   id: string;
   coach: string;
@@ -89,6 +91,8 @@ export type Notice = {
   booking: string;
 };
 export type GroupSession = {
+  locationName?: string;
+  locationInstructions?: string;
   format?: string;
   id: string;
   offer: Offer;
@@ -411,7 +415,16 @@ export function reserve(store: Store, draft: Booking): Store {
     duration: o.duration,
     kind: o.kind,
     serviceName: o.name,
-    address: group?.address ?? draft.address,
+    address:
+      group?.address ??
+      (draft.format === "Domicile"
+        ? draft.address
+        : offerAddress(store, c, draft.format)),
+    locationName: group?.locationName ?? locationLabel(store, c, draft.format),
+    locationInstructions:
+      group?.locationInstructions ??
+      coachLocations(store, c)[draft.format]?.instructions ??
+      "",
     status: "confirmed" as const,
   };
   return {
@@ -560,6 +573,9 @@ export function openGroup(store: Store, group: GroupSession): Store {
         ...group,
         offer: { ...o },
         format: groupFormat,
+        locationName: locationLabel(store, coach, groupFormat),
+        locationInstructions:
+          coachLocations(store, coach)[groupFormat]?.instructions ?? "",
         cancelHours: cfg.cancelHours,
         preparation: { ...cfg.preparation },
         level: group.level ?? o.level ?? "Tous niveaux",
@@ -725,7 +741,8 @@ export function quotePrice(store: Store, b: Booking, o: Offer) {
     Math.round(
       (o.price * (o.kind === "Groupe" ? b.seats : 1) +
         (o.kind !== "Groupe" && b.format === "Domicile"
-          ? configFor(store, b.coach).travelFee
+          ? (configFor(store, b.coach).locations?.Domicile?.travelFee ??
+            configFor(store, b.coach).travelFee)
           : 0)) *
         100,
     ) / 100
@@ -770,12 +787,88 @@ export function offerFormats(c: Coach, o?: Offer): string[] {
     ? c.formats
     : o.formats.filter((f) => c.formats.includes(f));
 }
+export function coachLocations(
+  store: Store,
+  c: Coach,
+): Record<string, import("./extendedTypes").CoachLocation> {
+  const cfg = configFor(store, c.id);
+  if (cfg.locations) return cfg.locations;
+  return Object.fromEntries(
+    c.formats.map((type) => [
+      type,
+      {
+        type,
+        name:
+          type === "Domicile"
+            ? "Chez le client"
+            : type === "Visio"
+              ? "En visioconférence"
+              : type === "Studio"
+                ? cfg.studio
+                : c.place,
+        address:
+          type === "Studio"
+            ? cfg.studioAddress
+            : type === "Domicile" || type === "Visio"
+              ? ""
+              : c.address,
+        instructions: "",
+        ...(type === "Domicile"
+          ? { sector: c.area, radius: cfg.radius, travelFee: cfg.travelFee }
+          : {}),
+      },
+    ]),
+  );
+}
+export function locationLabel(store: Store, c: Coach, key: string) {
+  const p = coachLocations(store, c)[key];
+  return p
+    ? p.name || p.type
+    : key.startsWith("place:")
+      ? "Lieu de la séance"
+      : key;
+}
+export function matchesLocation(
+  store: Store,
+  c: Coach,
+  o: Offer | undefined,
+  type: string,
+) {
+  return (
+    type === "Tous" ||
+    offerFormats(c, o).some(
+      (id) => id === type || coachLocations(store, c)[id]?.type === type,
+    )
+  );
+}
+export function locationDescription(store: Store, c: Coach, key: string) {
+  const p = coachLocations(store, c)[key];
+  if (!p) return "";
+  const detail =
+    p.type === "Domicile"
+      ? `${p.sector || c.area} · rayon ${p.radius ?? 3} km · ${(p.travelFee ?? 0) ? p.travelFee + " € de déplacement" : "déplacement inclus"}`
+      : p.type === "Visio"
+        ? "Lien transmis dans la conversation"
+        : p.address;
+  return [detail, p.instructions].filter(Boolean).join(" · ");
+}
 export function offerAddress(store: Store, c: Coach, format: string) {
-  return format === "Studio"
-    ? configFor(store, c.id).studioAddress
-    : format === "Visio"
-      ? "Lien de visioconférence transmis dans la conversation"
-      : format === "Domicile"
-        ? ""
-        : c.address;
+  const p = coachLocations(store, c)[format];
+  return format === "Visio"
+    ? "Lien de visioconférence transmis dans la conversation"
+    : format === "Domicile"
+      ? ""
+      : (p?.address ?? c.address);
+}
+export function locationsReady(store: Store, c?: Coach) {
+  if (!c?.formats.length) return false;
+  const locations = coachLocations(store, c);
+  return c.formats.every((key) => {
+    const p = locations[key];
+    return (
+      !!p?.name.trim() &&
+      (p.type === "Visio" ||
+        (p.type === "Domicile" ? !!p.sector?.trim() : !!p.address.trim()))
+    );
+  });
 }

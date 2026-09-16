@@ -84,3 +84,13 @@ Les réservations existantes restent conservées. Cette évolution porte sur le 
 La livraison est détaillée dans [Améliorations produit 6](ameliorations-produit-6.md). Elle ajoute les brouillons de réglages et leur abandon confirmé, les retours contextualisés, l’édition explicite des exceptions, la copie de journées, les lieux par prestation, les rendez-vous directs, le diagnostic des disponibilités, la duplication de cours, les noms facultatifs des participants, les progrès de mise en ligne et les confirmations de changements de réservation. Les réglages coach sont regroupés ; les sélections client sont conservées.
 
 Ces évolutions sont locales. Les nouveaux champs et contrôles n’ont pas été déployés sur le serveur. Les paiements et communications externes restent différés. Le HTML archivé est inchangé.
+
+## Version 7 — lieux configurables et planning allégé
+
+L’introduction « À votre rythme » est retirée de Disponibilités. Le diagnostic quitte l’Agenda et devient un lien d’aide secondaire à la fin des disponibilités.
+
+Lieux & déplacements permet d’enregistrer plusieurs lieux du même type, avec nom, adresse et consignes : salles de musculation, pistes, terrains, piscines, studios, parcs, chez le coach ou autres lieux. Les suggestions suivent la spécialité, sans restreindre le catalogue. Domicile contient un secteur, un rayon et un supplément ; l’adresse du client est saisie à la réservation. Visio possède ses propres consignes. Les anciennes données sont reprises sans changer leurs identifiants.
+
+Chaque prestation peut autoriser une sélection précise de lieux. Profils, choix de réservation, filtres, cours collectifs et rendez-vous directs utilisent leurs noms et adresses. Les nouvelles réservations et les cours conservent une copie du nom, de l’adresse et des consignes, indépendante des modifications ultérieures. Le contrôle géographique du rayon et la persistance serveur des lieux restent à raccorder ; les données demeurent locales dans cette simulation.
+
+Tests ajoutés : `test-native-locations.cjs` et `test-native-locations-web.cjs`. Tester notamment deux salles différentes, une prestation limitée à une seule salle, les conditions d’accès visibles avant paiement et le supplément à domicile.

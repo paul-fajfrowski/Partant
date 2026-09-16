@@ -2,6 +2,8 @@ import {
   AvailabilityIntervals,
   intervalSummary,
 } from "./AvailabilityIntervals";
+import { CoachPlacesEditor } from "./CoachPlacesEditor";
+import { validateLocations } from "./locations";
 import { copyDay } from "./agendaTools";
 import React, { useEffect, useRef, useState } from "react";
 import { Pressable, View, Switch } from "react-native";
@@ -18,6 +20,8 @@ import {
   mins,
   overlap,
   offerFormats,
+  coachLocations,
+  locationLabel,
 } from "./model";
 import type { CoachSettings, Interval } from "./extendedTypes";
 import {
@@ -90,7 +94,7 @@ const sectionFields: Record<string, (keyof CoachSettings)[]> = {
     "departureStep",
   ],
   rules: ["buffer", "notice", "horizon", "cancelHours"],
-  places: ["studio", "studioAddress", "radius", "travelFee"],
+  places: ["locations", "studio", "studioAddress", "radius", "travelFee"],
   documents: ["dossier", "published"],
   payout: ["business", "payoutReady"],
   notifications: ["notifications"],
@@ -499,7 +503,7 @@ function ConfigurationEditor({
         {c.formats.map((f) => (
           <Toggle
             key={f}
-            label={f}
+            label={`${coachLocations(store, c)[f]?.type ?? f} · ${locationLabel(store, c, f)}`}
             value={offerFormats(c, edit).includes(f)}
             onChange={(checked) =>
               setEdit({
@@ -552,112 +556,63 @@ function ConfigurationEditor({
     return (
       <>
         {feedback}
-        <Eyebrow style={{ marginBottom: 20 }}>VOS RÉGLAGES</Eyebrow>
-
-        <H2>Formats proposés</H2>
-        {["Parc", "Studio", "Domicile", "Visio"].map((f) => (
-          <Toggle
-            key={f}
-            label={f}
-            value={profile.formats.includes(f)}
-            onChange={(v) =>
-              setProfile({
-                ...profile,
-                formats: v
-                  ? [...profile.formats, f]
-                  : profile.formats.filter((x) => x !== f),
-              })
-            }
-          />
-        ))}
-        {text("Lieu extérieur / lieu principal", "place")}
-        {text("Adresse du lieu principal", "address")}
-        <Field
-          label="Nom du studio"
-          value={cfg.studio}
-          onChange={(studio) => setCfg({ ...cfg, studio })}
-        />
-        <Field
-          label="Adresse du studio"
-          value={cfg.studioAddress}
-          onChange={(studioAddress) => setCfg({ ...cfg, studioAddress })}
-        />
-        {num("Rayon de déplacement à domicile (km)", "radius")}
-        {num("Supplément déplacement à domicile (€)", "travelFee")}
-        <Note>
-          Le supplément est présenté avant paiement. Le rayon et les adresses
-          restent fictifs dans la démonstration.
-        </Note>
-        <Button
-          style={{ marginTop: 20 }}
-          onPress={() =>
+        <CoachPlacesEditor
+          sport={c.sport}
+          locations={cfg.locations ?? coachLocations(store, c)}
+          onChange={(locations) => setCfg({ ...cfg, locations })}
+          onSave={() =>
             run(() => {
-              if (
-                !profile.formats.length ||
-                (profile.formats.includes("Parc") &&
-                  (!profile.place.trim() || !profile.address.trim())) ||
-                (profile.formats.includes("Studio") &&
-                  (!cfg.studio.trim() || !cfg.studioAddress.trim())) ||
-                !Number.isFinite(cfg.travelFee) ||
-                cfg.travelFee < 0 ||
-                cfg.travelFee > 30 ||
-                cfg.radius < 1 ||
-                cfg.radius > 10
-              )
-                throw Error(
-                  "Vérifiez les formats, les adresses et le déplacement.",
-                );
+              const locations = validateLocations(
+                cfg.locations ?? coachLocations(store, c),
+              );
+              const formats = Object.keys(locations);
               if (
                 store.offers.some(
                   (o) =>
                     o.coach === actual &&
                     o.active &&
-                    o.formats?.some((f) => !profile.formats.includes(f)),
+                    o.formats?.some((f) => !formats.includes(f)),
                 )
               )
                 throw Error(
-                  "Modifiez d’abord les prestations qui utilisent le lieu à retirer.",
+                  "Ce lieu est associé à une prestation active. Retirez-le d’abord dans Séances & tarifs, puis enregistrez vos lieux.",
                 );
+              const physical = Object.values(locations).find(
+                (p) => !["Domicile", "Visio"].includes(p.type),
+              );
+              const next = saveSettings(store, actual, {
+                ...configFor(store, actual),
+                locations,
+                radius: locations.Domicile?.radius ?? cfg.radius,
+                travelFee: locations.Domicile?.travelFee ?? cfg.travelFee,
+              });
               commit({
-                ...saveSettings(store, actual, {
-                  ...configFor(store, actual),
-                  studio: cfg.studio,
-                  studioAddress: cfg.studioAddress,
-                  radius: cfg.radius,
-                  travelFee: cfg.travelFee,
-                }),
+                ...next,
                 coachOverrides: {
-                  ...store.coachOverrides,
+                  ...next.coachOverrides,
                   [actual]: {
-                    ...store.coachOverrides?.[actual],
-                    formats: profile.formats,
-                    place: profile.place,
-                    address: profile.address,
+                    ...next.coachOverrides?.[actual],
+                    formats,
+                    place: physical?.name ?? Object.values(locations)[0].name,
+                    address: physical?.address ?? "",
                   },
                 },
               });
-              message("Lieux enregistrés.");
+              message(
+                "Lieux enregistrés. Associez-les à vos prestations dans Séances & tarifs.",
+              );
             })
           }
-        >
-          Enregistrer
-        </Button>
+        />
+        <TextButton onPress={() => go("config-native", "offers")}>
+          Associer mes lieux à mes séances
+        </TextButton>
       </>
     );
   if (section === "schedule")
     return (
       <>
         {feedback}
-        <H1>À votre rythme.</H1>
-        <P small muted style={{ marginTop: 12 }}>
-          Votre semaine se répète automatiquement sur votre période de
-          réservation. Les exceptions datées prennent le relais pour les congés
-          et changements ponctuels.
-        </P>
-        <P muted style={{ marginVertical: 20 }}>
-          Vous choisissez les jours, l’heure de début et l’heure de fin. Chaque
-          plage commence à l’heure que vous saisissez, même à 9 h 10 ou 14 h 20.
-        </P>
         <Field
           label="Pause entre deux séances (minutes)"
           numeric
@@ -918,6 +873,9 @@ function ConfigurationEditor({
             </TextButton>
           </Note>
         )}
+        <TextButton onPress={() => go("availability-help-native")}>
+          Aide : comprendre un créneau indisponible
+        </TextButton>
       </>
     );
   if (section === "rules")

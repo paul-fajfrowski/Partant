@@ -78,7 +78,10 @@ async function toggle(label) {
   );
   await click("Disponibilités");
   await field("Début de plage 1", "09:25");
-  ok(stored().coachDrafts["0:schedule"].cfg.week[0][0][0]==="09:25", "Draft persisted in device storage");
+  ok(
+    stored().coachDrafts["0:schedule"].cfg.week[0][0][0] === "09:25",
+    "Draft persisted in device storage",
+  );
   await click("Gérer mes séances et leurs tarifs");
   ok(
     d.body.textContent.includes("Créer une séance"),
@@ -86,7 +89,7 @@ async function toggle(label) {
   );
   await click("Retour");
   ok(
-    d.body.textContent.includes("À votre rythme."),
+    d.body.textContent.includes("Pause entre deux séances"),
     "Back restores correct settings section",
   );
   ok(
@@ -128,8 +131,8 @@ async function toggle(label) {
   await click("Retour");
   await click("Séances & tarifs");
   await click("Modifier Coaching individuel");
-  await toggle("Domicile");
-  await toggle("Studio");
+  await toggle("Domicile · Chez le client");
+  await toggle("Studio · " + M.configFor(stored(), "0").studio);
   await click("Enregistrer l’offre");
   ok(
     stored()
@@ -145,13 +148,15 @@ async function toggle(label) {
   await click("Enregistrer le rendez-vous");
   ok(stored().externalSessions.length === 1, "Direct appointment persisted");
   await click("Retour");
-  await click("Pourquoi une heure n’est-elle pas disponible ?");
+  await click("Configurer");
+  await click("Aide : comprendre un créneau indisponible");
   await field("Heure à vérifier", "09:10");
   await click("Vérifier ce créneau");
   ok(
     d.body.textContent.includes("rendez-vous hors Partant"),
     "Availability diagnosis explains blocked slot",
   );
+  await click("Retour");
   await click("Retour");
   await click("Mes cours en groupe");
   await match("Running ensemble");
