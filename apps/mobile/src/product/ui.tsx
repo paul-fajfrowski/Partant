@@ -299,6 +299,7 @@ export function Chip({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
+      aria-pressed={active}
       onPress={onPress}
       style={[
         s.chip,
@@ -337,6 +338,7 @@ export function Choice({
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ checked: active }}
+      aria-checked={active}
       onPress={onPress}
       style={[s.choice, active && { backgroundColor: t.ink }]}
     >

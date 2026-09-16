@@ -152,7 +152,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const [budget, setBudget] = useState(300);
   const [distance, setDistance] = useState(10);
   const [format, setFormat] = useState("Tous");
-  const [sort, setSort] = useState("distance");
+  const [sort, setSort] = useState("recommended");
   const [map, setMap] = useState(false);
   const [comparison, setComparison] = useState<string[]>([]);
   const [coachId, setCoachId] = useState("0");
@@ -206,10 +206,28 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               : "changes"
         ]),
   ).length;
+  const conversations = store.bookings.filter(
+    (b) =>
+      b.clientId === store.account?.id ||
+      (store.account?.role === "coach" && b.coach === activeCoach),
+  );
+  const unreadMessages = live
+    ? 0
+    : conversations.reduce(
+        (total, b) =>
+          total +
+          (store.messages[b.id] ?? []).filter(
+            (m) =>
+              m.who !== store.account?.id &&
+              !m.readBy?.includes(store.account?.id ?? ""),
+          ).length,
+        0,
+      );
   const lastIdentity = useRef(store.account?.id);
   useEffect(() => {
     if (lastIdentity.current !== store.account?.id) {
       history.current = [];
+      resetFilters();
       lastIdentity.current = store.account?.id;
     }
   }, [store.account?.id]);
@@ -331,6 +349,17 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           (period !== "evening" || time >= "18:00") && (!hour || time === hour),
       );
   }
+  // Preferences rank suggestions; only explicit Explorer controls filter them.
+  function preferenceScore(c: Coach) {
+    return (
+      (pref.sport !== "Tout" && [c.sport, ...c.tags].includes(pref.sport)
+        ? 4
+        : 0) +
+      ((primary(c)?.price ?? c.price) <= pref.budget ? 2 : 0) +
+      (pref.format !== "Tous" && c.formats.includes(pref.format) ? 1 : 0) +
+      (c.dist !== null && c.dist <= pref.distance ? 1 : 0)
+    );
+  }
   const results = coaches
     .filter(
       (c) =>
@@ -345,12 +374,15 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         available(c).length,
     )
     .sort((a, b) =>
-      sort === "price"
-        ? a.price - b.price
-        : sort === "rating"
-          ? parseFloat((b.rating ?? "0").replace(",", ".")) -
-            parseFloat((a.rating ?? "0").replace(",", "."))
-          : (a.dist ?? 999) - (b.dist ?? 999),
+      sort === "recommended"
+        ? preferenceScore(b) - preferenceScore(a) ||
+          (a.dist ?? 999) - (b.dist ?? 999)
+        : sort === "price"
+          ? a.price - b.price
+          : sort === "rating"
+            ? parseFloat((b.rating ?? "0").replace(",", ".")) -
+              parseFloat((a.rating ?? "0").replace(",", "."))
+            : (a.dist ?? 999) - (b.dist ?? 999),
     );
   function chooseTime(c: Coach, time: string, o?: Offer, selectedDay = day) {
     const selected =
@@ -480,6 +512,8 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   }
   function resetFilters() {
     setSessionKind("Tous");
+    setSort("recommended");
+    setWeek(0);
     setSport("Tout");
     setQuery("");
     setBudget(300);
@@ -740,7 +774,10 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const bottom = ["explore", "favorites", "bookings", "account"].includes(
     screen,
   );
-  const coachBottom = screen === "coach";
+  const coachBottom =
+    screen === "coach" ||
+    (store.account?.role === "coach" &&
+      ["messages", "notifications", "chat"].includes(screen));
   const barTitle: Record<string, string> = {
     login: role === "coach" ? "Espace coach" : "Espace particulier",
     code: "Connexion",
@@ -1080,19 +1117,19 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   .eq("id", store.account.id);
                 if (error) throw error;
               }
-              setSport(pref.sport);
-              setBudget(pref.budget);
-              setDistance(pref.distance);
-              setFormat(pref.format);
-              setPeriod(pref.moment === "Le soir" ? "evening" : "all");
-              if (pref.moment === "Demain") setDay(addDays(today(), 1));
+              resetFilters();
               go("explore");
             })
           }
         >
           {step === 2 ? "Découvrir mes coachs" : "Continuer"}
         </Button>
-        <TextButton onPress={() => go("explore")}>
+        <TextButton
+          onPress={() => {
+            resetFilters();
+            go("explore");
+          }}
+        >
           Passer pour le moment
         </TextButton>
       </Section>
@@ -1198,6 +1235,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ selected: sport === label }}
+                aria-pressed={sport === label}
                 key={label}
                 onPress={() =>
                   label === "Autres" ? setModal("sports") : setSport(label)
@@ -2342,6 +2380,30 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           Bonjour, {store.account?.name.split(" ")[0] || "Invité"}.
         </H1>
         <P muted>Vos envies évoluent. Partant aussi.</P>
+        <Eyebrow style={{ marginTop: 28, marginBottom: 6 }}>
+          MES ÉCHANGES
+        </Eyebrow>
+        <Setting
+          title="Mes messages"
+          icon="message"
+          description={
+            unreadMessages
+              ? `${unreadMessages} non lu${unreadMessages > 1 ? "s" : ""}`
+              : undefined
+          }
+          onPress={() => go("messages")}
+        />
+        <Setting
+          title="Mes notifications"
+          icon="bell"
+          description={
+            unread ? `${unread} nouvelle${unread > 1 ? "s" : ""}` : undefined
+          }
+          onPress={() => go("notifications")}
+        />
+        <Eyebrow style={{ marginTop: 28, marginBottom: 6 }}>
+          MES PRÉFÉRENCES
+        </Eyebrow>
         <View
           style={{
             borderRadius: 16,
@@ -2368,94 +2430,48 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             Ajuster mes préférences
           </TextButton>
         </View>
-        <Setting
-          title="Mes notifications"
-          description={
-            unread ? `${unread} nouvelle${unread > 1 ? "s" : ""}` : undefined
-          }
-          icon="bell"
-          onPress={() => go("notifications")}
-        />
-        <Setting
-          title="Mes messages"
-          description={
-            !live
-              ? `${Object.entries(store.messages)
-                  .filter(([id]) =>
-                    store.bookings.some(
-                      (b) => b.id === id && W.canRead(store, b),
-                    ),
-                  )
-                  .reduce(
-                    (n, [, ms]) =>
-                      n +
-                      ms.filter(
-                        (m) =>
-                          m.who !== store.account?.id &&
-                          !m.readBy?.includes(store.account?.id ?? ""),
-                      ).length,
-                    0,
-                  )} non lu(s)`
-              : undefined
-          }
-          icon="message"
-          onPress={() => go("messages")}
-        />
-        <Setting
-          title="Mes séances"
-          icon="calendar"
-          onPress={() => go("bookings")}
-        />
         {!live && (
-          <>
-            <Setting
-              title="Mes alertes de disponibilité"
-              onPress={() => go("alerts-native")}
-            />
-            <Setting
-              title="Mes demandes"
-              onPress={() => go("support-native")}
-            />
-          </>
+          <Setting
+            title="Mes alertes de disponibilité"
+            icon="calendar"
+            description="Les créneaux que vous souhaitez retrouver"
+            onPress={() => go("alerts-native")}
+          />
         )}
         <Setting
-          title="Mes coachs favoris"
-          icon="heart"
-          onPress={() => go("favorites")}
-        />
-        <Setting
-          title="Mon compte & mes rappels"
+          title="Compte & notifications"
           icon="user"
+          description="Coordonnées, rappels et données personnelles"
           onPress={() =>
             live ? setModal("account-settings") : go("account-native")
           }
+        />
+        <Eyebrow style={{ marginTop: 28, marginBottom: 6 }}>
+          AIDE & CONFIANCE
+        </Eyebrow>
+        <Setting
+          title="Aide & mes demandes"
+          icon="message"
+          description="Une question, un imprévu ou une annulation"
+          onPress={() => (live ? setModal("help") : go("support-native"))}
         />
         <Setting
           title="Confiance & sécurité"
           icon="shield"
           onPress={() => setModal("trust")}
         />
+        <Rule />
         <Setting
-          title="Aide & annulations"
-          icon="message"
-          onPress={() => (live ? setModal("help") : go("support-native"))}
+          title="Passer côté coach"
+          icon="user"
+          description="Accéder à votre activité professionnelle"
+          onPress={() => {
+            setRole("coach");
+            setEmail(live ? "" : "thomas@example.test");
+            setSignup(false);
+            go("login");
+          }}
         />
-        <Note style={{ marginTop: 24 }}>
-          <H2 style={{ fontSize: 18 }}>Vous êtes aussi coach ?</H2>
-          <P muted style={{ marginTop: 8, marginBottom: 16 }}>
-            Un espace dédié à votre activité, avec vos propres réglages.
-          </P>
-          <Button
-            onPress={() => {
-              setRole("coach");
-              setEmail(live ? "" : "thomas@example.test");
-              setSignup(false);
-              go("login");
-            }}
-          >
-            Passer côté coach
-          </Button>
-        </Note>
         <TextButton
           onPress={() =>
             run(async () => {
@@ -2515,39 +2531,52 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           : empty(
               "Tout est à jour.",
               "Vos réservations et leurs modifications apparaîtront ici.",
+              store.account?.role === "coach"
+                ? "Revenir à l’agenda"
+                : "Explorer les coachs",
+              () => {
+                if (store.account?.role === "coach") {
+                  setCoachTab("agenda");
+                  go("coach");
+                } else go("explore");
+              },
             )}
       </Section>
     );
   if (screen === "messages")
     content = (
       <Section>
-        {store.bookings
-          .filter(
-            (b) =>
-              b.clientId === store.account?.id ||
-              (store.account?.role === "coach" && b.coach === activeCoach),
-          )
-          .map((b) => (
-            <Setting
-              key={b.id}
-              title={
-                store.account?.role === "coach"
-                  ? b.clientName
-                  : (coaches.find((c) => c.id === b.coach)?.name ??
-                    "Votre coach")
-              }
-              description={`${dayLabel(b.day, true)} · ${b.time}`}
-              icon="message"
-              onPress={() => {
-                setSelectedBooking(b.id);
-                go("chat");
-              }}
-            />
-          ))}
-        {!store.bookings.length &&
+        {conversations.map((b) => (
+          <Setting
+            key={b.id}
+            title={
+              store.account?.role === "coach"
+                ? b.clientName
+                : (coaches.find((c) => c.id === b.coach)?.name ?? "Votre coach")
+            }
+            description={`${dayLabel(b.day, true)} · ${b.time}${!live && (store.messages[b.id] ?? []).some((m) => m.who !== store.account?.id && !m.readBy?.includes(store.account?.id ?? "")) ? " · Nouveau message" : ""}`}
+            icon="message"
+            onPress={() => {
+              setSelectedBooking(b.id);
+              go("chat");
+            }}
+          />
+        ))}
+        {!conversations.length &&
           empty(
             "La conversation commence ici.",
-            "Après votre réservation, retrouvez vos échanges avec votre coach.",
+            store.account?.role === "coach"
+              ? "Vos échanges avec vos clients apparaîtront après une première réservation."
+              : "Après votre réservation, retrouvez vos échanges avec votre coach.",
+            store.account?.role === "coach"
+              ? "Revenir à l’agenda"
+              : "Découvrir les coachs",
+            () => {
+              if (store.account?.role === "coach") {
+                setCoachTab("agenda");
+                go("coach");
+              } else go("explore");
+            },
           )}
       </Section>
     );
@@ -2668,6 +2697,59 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               }}
             />
           </Row>
+          <Row wrap style={{ marginTop: 20, gap: 10 }}>
+            {(
+              [
+                ["messages", "message", "Messages", unreadMessages],
+                ["notifications", "bell", "Notifications", unread],
+              ] as const
+            ).map(([destination, icon, label, count]) => (
+              <Pressable
+                key={destination}
+                accessibilityRole="button"
+                accessibilityLabel={label}
+                accessibilityHint={
+                  count
+                    ? `${count} non lu${count > 1 ? "s" : ""}`
+                    : "Tout est à jour"
+                }
+                onPress={() => go(destination)}
+                style={{
+                  flex: 1,
+                  flexBasis: 142,
+                  minWidth: 142,
+                  minHeight: 44,
+                  borderRadius: 99,
+                  borderWidth: 1,
+                  borderColor: "#626262",
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                }}
+              >
+                <Row style={{ justifyContent: "center", gap: 7 }}>
+                  <Icon name={icon} color="#fff" size={17} />
+                  <P style={{ color: "#fff", fontSize: 13 }}>{label}</P>
+                  {count > 0 && (
+                    <View
+                      style={{
+                        minWidth: 20,
+                        height: 20,
+                        borderRadius: 99,
+                        backgroundColor: "#fff",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        paddingHorizontal: 4,
+                      }}
+                    >
+                      <P style={{ color: t.ink, fontSize: 11, lineHeight: 16 }}>
+                        {count > 99 ? "99+" : count}
+                      </P>
+                    </View>
+                  )}
+                </Row>
+              </Pressable>
+            ))}
+          </Row>
           <H1
             style={{
               color: "#fff",
@@ -2681,7 +2763,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           <P style={{ fontSize: 14, color: "#bdbdbd" }}>{captions[coachTab]}</P>
         </View>
         <Section style={styles.sheet}>
-          {unread > 0 && (
+          {coachTab === "agenda" && unread > 0 && (
             <Pressable
               accessibilityRole="button"
               onPress={() => go("notifications")}
@@ -3719,6 +3801,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     modalBody = (
       <>
         {[
+          ["recommended", "Pour vous"],
           ["distance", "Les plus proches"],
           ["price", "Prix croissant"],
           ["rating", "Les mieux notés"],
@@ -4260,16 +4343,27 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             <Pressable
               accessibilityRole="tab"
               accessibilityState={{
-                selected: coachBottom ? coachTab === id : screen === id,
+                selected: coachBottom
+                  ? screen === "coach" && coachTab === id
+                  : screen === id,
               }}
               key={id}
-              onPress={() => (coachBottom ? setCoachTab(id) : go(id))}
+              onPress={() => {
+                if (coachBottom) {
+                  setCoachTab(id);
+                  if (screen !== "coach") go("coach");
+                } else go(id);
+              }}
               style={styles.navItem}
             >
               <Icon
                 name={icon}
                 color={
-                  (coachBottom ? coachTab === id : screen === id)
+                  (
+                    coachBottom
+                      ? screen === "coach" && coachTab === id
+                      : screen === id
+                  )
                     ? t.ink
                     : t.muted
                 }
@@ -4278,10 +4372,18 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                 style={{
                   fontSize: 12,
                   lineHeight: 17,
-                  color: (coachBottom ? coachTab === id : screen === id)
+                  color: (
+                    coachBottom
+                      ? screen === "coach" && coachTab === id
+                      : screen === id
+                  )
                     ? t.ink
                     : t.muted,
-                  fontFamily: (coachBottom ? coachTab === id : screen === id)
+                  fontFamily: (
+                    coachBottom
+                      ? screen === "coach" && coachTab === id
+                      : screen === id
+                  )
                     ? t.bold
                     : t.font,
                 }}

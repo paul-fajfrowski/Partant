@@ -22,3 +22,10 @@ Comparer chaque parcours au HTML archivé, à 390 et 430 px. Vérifier notamment
 ## Ce qui nécessite encore un service réel
 
 Les cours et écritures avancées de démonstration sont locaux. OAuth Google/Apple, synchronisation Google/Outlook, stockage des justificatifs, contrôle des droits équipe et opérations avancées de réservation restent à raccorder ou compléter côté serveur. Paiement bancaire et communications externes restent différés.
+
+## Ajustements demandés après la reprise native
+
+- Coach : Messages et Notifications doivent être accessibles depuis chacun des quatre onglets, avec et sans non-lus. Lire une conversation retire son compteur ; le bandeau de notification est réservé à l’Agenda. Vérifier le retour vers les onglets depuis ces deux écrans.
+- Client : « Mon espace » regroupe échanges, préférences et aide. Séances et favoris restent dans la navigation principale ; l’assistance et le suivi des demandes ont une seule entrée.
+- Onboarding : terminer ou passer ne doit pas activer automatiquement les filtres sport, budget, distance, format ou date d’Explorer. La localisation reste le secteur choisi. Les préférences sont enregistrées dans le profil et influencent le tri « Pour vous ». Les filtres choisis volontairement dans Explorer restent fonctionnels. Un changement de compte efface les critères temporaires du compte précédent.
+- Le script `scripts/test-native-navigation-web.cjs` rejoue ces régressions sur le bundle web, y compris une création de compte complète et les boîtes de réception vides.

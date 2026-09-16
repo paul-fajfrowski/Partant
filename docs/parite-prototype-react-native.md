@@ -58,3 +58,9 @@ Les scripts `test-native-model.cjs`, `test-native-complete.cjs`, `test-native-we
 4. Paiements réels et communications externes restent reportés à la demande de l’utilisateur.
 
 La reprise fonctionnelle permet de poursuivre le produit dans React Native. Le MVP connecté et la validation sur appareils restent à terminer.
+
+## Corrections de navigation après retour utilisateur
+
+Messages et Notifications sont rétablis dans chaque onglet coach, avec compteurs et accès permanents à zéro non-lu. Le compte client regroupe échanges, préférences et aide, sans doubler les accès Séances/Favoris de la navigation. Les réponses d’onboarding restent des préférences : elles ordonnent le tri « Pour vous », sans imposer les filtres d’Explorer. Le secteur choisi reste conservé.
+
+Vérification complémentaire : 28 assertions DOM dans `test-native-navigation-web.cjs` (création de compte, fin/passage d’onboarding, filtres explicites, accès et lecture coach, organisation client, isolation des conversations). Les suites de réservation et de configuration passent également (33 + 14 assertions). TypeScript et exports web/iOS/Android réussis. Il ne s’agit pas d’une validation visuelle sur appareil.

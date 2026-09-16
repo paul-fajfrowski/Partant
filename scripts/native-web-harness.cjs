@@ -125,11 +125,9 @@ module.exports = {
   input,
   ok,
   errors,
-  finish() {
+  finish(label = "native settings") {
     ok(errors.length === 0, "No runtime errors: " + errors.join(";"));
-    console.log(
-      `PASS ${count} native settings DOM checks. Not a visual validation.`,
-    );
+    console.log(`PASS ${count} ${label} DOM checks. Not a visual validation.`);
     dom.window.close();
   },
   close() {

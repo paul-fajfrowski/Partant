@@ -41,6 +41,7 @@ Et depuis la racine :
 ```sh
 node scripts/test-native-web.cjs
 node scripts/test-native-settings-web.cjs
+node scripts/test-native-navigation-web.cjs
 ```
 
 Les tests DOM utilisent des simulations des API de polices et de mise en page. Une revue visuelle réelle reste nécessaire.
