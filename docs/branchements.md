@@ -4,7 +4,7 @@
 
 ## État actuel — 18 septembre 2026
 
-Voir [la livraison 10](integrations-10.md) pour l’état à jour. Carte réelle et adresses IGN intégrées ; fonctions Google Calendar, synchronisation planifiée et parcours OAuth déployés. Google Auth et Calendar sont activés avec les identifiants fournis ; les consentements du propriétaire et l’échange réel d’événements restent à tester. Apple attend sa configuration fournisseur. Microsoft et Stripe restent reportés.
+Voir [la livraison 10](integrations-10.md) pour l’état à jour. Carte réelle et adresses IGN intégrées ; fonctions Google Calendar, synchronisation planifiée et parcours OAuth déployés. Google Auth et Calendar sont activés avec les identifiants fournis ; les consentements du propriétaire et l’échange réel d’événements restent à tester. Apple est également activé ; le départ OAuth a été vérifié, le consentement et l’échange réel restent à tester. Voir [la configuration Apple et son renouvellement](configurer-apple.md). Microsoft et Stripe restent reportés.
 
 Les URL de retour Auth ont été configurées et vérifiées dans Supabase via un diff limité à ces deux propriétés. Les anciennes mentions « outil ne permettant pas la configuration » ci-dessous décrivent l’état initial ; la CLI authentifiée permet désormais une mise à jour ciblée.
 

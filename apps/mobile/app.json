@@ -7,7 +7,9 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.paulfajfrowski.partant",
+      "appleTeamId": "4STLA425HP"
     },
     "android": {
       "adaptiveIcon": {

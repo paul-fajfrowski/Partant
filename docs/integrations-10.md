@@ -24,7 +24,7 @@ L’utilisateur dispose maintenant de Google Cloud, d’un client OAuth Web et d
 
 ## Google activé : consentements à tester
 
-Le code et les fonctions sont déployés. Les identifiants OAuth fournis par l’utilisateur ont été installés côté serveur. **Google Auth et Google Calendar sont maintenant déclarés actifs par les services**, et les deux URL de retour sont acceptées par Google. Le propriétaire doit encore réaliser les consentements dans l’application avant de valider un échange réel d’événements. Aucun agenda personnel n’a été connecté automatiquement. Apple reste désactivé.
+Le code et les fonctions sont déployés. Les identifiants OAuth fournis par l’utilisateur ont été installés côté serveur. **Google Auth et Google Calendar sont maintenant déclarés actifs par les services**, et les deux URL de retour sont acceptées par Google. Le propriétaire doit encore réaliser les consentements dans l’application avant de valider un échange réel d’événements. Aucun agenda personnel n’a été connecté automatiquement. Apple est désormais activé ; voir la section Apple ci-dessous.
 
 Dans Google Cloud, client OAuth **Application Web**, ajouter les URI de redirection autorisées :
 
@@ -55,15 +55,15 @@ Ensuite, essais réels à effectuer avec consentement du propriétaire :
 
 [Guide pas à pas avec les valeurs Partant](configurer-apple.md).
 
-Le parcours OAuth utilise Supabase et le navigateur sécurisé du téléphone. L’App ID, le Services ID et le secret Apple doivent encore être configurés dans Apple Developer/Supabase. Retour autorisé : `https://jhhsysjdeyqsuztjtgea.supabase.co/auth/v1/callback`. Aucune clé `.p8` n’est demandée dans le chat.
+Le parcours OAuth utilise Supabase et le navigateur sécurisé du téléphone. Les identifiants Apple ont été confirmés par le propriétaire et le secret ES256 installé dans Supabase le 18 septembre. Le Bundle ID et le Team ID Expo sont alignés. Retour autorisé : `https://jhhsysjdeyqsuztjtgea.supabase.co/auth/v1/callback`. Aucune clé `.p8` n’est demandée dans le chat.
 
-Le fournisseur sera proposé automatiquement lorsque Supabase le déclare activé. Vérifier ensuite l’adresse masquée Apple, un compte existant et un development build signé. Apple Calendar dispose de l’export ICS par séance ; **aucune synchronisation iCloud n’est annoncée**.
+Supabase déclare Apple actif et le départ OAuth redirige vers le bon Services ID ; le bouton est disponible dans la simulation connectée. Le consentement et l’échange réel restent à tester. Renouveler le secret avant le 17 mars 2027 à 08:55:30 UTC, selon le guide ci-dessus. Vérifier ensuite l’adresse masquée Apple, un compte existant et un development build signé. Apple Calendar dispose de l’export ICS par séance ; **aucune synchronisation iCloud n’est annoncée**.
 
 ## Validation et limites
 
 Vérifications exécutées : 56 assertions du domaine connecté, 16 scénarios Google contrôlés, 13 contrôles HTTP du point d’entrée Google, 11 contrôles OAuth déployés (départ, PKCE, refus, rejeu) et 10 assertions SQL d’accès/état/verrou, en plus des régressions existantes.  TypeScript, exports web/iOS/Android ; domaines métier et écrans DOM ; API Supabase/Auth/Storage réelles ; état OAuth et verrous en SQL transactionnel ; chiffrement, fuseaux, doublons, déplacement, annulation et panne Google avec réponses fournisseur contrôlées. Les comptes temporaires sont supprimés après les tests.
 
-Les identifiants Google sont installés ; le consentement réel Google reste à effectuer par le propriétaire. Apple attend aussi ses identifiants. Les tests DOM ne remplacent pas une revue visuelle ni des essais sur téléphone.
+Les identifiants Google sont installés ; le consentement réel Google reste à effectuer par le propriétaire. Apple est configuré, son premier échange réel reste à valider. Les tests DOM ne remplacent pas une revue visuelle ni des essais sur téléphone.
 
 Limites restant explicites :
 

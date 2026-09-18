@@ -1,13 +1,50 @@
 # Activer « Continuer avec Apple » pour Partant
 
-Google Auth et Calendar sont configurés. Apple demande encore des éléments à créer dans le compte Apple Developer. Ces opérations enregistrent des identifiants et une clé ; elles ne publient pas Partant sur l’App Store.
+## État vérifié — 18 septembre 2026
+
+Apple est activé dans Supabase. Les valeurs suivantes ont été confirmées par le propriétaire :
+
+- Team ID : `4STLA425HP`.
+- Bundle ID iOS : `com.paulfajfrowski.partant` (également enregistré dans Expo).
+- Services ID OAuth : `com.paulfajfrowski.partant.web`.
+- Key ID : `DHW9X54M6A`.
+- Domaine : `jhhsysjdeyqsuztjtgea.supabase.co`.
+- Retour : `https://jhhsysjdeyqsuztjtgea.supabase.co/auth/v1/callback`.
+
+Le secret ES256 a été généré depuis la clé locale, sa signature vérifiée, puis envoyé uniquement à Supabase Auth. La clé `.p8` n’a pas été envoyée à Supabase et reste exclue de Git. Le diff de configuration a été limité au fournisseur Apple ; Google reste actif.
+
+**Expiration du secret : 17 mars 2027 à 08:55:30 UTC. Renouveler avant cette date**, idéalement début mars, avec la même clé si elle n’a pas été révoquée. Le script crée un secret de 180 jours, ne l’affiche pas, protège et supprime sa configuration temporaire :
+
+```sh
+node scripts/configure-apple-auth.mjs /chemin/absolu/AuthKey_DHW9X54M6A.p8 4STLA425HP DHW9X54M6A com.paulfajfrowski.partant.web
+```
+
+Après un renouvellement, reporter ici la nouvelle expiration affichée par le script. Aucune rotation automatique n’est installée.
+
+### Contrôles effectués et recette restante
+
+- Supabase `/auth/v1/settings` : Apple et Google actifs.
+- Départ OAuth PKCE : HTTP 302 vers Apple, Services ID et URL de retour exacts.
+- Configuration Expo : Bundle ID, Team ID et schéma `partant` valides.
+- Simulation locale : HTTP 200.
+- Advisor Supabase : sept informations RLS sur les tables privées volontairement inaccessibles aux clients ; aucune alerte WARN/ERROR renvoyée lors de ce contrôle. [Explication RLS](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
+
+**Le premier consentement Apple et l’échange du code contre une session ne sont pas encore testés.** Le départ OAuth ne prouve pas que la clé est associée au bon App ID dans Apple Developer ; seul un échange réel valide l’ensemble.
+
+Ouvrir `http://127.0.0.1:8081/?data=connected&version=apple-connected-11`, puis « Continuer avec Apple ». Si une session existe, se déconnecter d’abord. Vérifier le retour dans Partant, la création du profil client/coach, l’adresse masquée si choisie et la reconnexion au même compte. Le nom est demandé par Partant car le flux OAuth web Apple ne le fournit pas. Tester également un refus de consentement.
+
+Sur téléphone, utiliser un development build signé : le parcours actuel ouvre le navigateur sécurisé. Le SDK natif Apple n’est pas intégré par cette livraison. Aucune publication App Store n’a été réalisée. La synchronisation iCloud Calendar n’est pas incluse.
+
+Les instructions ci-dessous sont conservées pour recréer ou modifier la configuration Apple. [Documentation Supabase](https://supabase.com/docs/guides/auth/social-login/auth-apple).
+
+## Guide de configuration
 
 ## 1. Identifiant de l’application
 
 Ouvrir [Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/identifiers/list), puis **Identifiers → + → App IDs → App**.
 
 - Description : `Partant`.
-- Bundle ID : **Explicit**. Proposition, si disponible : `com.paulfajfrowski.partant`.
+- Bundle ID : **Explicit**. `com.paulfajfrowski.partant` (valeur enregistrée).
 - Capabilities : cocher **Sign in with Apple**. Le configurer comme App ID principal si Apple le demande.
 - Continuer puis enregistrer.
 
@@ -18,7 +55,7 @@ Si un App ID Partant existe déjà, le réutiliser et communiquer sa valeur exac
 Toujours dans **Identifiers → +**, choisir **Services IDs**.
 
 - Description : `Partant connexion`.
-- Identifier : proposition `com.paulfajfrowski.partant.web`, si disponible.
+- Identifier : `com.paulfajfrowski.partant.web` (valeur enregistrée).
 - Enregistrer, rouvrir cet identifiant, cocher **Sign in with Apple → Configure**.
 - Primary App ID : sélectionner l’App ID Partant créé à l’étape précédente.
 - Domains and Subdomains : `jhhsysjdeyqsuztjtgea.supabase.co` — sans `https://`.
