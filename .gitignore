@@ -9,8 +9,8 @@ node_modules/
 *.log
 .expo/
 dist/
-supabase/.temp/
-supabase/.branches/
+**/supabase/.temp/
+**/supabase/.branches/
 
 # Developer OAuth downloads and signing keys must remain private.
 client_secret*.json

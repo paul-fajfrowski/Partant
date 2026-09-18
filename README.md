@@ -1,19 +1,23 @@
 # Partant
 
-Marketplace locale de coachs sportifs — prototype mobile interactif, autonome et en français.
+Marketplace locale de coachs sportifs — application React Native, backend Supabase de développement et prototype HTML de référence.
 
+
+## Périmètre temporairement figé — 18 septembre 2026
+
+La prochaine phase porte sur la stabilisation et la recette des parcours existants, puis les essais sur téléphone. Aucune nouvelle fonctionnalité ni refonte n’est prévue sans nouvelle décision. Voir [le périmètre figé et les critères de validation](docs/gel-mvp.md).
 
 ## Application cible et branchements
 
 **Décision du 16 septembre 2026 : React Native + TypeScript + Expo, sans développement Swift préalable.** Le prototype HTML reste la référence visuelle validée. **Les prochaines modifications produit se font uniquement dans `apps/mobile`.** Le HTML est conservé comme archive de référence.
 
-Consulter [la décision](docs/decisions/001-react-native.md) et [l’état exact des branchements et réglages à faire](docs/branchements.md). Les fondations Supabase sont déployées ; les étapes 1–3 restent en cours. Google est configuré côté serveur, avec consentements utilisateur à tester. Apple et Outlook ne sont pas encore activés. Paiement et communications externes sont reportés.
+Consulter [la décision](docs/decisions/001-react-native.md) et [l’état exact des branchements et réglages à faire](docs/branchements.md). Les fondations Supabase sont déployées ; les étapes 1–3 restent en cours. Google est configuré côté serveur, avec consentements utilisateur à tester. Apple est activé côté serveur, avec premier consentement et échange réel à tester. Outlook reste reporté. Paiement et communications externes sont reportés.
 
 La version native navigable reprend les actifs, les parcours client et les configurations coach du prototype. Voir [le suivi précis de parité](docs/parite-prototype-react-native.md) et [le lancement React Native](apps/mobile/README.md). Les parcours avancés et les lieux par plage sont désormais raccordés au serveur de développement : voir [la livraison 9](docs/connected-product-9.md). Les intégrations externes, paiements/communications et la validation sur appareils restent à traiter. Voir [la recette native](docs/recette-react-native.md).
 
 ## Dernière livraison — intégrations 10
 
-[État exact, activation Google et limites](docs/integrations-10.md) : carte réelle, géocodage IGN, retours de connexion, écran d’agendas et synchronisation Google côté serveur. Les identifiants OAuth sont installés ; le consentement du propriétaire et les échanges réels restent à tester. Microsoft/Stripe reportés ; Apple à configurer.
+[État exact, activation Google et limites](docs/integrations-10.md) : carte réelle, géocodage IGN, retours de connexion, écran d’agendas et synchronisation Google côté serveur. Les identifiants OAuth sont installés ; le consentement du propriétaire et les échanges réels restent à tester. Microsoft/Stripe reportés ; Apple activé, premier échange réel à tester. Les blocages Google et e-mail constatés lors de la recette sont documentés dans cette livraison.
 
 ## Ouvrir le prototype
 
@@ -46,7 +50,7 @@ L’accueil propose des comptes de démonstration. Exemples : **alex@example.tes
 
 Les données d’essai restent dans le stockage local du navigateur. Utilisez un seul onglet pour tester les échanges entre comptes ; le fichier local et l’aperçu HTTP ont des stockages distincts.
 
-Le calendrier suit l’heure réelle de Paris et propose 90 jours de navigation, dans l’horizon configuré par le coach. Paiements, vérifications, versements, connexions et messages externes sont simulés. Aucun backend ni service de production n’est connecté.
+Dans le prototype HTML autonome, le calendrier suit l’heure réelle de Paris et propose 90 jours de navigation, dans l’horizon configuré par le coach. Paiements, vérifications, versements, connexions et messages externes sont simulés. Aucun backend ni service de production n’est connecté.
 
 ## Organisation
 
