@@ -33,6 +33,13 @@ const connectedInitial = (): Store => ({
   published: false,
 });
 export function useMarketplace(live: boolean) {
+  // A visible QA replay gets its own demo storage; connected sessions are unaffected.
+  const previewKey = useRef((() => {
+    const run = Platform.OS === "web" && !live
+      ? new URLSearchParams(window.location.search).get("recette") : null;
+    return run && /^[a-zA-Z0-9-]{1,64}$/.test(run)
+      ? `partant-native-recette-${run}` : "partant-native-preview-v1";
+  })()).current;
   const [store, update] = useState<Store>(() =>
     live ? connectedInitial() : newPreviewStore(),
   );
@@ -178,7 +185,7 @@ export function useMarketplace(live: boolean) {
       return () => {
         active.current = false;
       };
-    AsyncStorage.getItem("partant-native-preview-v1")
+    AsyncStorage.getItem(previewKey)
       .then((raw) => {
         if (raw) {
           try {
@@ -192,7 +199,7 @@ export function useMarketplace(live: boolean) {
   useEffect(() => {
     if (ready && !live)
       AsyncStorage.setItem(
-        "partant-native-preview-v1",
+        previewKey,
         JSON.stringify(store),
       ).catch(() => setError("Le stockage local est indisponible."));
   }, [store, ready]);

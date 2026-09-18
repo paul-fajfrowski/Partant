@@ -1,6 +1,6 @@
 # Prototype de référence et version React Native
 
-> Mise à jour du 18 septembre : carte et Google activés côté serveur ; consentements Google à tester et Apple à configurer. Voir [la livraison 10](integrations-10.md).
+> Mise à jour du 18 septembre : carte et Google activés côté serveur ; Google/Apple activés, consentements réels à tester. Recette fonctionnelle documentée dans [le rapport du 18 septembre](recette-2026-09-18.md). Voir [la livraison 10](integrations-10.md).
 
 
 > **Mise à jour du 17 septembre 2026** : les lieux par plage et les parcours avancés sont désormais raccordés au serveur de développement. Voir [la livraison et ses limites](connected-product-9.md). Les sections ci-dessous conservent l’historique des versions précédentes ; leurs mentions de fonctions « locales uniquement » sont remplacées par ce nouvel état. Les intégrations externes, paiements/communications et la recette complète sur appareils restent à traiter.

@@ -3,14 +3,18 @@ const users = JSON.parse(
   fs.readFileSync("/private/tmp/partant-connected-qa.json", "utf8"),
 );
 if (
+  !users.length ||
   !users.every(
     (u) =>
-      u.email.startsWith("partant-qa-") && u.email.endsWith("@example.invalid"),
+      u.email.startsWith("partant-qa-") && u.email.endsWith("@example.invalid") &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(u.id),
   )
 )
   throw Error("Not a QA fixture");
 const ids = users.map((u) => `'${u.id}'`).join(",");
 const sql = `begin;
+-- Serialize with product_commit so concurrent user saves cannot be overwritten.
+select version from private.product_revision where id=true for update;
 -- Delete only the isolated fixture identities and their product documents.
 do $$ declare ids text[]:=array[${ids}]; booked text[]; d record; cleaned jsonb;
 begin
@@ -29,6 +33,8 @@ begin
 end $$;
 delete from private.product_requests where actor::text=any(array[${ids}]);
 delete from private.product_rate_limits where actor=any(array[${ids}]);
+delete from auth.refresh_tokens where user_id::text=any(array[${ids}]);
+delete from auth.sessions where user_id::text=any(array[${ids}]);
 delete from auth.users where id::text=any(array[${ids}]) and email like 'partant-qa-%@example.invalid';
 commit;
 select count(*) as remaining_qa_users from auth.users where id::text=any(array[${ids}]);`;

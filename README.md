@@ -19,6 +19,10 @@ La version native navigable reprend les actifs, les parcours client et les confi
 
 [État exact, activation Google et limites](docs/integrations-10.md) : carte réelle, géocodage IGN, retours de connexion, écran d’agendas et synchronisation Google côté serveur. Les identifiants OAuth sont installés ; le consentement du propriétaire et les échanges réels restent à tester. Microsoft/Stripe reportés ; Apple activé, premier échange réel à tester. Les blocages Google et e-mail constatés lors de la recette sont documentés dans cette livraison.
 
+## Recette et simulation mobile
+
+[Résultats de la recette du 18 septembre et limites](docs/recette-2026-09-18.md). Après l’export web, le serveur local propose une [recette visible automatique](http://127.0.0.1:8081/recette.html?autoplay=1) et un [aperçu téléphone interactif](http://127.0.0.1:8081/simulation.html). Le déroulé visible utilise la démo isolée ; les essais Supabase sont effectués séparément.
+
 ## Ouvrir le prototype
 
 Téléchargez le dépôt (bouton **Code → Download ZIP**), décompressez-le, puis ouvrez **[outputs/partant.html](outputs/partant.html)** dans votre navigateur. Aucun serveur ni installation nécessaire : CSS, JavaScript, photos et police sont intégrés au HTML.
