@@ -1,3 +1,4 @@
+import demoGeography from "../reference/demo-geography.json";
 import { recorded } from "./commands";
 import type { ExtendedStore, CoachSettings, Interval } from "./extendedTypes";
 import reference from "../reference/prototype.json";
@@ -106,6 +107,20 @@ export type GroupSession = {
   level?: string;
 };
 export type Store = ExtendedStore & {
+  calendarBusy?: Record<
+    string,
+    { day: string; time: string; duration: number }[]
+  >;
+  calendarStatus?: Record<
+    string,
+    {
+      connected: boolean;
+      updatedAt: number;
+      through?: string;
+      error?: string;
+      conflicts?: string[];
+    }
+  >;
   connected?: boolean;
   staff?: boolean;
   busyTimes?: {
@@ -265,6 +280,14 @@ export function slotsFor(
   offer?: Offer,
 ): string[] {
   const cfg = configFor(store, c.id);
+  const calendar = store.calendarStatus?.[c.id];
+  if (
+    calendar?.connected &&
+    (calendar.error ||
+      now() - calendar.updatedAt > 15 * 60000 ||
+      (calendar.through && day >= calendar.through.slice(0, 10)))
+  )
+    return [];
   if (offer && offer.kind !== "Groupe" && !offerFormats(c, offer).length)
     return [];
   if (
@@ -336,6 +359,11 @@ export function slotsFor(
             g.time,
             g.offer.duration + cfg.buffer,
           ) && !(offer?.id === g.offer.id && time === g.time),
+      ) &&
+      !(store.calendarBusy?.[c.id] ?? []).some(
+        (b) =>
+          b.day === day &&
+          overlap(time, offer?.duration ?? 60, b.time, b.duration),
       ) &&
       !(store.busyTimes ?? []).some(
         (b) =>
@@ -882,6 +910,17 @@ export function coachLocations(
             : type === "Domicile" || type === "Visio"
               ? ""
               : c.address,
+        ...(!store.connected &&
+        !["Domicile", "Visio"].includes(type) &&
+        (demoGeography as Record<string, any>)[
+          type === "Studio" ? cfg.studioAddress : c.address
+        ]
+          ? {
+              coordinates: (demoGeography as Record<string, any>)[
+                type === "Studio" ? cfg.studioAddress : c.address
+              ],
+            }
+          : {}),
         instructions: "",
         ...(type === "Domicile"
           ? { sector: c.area, radius: cfg.radius, travelFee: cfg.travelFee }

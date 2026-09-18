@@ -1,5 +1,8 @@
 # Partant — périmètre du MVP et reste à faire
 
+> Mise à jour du 18 septembre : carte et Google activés côté serveur ; consentements Google à tester et Apple à configurer. Voir [la livraison 10](../docs/integrations-10.md).
+
+
 > **Mise à jour du 17 septembre 2026** : les lieux par plage et les parcours avancés sont désormais raccordés au serveur de développement. Voir [la livraison et ses limites](../docs/connected-product-9.md). Les sections ci-dessous conservent l’historique des versions précédentes ; leurs mentions de fonctions « locales uniquement » sont remplacées par ce nouvel état. Les intégrations externes, paiements/communications et la recette complète sur appareils restent à traiter.
 
 > Mise à jour React Native : le développement produit continue désormais dans `apps/mobile`. Ce document décrit le périmètre issu du HTML ; consulter [la couverture native et les limites du mode connecté](../docs/parite-prototype-react-native.md) pour l’état actuel.

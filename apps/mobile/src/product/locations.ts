@@ -33,6 +33,15 @@ export function validateLocations(locations: Record<string, CoachLocation>) {
   if (!rows.length)
     throw Error("Ajoutez au moins un lieu ou un mode de séance.");
   for (const [id, p] of rows) {
+    if (
+      p.coordinates &&
+      (!Number.isFinite(p.coordinates.latitude) ||
+        !Number.isFinite(p.coordinates.longitude) ||
+        Math.abs(p.coordinates.latitude) > 90 ||
+        Math.abs(p.coordinates.longitude) > 180 ||
+        p.coordinates.label !== p.address)
+    )
+      throw Error("Sélectionnez à nouveau l’adresse de ce lieu.");
     if (!placeTypes.includes(p.type) || !p.name.trim())
       throw Error("Précisez le type et le nom de chaque lieu.");
     if ((p.type === "Domicile" || p.type === "Visio") && p.type !== id)

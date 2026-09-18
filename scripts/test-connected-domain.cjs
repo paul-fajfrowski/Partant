@@ -348,6 +348,79 @@ fail(
   () => command(alice, "saveReview", "booking1", 5, "Excellent"),
   /terminée/,
 );
+const withCalendar = {
+  ...s,
+  calendarBusy: {
+    [coach.id]: [{ day: "2026-09-20", time: "09:10", duration: 60 }],
+  },
+  calendarStatus: {
+    [coach.id]: {
+      connected: true,
+      updatedAt: M.now(),
+      through: "2026-12-15T00:00:00Z",
+      conflicts: ["private-booking"],
+    },
+  },
+};
+const publicCalendar = D.project(withCalendar, bob);
+ok(
+  !publicCalendar.calendarStatus[coach.id].conflicts,
+  "External conflicts stay coach-private",
+);
+ok(
+  !M.slotsFor(
+    M.allCoaches(withCalendar)[0],
+    "2026-09-20",
+    withCalendar,
+    solo,
+  ).includes("09:10"),
+  "Google occupancy excludes a public slot",
+);
+const staleCalendar = {
+  ...withCalendar,
+  calendarStatus: {
+    [coach.id]: { connected: true, updatedAt: M.now() - 16 * 60000 },
+  },
+};
+ok(
+  M.slotsFor(M.allCoaches(staleCalendar)[0], "2026-09-20", staleCalendar, solo)
+    .length === 0,
+  "Stale Google sync fails closed",
+);
+fail(
+  () =>
+    D.applyCommand(withCalendar, coach, {
+      name: "openGroup",
+      args: [
+        {
+          id: "google-conflict",
+          offer: group,
+          day: "2026-09-20",
+          time: "09:10",
+          format: "gym",
+          address: "",
+        },
+      ],
+    }),
+  /Google/,
+);
+fail(
+  () =>
+    D.applyCommand(staleCalendar, coach, {
+      name: "openGroup",
+      args: [
+        {
+          id: "google-stale",
+          offer: group,
+          day: "2026-09-20",
+          time: "09:10",
+          format: "gym",
+          address: "",
+        },
+      ],
+    }),
+  /Google/,
+);
 M.setDemoClock((Date.parse("2026-09-25T06:00:00Z") - Date.now()) / 3600000);
 s = W.maintain(s);
 command(alice, "saveReview", "booking1", 5, "Excellent");

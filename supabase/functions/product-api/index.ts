@@ -1,3 +1,4 @@
+import { syncGoogle } from "../_shared/calendarSync.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import {
   emptyConnected,
@@ -73,6 +74,7 @@ Deno.serve(async (req) => {
     )
       .map((x) => x.toString(16).padStart(2, "0"))
       .join("");
+    let calendarChecked = false;
     for (let attempt = 0; attempt < 6; attempt++) {
       const loaded = await admin.rpc("product_load", {
         p_actor: actor?.id ?? null,
@@ -103,6 +105,90 @@ Deno.serve(async (req) => {
           },
           409,
         );
+      // Refresh external occupancy before any action that takes a new time slot.
+      // First validate ownership against the authenticated actor, never an arbitrary coach ID.
+      if (
+        !calendarChecked &&
+        actor &&
+        commands.some((c: any) =>
+          [
+            "reserve",
+            "reschedule",
+            "transfer",
+            "answerProposal",
+            "openGroup",
+            "repeatGroup",
+            "addExternalSession",
+          ].includes(c.name),
+        )
+      ) {
+        calendarChecked = true;
+        const coaches = new Set<string>();
+        for (const cmd of commands) {
+          const a = cmd.args ?? [];
+          if (
+            cmd.name === "reserve" &&
+            state.offers.some(
+              (o: any) => o.id === a[0]?.offerId && o.coach === a[0]?.coach,
+            )
+          )
+            coaches.add(a[0].coach);
+          if (["reschedule", "transfer"].includes(cmd.name)) {
+            const b = state.bookings.find(
+              (b: any) => b.id === a[0] && b.clientId === actor.id,
+            );
+            if (b) coaches.add(b.coach);
+          }
+          if (cmd.name === "answerProposal") {
+            const p = state.proposals?.find((p: any) => p.id === a[0]);
+            const b = state.bookings.find(
+              (b: any) => b.id === p?.booking && b.clientId === actor.id,
+            );
+            if (b) coaches.add(b.coach);
+          }
+          if (
+            ["openGroup", "repeatGroup", "addExternalSession"].includes(
+              cmd.name,
+            ) &&
+            state.identities?.some(
+              (a: any) => a.id === actor.id && a.role === "coach",
+            )
+          )
+            coaches.add(actor.id);
+        }
+        const activeCoaches = [...coaches].filter(
+          (id) => state.calendarStatus?.[id]?.connected,
+        );
+        if (activeCoaches.length) {
+          const unchanged = (docs: any) =>
+            JSON.stringify(
+              Object.fromEntries(
+                Object.entries(docs)
+                  .filter(
+                    ([k]) => !["calendarBusy", "calendarStatus"].includes(k),
+                  )
+                  .sort(([a], [b]) => a.localeCompare(b)),
+              ),
+            );
+          for (const coach of activeCoaches) await syncGoogle(admin, coach);
+          const fresh = await admin.rpc("product_load", { p_actor: actor.id });
+          if (fresh.error) throw fresh.error;
+          if (unchanged(docs) !== unchanged(fresh.data.documents))
+            return reply(
+              {
+                error: "Les données ont changé. Vérifiez puis réessayez.",
+                store: project(
+                  { ...emptyConnected(), ...fresh.data.documents },
+                  actor,
+                ),
+                version: fresh.data.version,
+              },
+              409,
+            );
+          input.version = fresh.data.version;
+          continue;
+        }
+      }
       const before = JSON.stringify(documents(state));
       state = maintain(state);
       if (input.register && actor)

@@ -1,3 +1,7 @@
+import { searchAddresses, distanceKm } from "../lib/geo";
+import CoachMap from "../components/CoachMap";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { signInSocial, socialProviders } from "../lib/auth";
 import { placeTypes } from "./locations";
 import { AgendaTools } from "./AgendaToolsScreen";
 import { setupSteps } from "./agendaTools";
@@ -6,8 +10,6 @@ import * as W from "./workflows";
 import { CompleteFlows, BookingExtras } from "./CompleteFlows";
 import { CoachConfiguration } from "./CoachConfiguration";
 import { exportFile } from "./deviceFiles";
-import { SvgXml } from "react-native-svg";
-import { referenceMap } from "./referenceMap";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -132,7 +134,39 @@ const euro = (n: number) =>
   `${Number.isInteger(n) ? n : n.toFixed(2).replace(".", ",")} €`;
 export default function ProductApp({ live = false }: { live?: boolean }) {
   const market = useMarketplace(live);
-  const { store, setStore, coaches } = market;
+  const { store, setStore } = market;
+  const [sectorPosition, setSectorPosition] = useState<
+    import("../lib/geo").Place | null
+  >(null);
+  useEffect(() => {
+    if (!live) return;
+    const controller = new AbortController();
+    setSectorPosition(null);
+    searchAddresses(store.preferences.city.split(" · ")[0], controller.signal)
+      .then((rows) => {
+        if (!controller.signal.aborted) setSectorPosition(rows[0] ?? null);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [live, store.preferences.city]);
+  const coaches = market.coaches.map((c) => {
+    if (!live || !sectorPosition) return c;
+    const points = Object.values(coachLocations(store, c)).filter(
+      (p) =>
+        p.coordinates &&
+        !["Domicile", "Visio", "Chez le coach"].includes(p.type),
+    );
+    return {
+      ...c,
+      dist: points.length
+        ? Math.round(
+            Math.min(
+              ...points.map((p) => distanceKm(sectorPosition, p.coordinates!)),
+            ) * 10,
+          ) / 10
+        : null,
+    };
+  });
   const { width, height } = useWindowDimensions();
   const desktop = Platform.OS === "web" && width > 740;
   const pageWidth = desktop ? (width > 900 ? 430 : 410) : Math.min(width, 740);
@@ -152,6 +186,26 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const [focus, setFocus] = useState("");
   const [attemptId, setAttemptId] = useState("");
   const [sessionKind, setSessionKind] = useState("Tous");
+  const [providers, setProviders] = useState({ google: false, apple: false });
+  useEffect(() => {
+    if (live)
+      socialProviders()
+        .then(setProviders)
+        .catch(() => {});
+  }, [live]);
+  useEffect(() => {
+    if (!live || !market.session || store.account) return;
+    AsyncStorage.getItem("partant-auth-intent").then((raw) => {
+      if (raw) {
+        try {
+          const intent = JSON.parse(raw);
+          setRole(intent.role === "coach" ? "coach" : "client");
+          setName(intent.name || "");
+        } catch {}
+      }
+      setScreen("completeAccount");
+    });
+  }, [live, market.session?.user.id, store.account?.id]);
   const [mapCoach, setMapCoach] = useState("0");
   const scroll = useRef<ScrollView>(null);
   const [modal, setModal] = useState("");
@@ -258,10 +312,26 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     }
   }, [store.account?.id]);
   useEffect(() => {
+    if (!live || !store.account || Platform.OS !== "web") return;
+    const result = new URL(window.location.href).searchParams.get("calendar");
+    if (result) {
+      setScreen("config");
+      setConfig("calendars");
+      setNotice(
+        result === "connected"
+          ? "Google est associé. Choisissez maintenant vos agendas."
+          : result === "cancelled"
+            ? "Connexion à Google annulée."
+            : "La connexion à Google n’a pas abouti. Réessayez.",
+      );
+      window.history.replaceState({}, "", "/?data=connected");
+    }
+  }, [live, store.account?.id]);
+  useEffect(() => {
     if (market.ready && !initial.current) {
       if (store.account) {
         initial.current = true;
-        if (screen === "welcome")
+        if (["welcome", "completeAccount", "login"].includes(screen))
           setScreen(store.account.role === "coach" ? "coach" : "explore");
       }
     }
@@ -1025,10 +1095,54 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             Explorer d’abord
           </TextButton>
           <P small muted style={{ textAlign: "center", marginTop: 12 }}>
-            {"Prototype · aucune authentification réelle"}
+            {live
+              ? "Application de développement · aucun paiement"
+              : "Prototype · aucune authentification réelle"}
           </P>
         </Section>
       </>
+    );
+  if (screen === "completeAccount")
+    content = (
+      <Section>
+        <H1>Faisons connaissance.</H1>
+        <P muted>
+          Votre connexion est confirmée. Complétez votre espace pour commencer.
+        </P>
+        <Field label="Votre prénom et nom" value={name} onChange={setName} />
+        <Choice
+          title="Je veux bouger"
+          active={role === "client"}
+          onPress={() => setRole("client")}
+        />
+        <Choice
+          title="Je suis coach"
+          active={role === "coach"}
+          onPress={() => setRole("coach")}
+        />
+        <Button
+          disabled={busy}
+          onPress={() =>
+            run(async () => {
+              if (name.trim().length < 2) throw Error("Précisez votre nom.");
+              await market.finishSocial(name.trim(), role);
+              go(role === "coach" ? "coach" : "onboarding");
+            })
+          }
+        >
+          Créer mon espace
+        </Button>
+        <TextButton
+          onPress={() =>
+            run(async () => {
+              await market.signOut();
+              go("welcome");
+            })
+          }
+        >
+          Utiliser un autre compte
+        </TextButton>
+      </Section>
     );
   if (screen === "login")
     content = (
@@ -1068,6 +1182,26 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             Continuer avec mon e-mail
           </Button>
         </View>
+        {live && (providers.google || providers.apple) && (
+          <View style={{ gap: 12, marginTop: 24 }}>
+            {(["google", "apple"] as const)
+              .filter((p) => providers[p])
+              .map((p) => (
+                <Button
+                  key={p}
+                  light
+                  disabled={busy}
+                  onPress={() =>
+                    run(async () => {
+                      await signInSocial(p, { name: signup ? name : "", role });
+                    })
+                  }
+                >
+                  Continuer avec {p === "google" ? "Google" : "Apple"}
+                </Button>
+              ))}
+          </View>
+        )}
         <Note style={{ marginTop: 24 }}>
           {live ? (
             "Vous recevrez un lien ou un code selon le modèle d’e-mail configuré dans Supabase. En développement, l’envoi est limité aux adresses autorisées."
@@ -1536,66 +1670,45 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               </Pressable>
             </Row>
           )}
-          {map && false ? (
-            <Section>
-              <Note>
-                La carte des coachs connectés reste à raccorder. Les résultats
-                disponibles figurent dans la liste.
-              </Note>
-              <Button
-                light
-                onPress={() => setMap(false)}
-                style={{ marginTop: 16 }}
-              >
-                Voir la liste
-              </Button>
-            </Section>
-          ) : map ? (
+          {map ? (
             <>
-              <View
-                style={{
-                  marginHorizontal: 16,
-                  height: 360,
-                  backgroundColor: "#e8e8e8",
-                  borderRadius: 14,
-                  overflow: "hidden",
-                }}
-              >
-                <SvgXml xml={referenceMap} width="100%" height="100%" />
-                {results.map((c, i) => (
-                  <Pressable
-                    accessibilityRole="button"
-                    key={c.id}
-                    onPress={() => setMapCoach(c.id)}
-                    style={{
-                      position: "absolute",
-                      left: ((reference.coaches[Number(c.id)]?.xy[0] ?? 30) +
-                        "%") as any,
-                      top: ((reference.coaches[Number(c.id)]?.xy[1] ?? 30) +
-                        "%") as any,
-                      backgroundColor: "#fff",
-                      padding: 10,
-                      borderRadius: 99,
-                    }}
-                  >
-                    <P bold style={{ fontSize: 14 }}>
-                      {euro(primary(c)?.price ?? c.price)}
-                    </P>
-                  </Pressable>
-                ))}
-                <P
-                  small
-                  style={{
-                    position: "absolute",
-                    bottom: 8,
-                    left: 10,
-                    backgroundColor: "#ffffffd9",
-                    padding: 4,
-                    fontSize: 11,
-                  }}
-                >
-                  Carte schématique · prototype
+              <View style={{ marginHorizontal: 16 }}>
+                <CoachMap
+                  points={results.flatMap((c) =>
+                    Object.entries(coachLocations(store, c))
+                      .filter(
+                        ([_, p]) =>
+                          p.coordinates &&
+                          p.type !== "Domicile" &&
+                          p.type !== "Chez le coach" &&
+                          p.type !== "Visio",
+                      )
+                      .map(([id, p]) => ({
+                        id: c.id,
+                        latitude: p.coordinates!.latitude,
+                        longitude: p.coordinates!.longitude,
+                        name: c.name,
+                        label: euro(primary(c)?.price ?? c.price),
+                      })),
+                  )}
+                  onSelect={setMapCoach}
+                />
+                <P small muted style={{ marginTop: 10 }}>
+                  Les lieux publics dont l’adresse est localisée apparaissent
+                  sur la carte. Les adresses privées restent masquées.
                 </P>
+                {!results.some((c) =>
+                  Object.values(coachLocations(store, c)).some(
+                    (p) =>
+                      p.coordinates &&
+                      !["Domicile", "Chez le coach", "Visio"].includes(p.type),
+                  ),
+                ) && (
+                  <Note>
+                    Aucun lieu localisé pour ces résultats. Retrouvez tous les
+                    coachs dans la liste.
+                  </Note>
+                )}
               </View>
               {results.length > 0 && (
                 <View style={{ marginTop: 20 }}>
@@ -3871,6 +3984,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       <>
         <P small muted style={{ marginBottom: 14 }}>
           {pref.city} · secteur actuel
+          {live ? " · distances à vol d’oiseau depuis le secteur" : ""}
         </P>
         <Field
           label="Commune ou code postal"

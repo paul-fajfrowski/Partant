@@ -592,6 +592,49 @@ function applyCommand(source, actor, cmd) {
         default:
             throw Error("Action serveur non reconnue.");
     }
+    // All paths that occupy a time (including coach proposals and direct sessions) respect Google.
+    const occupied = (state) => [
+        ...state.bookings
+            .filter((b) => b.status === "confirmed")
+            .map((b) => ({
+            id: "b:" + b.id,
+            coach: b.coach,
+            day: b.day,
+            time: b.time,
+            duration: b.duration,
+        })),
+        ...(state.groups ?? [])
+            .filter((g) => !g.cancelled)
+            .map((g) => ({
+            id: "g:" + g.id,
+            coach: g.offer.coach,
+            day: g.day,
+            time: g.time,
+            duration: g.offer.duration,
+        })),
+        ...(state.externalSessions ?? [])
+            .filter((b) => !b.cancelled)
+            .map((b) => ({
+            id: "e:" + b.id,
+            coach: b.coach,
+            day: b.day,
+            time: b.time,
+            duration: b.duration,
+        })),
+    ];
+    const prior = new Map(occupied(s).map((b) => [b.id, JSON.stringify(b)]));
+    for (const b of occupied(n)) {
+        if (prior.get(b.id) === JSON.stringify(b))
+            continue;
+        const cal = n.calendarStatus?.[b.coach];
+        if (cal?.connected &&
+            (cal.error ||
+                M.now() - cal.updatedAt > 15 * 60000 ||
+                (cal.through && b.day >= cal.through.slice(0, 10))))
+            throw Error("Synchronisez l’agenda Google avant d’ouvrir ce créneau.");
+        if (n.calendarBusy?.[b.coach]?.some((x) => x.day === b.day && M.overlap(b.time, b.duration, x.time, x.duration)))
+            throw Error("Un événement Google occupe ce créneau.");
+    }
     return {
         ...copy(n),
         account: null,
@@ -670,6 +713,19 @@ function project(source, actor) {
             (o.active || own(o.coach) || bookings.some((b) => b.offerId === o.id))),
         groups: s.groups?.filter((g) => ids.has(g.offer.coach)),
         bookings,
+        calendarBusy: Object.fromEntries(Object.entries(s.calendarBusy ?? {}).filter(([coach]) => ids.has(coach))),
+        calendarStatus: Object.fromEntries(Object.entries(s.calendarStatus ?? {})
+            .filter(([coach]) => ids.has(coach))
+            .map(([coach, status]) => [
+            coach,
+            own(coach)
+                ? status
+                : {
+                    ...status,
+                    error: status.error ? "Agenda temporairement indisponible" : "",
+                    conflicts: undefined,
+                },
+        ])),
         busyTimes,
         closed: s.closed.filter((k) => ids.has(k.split("|")[0])),
         preferences: s.preferences,
@@ -737,6 +793,7 @@ exports.matchesLocation = matchesLocation;
 exports.locationDescription = locationDescription;
 exports.offerAddress = offerAddress;
 exports.locationsReady = locationsReady;
+const demo_geography_json_1 = __importDefault(load("../reference/demo-geography.json"));
 const commands_1 = load("commands.ts");
 const prototype_json_1 = __importDefault(load("../reference/prototype.json"));
 exports.seedCoaches = prototype_json_1.default.coaches.map((c) => ({
@@ -838,6 +895,12 @@ const overlap = (a, ad, b, bd) => (0, exports.mins)(a) < (0, exports.mins)(b) + 
 exports.overlap = overlap;
 function slotsFor(c, day, store, offer) {
     const cfg = configFor(store, c.id);
+    const calendar = store.calendarStatus?.[c.id];
+    if (calendar?.connected &&
+        (calendar.error ||
+            (0, exports.now)() - calendar.updatedAt > 15 * 60000 ||
+            (calendar.through && day >= calendar.through.slice(0, 10))))
+        return [];
     if (offer && offer.kind !== "Groupe" && !offerFormats(c, offer).length)
         return [];
     if (!cfg.published ||
@@ -875,6 +938,8 @@ function slotsFor(c, day, store, offer) {
             offer.kind !== "Groupe" ||
             remaining(offer, day, time, store) > 0) &&
         !groups.some((g) => (0, exports.overlap)(time, (offer?.duration ?? 60) + cfg.buffer, g.time, g.offer.duration + cfg.buffer) && !(offer?.id === g.offer.id && time === g.time)) &&
+        !(store.calendarBusy?.[c.id] ?? []).some((b) => b.day === day &&
+            (0, exports.overlap)(time, offer?.duration ?? 60, b.time, b.duration)) &&
         !(store.busyTimes ?? []).some((b) => b.coach === c.id &&
             b.day === day &&
             (0, exports.overlap)(time, offer?.duration ?? 60, b.time, b.duration) &&
@@ -1281,6 +1346,13 @@ function coachLocations(store, c) {
                 : type === "Domicile" || type === "Visio"
                     ? ""
                     : c.address,
+            ...(!store.connected &&
+                !["Domicile", "Visio"].includes(type) &&
+                demo_geography_json_1.default[type === "Studio" ? cfg.studioAddress : c.address]
+                ? {
+                    coordinates: demo_geography_json_1.default[type === "Studio" ? cfg.studioAddress : c.address],
+                }
+                : {}),
             instructions: "",
             ...(type === "Domicile"
                 ? { sector: c.area, radius: cfg.radius, travelFee: cfg.travelFee }
@@ -1333,6 +1405,41 @@ function locationsReady(store, c) {
 exports.reserve = (0, commands_1.recorded)("reserve", _reserve);
 exports.openGroup = (0, commands_1.recorded)("openGroup", _openGroup);
 
+},
+"../reference/demo-geography.json":(module,exports,load)=>{
+module.exports={
+  "2 rue du Général-Blaise, 75011 Paris": {
+    "latitude": 48.861085,
+    "longitude": 2.379073,
+    "label": "2 rue du Général-Blaise, 75011 Paris"
+  },
+  "18 rue du Commerce, 75015 Paris": {
+    "latitude": 48.848081,
+    "longitude": 2.29665,
+    "label": "18 rue du Commerce, 75015 Paris"
+  },
+  "44 rue de Lyon, 75012 Paris": {
+    "latitude": 48.849788,
+    "longitude": 2.370991,
+    "label": "44 rue de Lyon, 75012 Paris"
+  },
+  "35 quai de Valmy, 75010 Paris": {
+    "latitude": 48.869106,
+    "longitude": 2.366573,
+    "label": "35 quai de Valmy, 75010 Paris"
+  },
+  "24 rue Notre-Dame-de-Lorette, 75009 Paris": {
+    "latitude": 48.878298,
+    "longitude": 2.337779,
+    "label": "24 rue Notre-Dame-de-Lorette, 75009 Paris"
+  },
+  "27 rue de Ménilmontant, 75020 Paris": {
+    "latitude": 48.867578,
+    "longitude": 2.384898,
+    "label": "27 rue de Ménilmontant, 75020 Paris"
+  }
+}
+;
 },
 "commands.ts":(module,exports,load)=>{
 "use strict";
@@ -3280,6 +3387,13 @@ function validateLocations(locations) {
     if (!rows.length)
         throw Error("Ajoutez au moins un lieu ou un mode de séance.");
     for (const [id, p] of rows) {
+        if (p.coordinates &&
+            (!Number.isFinite(p.coordinates.latitude) ||
+                !Number.isFinite(p.coordinates.longitude) ||
+                Math.abs(p.coordinates.latitude) > 90 ||
+                Math.abs(p.coordinates.longitude) > 180 ||
+                p.coordinates.label !== p.address))
+            throw Error("Sélectionnez à nouveau l’adresse de ce lieu.");
         if (!exports.placeTypes.includes(p.type) || !p.name.trim())
             throw Error("Précisez le type et le nom de chaque lieu.");
         if ((p.type === "Domicile" || p.type === "Visio") && p.type !== id)
@@ -3510,3 +3624,4 @@ const cache={};function load(id){if(cache[id])return cache[id].exports;const m={
 const d=load('connectedDomain.ts');
 export const {emptyConnected,register,applyCommand,project,documents}=d;
 export const {maintain}=load('workflows.ts');
+export const {instant}=load('model.ts');

@@ -281,6 +281,13 @@ export function useMarketplace(live: boolean) {
     const saved = await execute([], { name, role });
     assign(saved);
   }
+  async function finishSocial(name: string, role: "client" | "coach") {
+    if (!session?.user)
+      throw Error("Connectez-vous avant de compléter votre compte.");
+    await queue.current;
+    assign(await execute([], { name, role }));
+    await AsyncStorage.removeItem("partant-auth-intent");
+  }
   async function book(draft: Booking) {
     await queue.current;
     const saved = await execute([{ name: "reserve", args: [draft] }]);
@@ -337,6 +344,7 @@ export function useMarketplace(live: boolean) {
     refresh,
     sendCode,
     verifyCode,
+    finishSocial,
     book,
     cancelBooking,
     signOut,

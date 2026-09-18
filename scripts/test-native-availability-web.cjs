@@ -154,9 +154,10 @@ async function field(label, value) {
   );
   await click("Voir la carte");
   ok(
-    [...d.querySelectorAll('[role="button"]')].some(
-      (e) => e.textContent.trim() === "30 €",
-    ),
+    d
+      .querySelector('iframe[title="Coachs autour de vous"]')
+      ?.getAttribute("srcdoc")
+      ?.includes('"label":"30 €"'),
     "Map shows the available offer price",
   );
   await click("Voir la liste");

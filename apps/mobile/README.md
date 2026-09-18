@@ -1,5 +1,8 @@
 # Partant — React Native
 
+> Mise à jour du 18 septembre : carte et Google activés côté serveur ; consentements Google à tester et Apple à configurer. Voir [la livraison 10](../../docs/integrations-10.md).
+
+
 > Livraison 9 : les lieux par plage et les parcours avancés sont disponibles en mode connecté (`?data=connected`). Voir [le périmètre et les limites](../../docs/connected-product-9.md). La démonstration locale reste accessible sans compte ; le HTML est archivé.
 
 **Cette application est désormais la version de travail de Partant.** Le prototype HTML validé reste archivé comme référence. Voir [le suivi de parité](../../docs/parite-prototype-react-native.md) pour les parcours repris et les écarts restant à corriger.

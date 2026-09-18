@@ -1,0 +1,32 @@
+{
+  "2 rue du Général-Blaise, 75011 Paris": {
+    "latitude": 48.861085,
+    "longitude": 2.379073,
+    "label": "2 rue du Général-Blaise, 75011 Paris"
+  },
+  "18 rue du Commerce, 75015 Paris": {
+    "latitude": 48.848081,
+    "longitude": 2.29665,
+    "label": "18 rue du Commerce, 75015 Paris"
+  },
+  "44 rue de Lyon, 75012 Paris": {
+    "latitude": 48.849788,
+    "longitude": 2.370991,
+    "label": "44 rue de Lyon, 75012 Paris"
+  },
+  "35 quai de Valmy, 75010 Paris": {
+    "latitude": 48.869106,
+    "longitude": 2.366573,
+    "label": "35 quai de Valmy, 75010 Paris"
+  },
+  "24 rue Notre-Dame-de-Lorette, 75009 Paris": {
+    "latitude": 48.878298,
+    "longitude": 2.337779,
+    "label": "24 rue Notre-Dame-de-Lorette, 75009 Paris"
+  },
+  "27 rue de Ménilmontant, 75020 Paris": {
+    "latitude": 48.867578,
+    "longitude": 2.384898,
+    "label": "27 rue de Ménilmontant, 75020 Paris"
+  }
+}

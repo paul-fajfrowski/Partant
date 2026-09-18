@@ -20,6 +20,7 @@ export type Dossier = {
   history: { date: string; status: string; reason: string }[];
 };
 export type CoachLocation = {
+  coordinates?: { latitude: number; longitude: number; label: string };
   type: string;
   name: string;
   address: string;

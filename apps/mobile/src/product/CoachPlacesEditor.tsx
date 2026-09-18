@@ -1,3 +1,4 @@
+import { AddressPicker } from "./AddressPicker";
 import React, { useState } from "react";
 import { View } from "react-native";
 import type { CoachLocation } from "./extendedTypes";
@@ -127,12 +128,30 @@ export function CoachPlacesEditor({
               la conversation.
             </P>
           ) : (
-            <Field
-              label="Adresse du lieu"
-              placeholder="Numéro, rue, code postal et ville"
-              value={p.address}
-              onChange={(address) => update({ address })}
-            />
+            <>
+              <AddressPicker
+                label="Adresse du lieu"
+                value={p.address}
+                onChange={(address) =>
+                  update({ address, coordinates: undefined })
+                }
+                onSelect={(place) =>
+                  update({
+                    address: place.label,
+                    coordinates: {
+                      latitude: place.latitude,
+                      longitude: place.longitude,
+                      label: place.label,
+                    },
+                  })
+                }
+              />
+              <P small muted>
+                {p.coordinates
+                  ? "Adresse localisée sur la carte."
+                  : "Sélectionnez une adresse proposée pour apparaître sur la carte."}
+              </P>
+            </>
           )}
           <Field
             label={

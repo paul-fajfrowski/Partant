@@ -657,6 +657,55 @@ export function applyCommand(
     default:
       throw Error("Action serveur non reconnue.");
   }
+  // All paths that occupy a time (including coach proposals and direct sessions) respect Google.
+  const occupied = (state: M.Store) => [
+    ...state.bookings
+      .filter((b) => b.status === "confirmed")
+      .map((b) => ({
+        id: "b:" + b.id,
+        coach: b.coach,
+        day: b.day,
+        time: b.time,
+        duration: b.duration,
+      })),
+    ...(state.groups ?? [])
+      .filter((g) => !g.cancelled)
+      .map((g) => ({
+        id: "g:" + g.id,
+        coach: g.offer.coach,
+        day: g.day,
+        time: g.time,
+        duration: g.offer.duration,
+      })),
+    ...(state.externalSessions ?? [])
+      .filter((b) => !b.cancelled)
+      .map((b) => ({
+        id: "e:" + b.id,
+        coach: b.coach,
+        day: b.day,
+        time: b.time,
+        duration: b.duration,
+      })),
+  ];
+  const prior = new Map(occupied(s).map((b) => [b.id, JSON.stringify(b)]));
+  for (const b of occupied(n)) {
+    if (prior.get(b.id) === JSON.stringify(b)) continue;
+    const cal = n.calendarStatus?.[b.coach];
+    if (
+      cal?.connected &&
+      (cal.error ||
+        M.now() - cal.updatedAt > 15 * 60000 ||
+        (cal.through && b.day >= cal.through.slice(0, 10)))
+    )
+      throw Error("Synchronisez l’agenda Google avant d’ouvrir ce créneau.");
+    if (
+      n.calendarBusy?.[b.coach]?.some(
+        (x) =>
+          x.day === b.day && M.overlap(b.time, b.duration, x.time, x.duration),
+      )
+    )
+      throw Error("Un événement Google occupe ce créneau.");
+  }
   return {
     ...copy(n),
     account: null,
@@ -747,6 +796,23 @@ export function project(source: M.Store, actor?: Actor): M.Store {
     ),
     groups: s.groups?.filter((g) => ids.has(g.offer.coach)),
     bookings,
+    calendarBusy: Object.fromEntries(
+      Object.entries(s.calendarBusy ?? {}).filter(([coach]) => ids.has(coach)),
+    ),
+    calendarStatus: Object.fromEntries(
+      Object.entries(s.calendarStatus ?? {})
+        .filter(([coach]) => ids.has(coach))
+        .map(([coach, status]) => [
+          coach,
+          own(coach)
+            ? status
+            : {
+                ...status,
+                error: status.error ? "Agenda temporairement indisponible" : "",
+                conflicts: undefined,
+              },
+        ]),
+    ),
     busyTimes,
     closed: s.closed.filter((k) => ids.has(k.split("|")[0])),
     preferences: s.preferences,

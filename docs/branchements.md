@@ -2,7 +2,13 @@
 
 État : 16 septembre 2026. Cible décidée : **React Native + TypeScript + Expo**. Voir [la décision persistante](decisions/001-react-native.md).
 
-## État actuel — 17 septembre 2026
+## État actuel — 18 septembre 2026
+
+Voir [la livraison 10](integrations-10.md) pour l’état à jour. Carte réelle et adresses IGN intégrées ; fonctions Google Calendar, synchronisation planifiée et parcours OAuth déployés. Google Auth et Calendar sont activés avec les identifiants fournis ; les consentements du propriétaire et l’échange réel d’événements restent à tester. Apple attend sa configuration fournisseur. Microsoft et Stripe restent reportés.
+
+Les URL de retour Auth ont été configurées et vérifiées dans Supabase via un diff limité à ces deux propriétés. Les anciennes mentions « outil ne permettant pas la configuration » ci-dessous décrivent l’état initial ; la CLI authentifiée permet désormais une mise à jour ciblée.
+
+## Historique — 17 septembre 2026
 
 Les deux points autorisés dans cette itération sont intégrés : **lieux par plage** et **parcours avancés partagés sur Supabase**. Voir [la matrice détaillée, la méthode de validation et les limites](connected-product-9.md).
 

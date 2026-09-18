@@ -1,5 +1,6 @@
+// Generated from services/calendar/providers.mjs by build-server-domain.cjs.
 // Server-only adapters. OAuth tokens must never be imported into the mobile app.
-import { Temporal } from "@js-temporal/polyfill";
+import { Temporal } from "npm:@js-temporal/polyfill@0.5.1";
 export function instant(value, zone = "UTC") {
   if (/([zZ]|[+-]\d\d:\d\d)$/.test(value))
     return Temporal.Instant.from(value).toString();

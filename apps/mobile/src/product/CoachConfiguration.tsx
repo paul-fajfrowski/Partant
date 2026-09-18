@@ -1,3 +1,4 @@
+import {CalendarConnections} from "./CalendarConnections";
 import {
   AvailabilityIntervals,
   intervalSummary,
@@ -1190,18 +1191,7 @@ function ConfigurationEditor({
         </H1>
         {section === "calendars" && (
           <>
-            {["Google Calendar", "Apple Calendar", "Outlook"].map((p) => (
-              <Setting
-                key={p}
-                title={p}
-                description="Non connecté"
-                onPress={() =>
-                  message(
-                    "Connexion externe non activée. Vous pouvez tester un événement occupé ci-dessous.",
-                  )
-                }
-              />
-            ))}
+            <CalendarConnections live={!!store.connected}/>
             <Note style={{ marginVertical: 20 }}>
               Un événement occupé masque les créneaux publics. Le libellé reste
               privé.

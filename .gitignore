@@ -11,3 +11,8 @@ node_modules/
 dist/
 supabase/.temp/
 supabase/.branches/
+
+# Developer OAuth downloads and signing keys must remain private.
+client_secret*.json
+**/client_secret*.json
+*.p8
