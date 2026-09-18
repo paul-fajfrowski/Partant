@@ -21,8 +21,12 @@ Le critère de sortie est un parcours client/coach complet, sans blocage, avec d
 
 Pas de nouvelles fonctionnalités ni de refonte pendant cette phase sans nouvelle décision utilisateur. Stripe et les reversements/remboursements réels, les communications externes, un fournisseur SMTP et un domaine, ainsi qu’Outlook, restent reportés. Aucune publication dans les stores n’est demandée.
 
-La connexion e-mail reste soumise au quota du fournisseur Supabase par défaut. Les essais connectés privilégient Google/Apple ; la démo locale reste disponible sans authentification réelle. Le blocage Google `org_internal` nécessite un réglage Externe/Test dans Google Cloud ; sa résolution et le premier échange Apple ne sont pas encore confirmés par le propriétaire.
+La connexion e-mail reste soumise au quota du fournisseur Supabase par défaut. Les essais connectés privilégient Google/Apple ; la démo locale reste disponible sans authentification réelle. Le propriétaire confirme que Google fonctionne avec son compte de test et qu’Apple fonctionne dans la simulation web.
 
 ## Sauvegarde
 
 Le dépôt GitHub contient les sources React Native, le prototype et ses actifs, le code serveur et les migrations Supabase, les scripts, les tests et la documentation. Les clés Apple/Google, les fichiers `.env`, les dépendances installées et les caches/exports générés restent exclus. Les données hébergées dans Supabase et les réglages des consoles externes ne sont pas une sauvegarde Git ; leur état et leur configuration sont documentés dans [les branchements](branchements.md), [les intégrations](integrations-10.md) et [Apple](configurer-apple.md).
+
+## Amélioration autorisée après le gel
+
+Le propriétaire a demandé puis autorisé la simplification des notifications client/coach. Voir [les changements et la recette](notifications-13.md). Cette autorisation ne rouvre pas le périmètre des paiements ou communications externes.

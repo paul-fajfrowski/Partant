@@ -1,3 +1,4 @@
+import type { NoticeEvent } from "./noticeEvents";
 import demoGeography from "../reference/demo-geography.json";
 import { recorded } from "./commands";
 import type { ExtendedStore, CoachSettings, Interval } from "./extendedTypes";
@@ -84,7 +85,25 @@ export type Account = {
   role: "client" | "coach";
   coachId?: string;
 };
+export type NoticeContext = Pick<
+  Booking,
+  | "day"
+  | "time"
+  | "serviceName"
+  | "seats"
+  | "kind"
+  | "address"
+  | "status"
+  | "clientName"
+> & { coachName: string; locationName?: string };
 export type Notice = {
+  createdAt?: number;
+  event?: NoticeEvent;
+  context?: NoticeContext;
+  previous?: NoticeContext;
+  proposalId?: string;
+  ticketId?: string;
+  resolvedAt?: number;
   category?: "booking" | "changes" | "reminder" | "availability";
   id: string;
   recipient: string;
@@ -92,6 +111,21 @@ export type Notice = {
   read: boolean;
   booking: string;
 };
+export function noticeContext(s: Store, b: Booking): NoticeContext {
+  return {
+    day: b.day,
+    time: b.time,
+    serviceName: b.serviceName,
+    seats: b.seats,
+    kind: b.kind,
+    address: b.address,
+    locationName: b.locationName,
+    status: b.status,
+    clientName: b.clientName,
+    coachName:
+      allCoaches(s).find((c) => c.id === b.coach)?.name ?? "Votre coach",
+  };
+}
 export type GroupSession = {
   locationName?: string;
   locationInstructions?: string;
@@ -495,6 +529,9 @@ function _reserve(store: Store, draft: Booking): Store {
       ...store.notices,
       {
         category: "booking" as const,
+        createdAt: now(),
+        event: "booking" as const,
+        context: noticeContext(store, b),
         id: `${b.id}:coach`,
         recipient: coachRecipient(store, c.id),
         body: "Une nouvelle séance a été réservée.",
@@ -503,6 +540,9 @@ function _reserve(store: Store, draft: Booking): Store {
       },
       {
         category: "booking" as const,
+        createdAt: now(),
+        event: "booking" as const,
+        context: noticeContext(store, b),
         id: `${b.id}:client`,
         recipient: b.clientId,
         body: "Votre séance est confirmée.",
@@ -530,6 +570,9 @@ export function cancel(store: Store, id: string): Store {
       ...store.notices,
       {
         id: `${id}:cancel:coach`,
+        createdAt: now(),
+        event: "cancelled" as const,
+        context: noticeContext(store, { ...b, status: "cancelled" }),
         recipient: coachRecipient(store, b.coach),
         body: "Une réservation a été annulée.",
         read: false,
@@ -537,6 +580,9 @@ export function cancel(store: Store, id: string): Store {
       },
       {
         id: `${id}:cancel:client`,
+        createdAt: now(),
+        event: "cancelled" as const,
+        context: noticeContext(store, { ...b, status: "cancelled" }),
         recipient: b.clientId,
         body: "Votre réservation a été annulée.",
         read: false,

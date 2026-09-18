@@ -173,6 +173,16 @@ fail(() => command(alice, "reserve", { ...draft, seats: 2 }), /places/);
 command(alice, "reserve", draft);
 ok(s.bookings[0].address === locations.gym.address, "Server venue snapshot");
 ok(s.bookings[0].clientId === alice.id, "Authenticated booking owner");
+ok(
+  s.notices
+    .filter((n) => n.booking === "booking1")
+    .every((n) => Number.isFinite(n.createdAt) && n.context?.serviceName),
+  "Server timestamps and snapshots booking notifications",
+);
+ok(
+  !D.project(s, bob).notices.length,
+  "No private notification snapshots for another client",
+);
 ok(D.project(s, coach).notices.length > 0, "Coach notification");
 ok(
   D.project(s, bob).bookings.length === 0,
@@ -196,6 +206,16 @@ ok(
 ok(!D.project(s, bob).messages.booking1, "Private messaging");
 command(coach, "readMessages", "booking1");
 ok(
+  D.project(s, coach)
+    .notices.filter((n) => n.event === "message")
+    .every((n) => n.read),
+  "Opening chat marks message notifications read",
+);
+ok(
+  D.project(s, coach).notices.some((n) => n.event === "booking" && !n.read),
+  "Opening chat preserves unread booking notifications",
+);
+ok(
   D.project(s, alice).messages.booking1[0].readBy.includes(coach.id),
   "Read receipt shared",
 );
@@ -211,6 +231,12 @@ command(
   "Adaptation",
 );
 const proposal = s.proposals.at(-1);
+ok(
+  D.project(s, alice).notices.some(
+    (n) => n.proposalId === proposal.id && n.event === "proposal",
+  ),
+  "Server links proposal to its exact notification",
+);
 command(alice, "answerProposal", proposal.id, "accepted");
 ok(s.bookings[0].day === "2026-09-19", "Proposal accepted atomically");
 ok(

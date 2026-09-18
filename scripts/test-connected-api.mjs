@@ -234,7 +234,30 @@ ok(
   state.notices.some((n) => n.booking === draft.id),
   "Coach receives notification",
 );
+ok(
+  state.notices
+    .filter((n) => n.booking === draft.id)
+    .every((n) => Number.isFinite(n.createdAt) && n.context?.clientName),
+  "Server records receipt date and booking snapshot",
+);
+ok(
+  !(await read(bob)).store.notices.some((n) => n.booking === draft.id),
+  "Private event context hidden from other customer",
+);
 await command(coach, "readMessages", draft.id);
+const readCoach = (await read(coach)).store;
+ok(
+  readCoach.notices
+    .filter((n) => n.booking === draft.id && n.event === "message")
+    .every((n) => n.read),
+  "Chat clears only relevant message notices",
+);
+ok(
+  readCoach.notices.some(
+    (n) => n.booking === draft.id && n.event === "booking" && !n.read,
+  ),
+  "Chat preserves unread booking notices",
+);
 state = (await read(alice)).store;
 ok(
   state.messages[draft.id][0].readBy.includes(coach.id),
@@ -249,11 +272,34 @@ await command(
 );
 state = (await read(alice)).store;
 const prop = state.proposals.find((p) => p.booking === draft.id);
+const proposalNotice = state.notices.find(
+  (n) => n.proposalId === prop.id && n.event === "proposal",
+);
+ok(!!proposalNotice, "Proposal notification links exact proposal");
+state = await command(alice, "readNotice", proposalNotice.id);
+ok(
+  state.proposals.find((p) => p.id === prop.id).status === "pending",
+  "Reading notification leaves proposal pending",
+);
 await command(alice, "answerProposal", prop.id, "accepted");
 ok(
   (await read(coach)).store.bookings.find((b) => b.id === draft.id).day ===
     day(5),
   "Reschedule shared",
+);
+state = (await read(alice)).store;
+const changeNotice = state.notices.find(
+  (n) => n.booking === draft.id && n.event === "rescheduled",
+);
+ok(
+  changeNotice.previous.day === draft.day &&
+    changeNotice.context.day === day(5),
+  "Change stores before and after session snapshots",
+);
+ok(
+  state.notices.find((n) => n.booking === draft.id && n.event === "booking")
+    .context.day === draft.day,
+  "Original booking event keeps historical session date",
 );
 const g = {
   id: randomUUID(),

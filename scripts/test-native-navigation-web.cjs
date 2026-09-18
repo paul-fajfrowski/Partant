@@ -106,7 +106,8 @@ const selected = (label) =>
     !d.body.textContent.includes("Message privé de Sarah"),
     "Other coach notifications are isolated",
   );
-  await click("Alex a modifié sa séance.");
+  d.querySelector('[data-testid="notification-coach-notice"]').click();
+  await wait();
   ok(
     stored().notices.find((n) => n.id === "coach-notice").read,
     "Notification marked read",

@@ -1,3 +1,5 @@
+import { noticeKind } from "./noticeEvents";
+import type { Notice } from "./model";
 import { recorded } from "./commands";
 import { validateLocations } from "./locations";
 import {
@@ -16,6 +18,7 @@ import {
   addDays,
   today,
   now,
+  noticeContext,
   instant,
   mins,
   overlap,
@@ -162,6 +165,9 @@ export function notify(
   body: string,
   booking = "",
   id = uid(),
+  detail: Partial<
+    Pick<Notice, "event" | "previous" | "proposalId" | "ticketId">
+  > = {},
 ): Store {
   if (s.notices.some((n) => n.id === id)) return s;
   return {
@@ -173,6 +179,12 @@ export function notify(
         recipient,
         body,
         booking,
+        createdAt: now(),
+        event: noticeKind({ body, id }),
+        context: s.bookings.find((b) => b.id === booking)
+          ? noticeContext(s, s.bookings.find((b) => b.id === booking)!)
+          : undefined,
+        ...detail,
         read: false,
         category: id.startsWith("reminder:")
           ? "reminder"
@@ -183,12 +195,22 @@ export function notify(
     ],
   };
 }
-function notifyBoth(s: Store, b: Booking, body: string) {
+function notifyBoth(
+  s: Store,
+  b: Booking,
+  body: string,
+  detail: Partial<Pick<Notice, "event" | "proposalId">> = {},
+) {
   return notify(
-    notify(s, b.clientId, body, b.id),
+    notify(s, b.clientId, body, b.id, uid(), {
+      previous: noticeContext(s, b),
+      ...detail,
+    }),
     coachRecipient(s, b.coach),
     body,
     b.id,
+    uid(),
+    { previous: noticeContext(s, b), ...detail },
   );
 }
 export function canRead(s: Store, b: Booking) {
@@ -381,6 +403,7 @@ function _cancelSession(s: Store, id: string, reason: string) {
     },
     b,
     `Séance annulée. ${amount} € de remboursement simulé. ${reason}`,
+    { event: "cancelled" },
   );
 }
 function _partialCancel(s: Store, id: string, seats: number) {
@@ -421,6 +444,7 @@ function _partialCancel(s: Store, id: string, seats: number) {
     },
     b,
     `Places modifiées : ${b.seats} → ${seats}.`,
+    { event: "seats" },
   );
 }
 export function clientConflict(
@@ -512,6 +536,7 @@ function _transfer(
     },
     b,
     "Votre réservation a été transférée. Actualisez votre calendrier.",
+    { event: "transferred" },
   );
 }
 function _reschedule(
@@ -586,6 +611,7 @@ function _reschedule(
     },
     b,
     `Séance modifiée : ${b.day} ${b.time} → ${day} ${time}.`,
+    { event: "rescheduled" },
   );
 }
 function _closeGroup(s: Store, id: string, reason: string) {
@@ -705,7 +731,29 @@ function _addProposal(
       p,
     ],
   };
-  return notify(next, b.clientId, "Votre coach propose un changement.", id);
+  return notify(
+    next,
+    b.clientId,
+    "Votre coach propose un changement.",
+    id,
+    uid(),
+    { event: "proposal", proposalId: p.id },
+  );
+}
+export function effectiveProposalStatus(
+  s: Store,
+  p: Proposal,
+): Proposal["status"] {
+  if (p.status !== "pending") return p.status;
+  const b = s.bookings.find((b) => b.id === p.booking);
+  return !b ||
+    b.status !== "confirmed" ||
+    fingerprint(b) !== p.before ||
+    instant(b.day, b.time) <= now() ||
+    (b.kind !== "Groupe" && instant(b.day, b.time) - now() < 7200000) ||
+    instant(p.target.day, p.target.time) <= now()
+    ? "expired"
+    : "pending";
 }
 function _answerProposal(
   s: Store,
@@ -713,7 +761,7 @@ function _answerProposal(
   answer: "accepted" | "declined" | "withdrawn",
 ) {
   const p = s.proposals?.find((p) => p.id === id);
-  if (!p || p.status !== "pending")
+  if (!p || effectiveProposalStatus(s, p) !== "pending")
     throw Error("Cette proposition n’est plus ouverte.");
   const b = owned(s, p.booking);
   if (
@@ -761,6 +809,7 @@ function _answerProposal(
       : answer === "declined"
         ? "Le client garde la séance initiale."
         : "Proposition retirée.",
+    { event: "proposal-result", proposalId: p.id },
   );
 }
 function _saveReview(s: Store, id: string, rating: number, text: string) {
@@ -791,7 +840,7 @@ function _saveReview(s: Store, id: string, rating: number, text: string) {
     },
     coachRecipient(s, b.coach),
     "Un nouvel avis a été publié.",
-    id,
+    id, uid(), { event: "review" },
   );
 }
 function _replyReview(s: Store, id: string, text: string) {
@@ -810,7 +859,7 @@ function _replyReview(s: Store, id: string, text: string) {
     },
     r.owner,
     "Votre coach a répondu à votre avis.",
-    r.booking,
+    r.booking, uid(), { event: "review-reply" },
   );
 }
 function _report(s: Store, values: Partial<Ticket>) {
@@ -883,6 +932,8 @@ function _resolveTicket(
     ticket.owner,
     "Votre demande a reçu une réponse.",
     ticket.booking,
+    uid(),
+    { event: "support", ticketId: ticket.id },
   );
 }
 function _reviewDossier(
@@ -918,6 +969,7 @@ function _reviewDossier(
     },
     coachRecipient(s, id),
     "Votre dossier : " + reason,
+    "", uid(), { event: "dossier" },
   );
 }
 export function alertMatches(s: Store, a: AvailabilityAlert) {
@@ -1009,6 +1061,41 @@ export function maintain(s: Store): Store {
         },
       };
   }
+  for (const c of allCoaches(next)) {
+    const calendar = next.calendarStatus?.[c.id];
+    const recipient = coachRecipient(next, c.id);
+    const open = next.notices.filter(
+      (n) =>
+        n.recipient === recipient && n.event === "calendar" && !n.resolvedAt,
+    );
+    const problem = !!(calendar?.error || calendar?.conflicts?.length);
+    if (problem && !open.length)
+      next = notify(
+        next,
+        recipient,
+        "Votre agenda nécessite une vérification.",
+        "",
+        uid(),
+        { event: "calendar" },
+      );
+    if (!problem && open.length)
+      next = {
+        ...next,
+        notices: next.notices.map((n) =>
+          open.some((x) => x.id === n.id) ? { ...n, resolvedAt: now() } : n,
+        ),
+      };
+    const cfg = next.settings?.[c.id];
+    if (cfg?.dossier.status === "expired")
+      next = notify(
+        next,
+        recipient,
+        "Votre dossier : justificatifs arrivés à expiration.",
+        "",
+        `dossier-expired:${c.id}:${cfg.dossier.expires}`,
+        { event: "dossier" },
+      );
+  }
   for (const b of next.bookings) {
     if (b.status !== "confirmed" || instant(b.day, b.time) - now() > 86400000)
       continue;
@@ -1034,17 +1121,36 @@ export function maintain(s: Store): Store {
   );
   if (attempts?.some((p, i) => p !== next.attempts![i]))
     next = { ...next, attempts };
-  const proposals = next.proposals?.map((p) => {
-    const b = next.bookings.find((b) => b.id === p.booking);
-    return p.status === "pending" &&
-      (!b ||
-        b.status !== "confirmed" ||
-        instant(p.target.day, p.target.time) <= now())
+  const proposals = next.proposals?.map((p) =>
+    p.status === "pending" && effectiveProposalStatus(next, p) === "expired"
       ? { ...p, status: "expired" as const }
-      : p;
-  });
+      : p,
+  );
   if (proposals?.some((p, i) => p !== next.proposals![i]))
     next = { ...next, proposals };
+  // Recover actionable legacy proposals without assigning a guessed historical date.
+  for (const p of next.proposals ?? []) {
+    if (p.status !== "pending") continue;
+    const b = next.bookings.find((b) => b.id === p.booking);
+    if (!b) continue;
+    const candidates = next.proposals?.filter((x) => x.booking === b.id) ?? [];
+    const represented = next.notices.some(
+      (n) =>
+        n.recipient === b.clientId &&
+        n.booking === b.id &&
+        noticeKind(n) === "proposal" &&
+        (n.proposalId === p.id || (!n.proposalId && candidates.length === 1)),
+    );
+    if (!represented)
+      next = notify(
+        next,
+        b.clientId,
+        "Votre coach propose un changement.",
+        b.id,
+        `proposal-pending:${p.id}`,
+        { event: "proposal", proposalId: p.id },
+      );
+  }
   for (const a of next.alerts ?? []) {
     const matches = alertMatches(next, a),
       keys = matches.map(

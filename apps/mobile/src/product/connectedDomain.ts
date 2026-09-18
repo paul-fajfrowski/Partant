@@ -1,3 +1,4 @@
+import { noticeKind } from "./noticeEvents";
 /** Authoritative domain used by the Edge Function. No browser state is trusted. */
 import * as M from "./model";
 import * as W from "./workflows";
@@ -541,6 +542,13 @@ export function applyCommand(
       W.owned(s, a[0]);
       n = {
         ...s,
+        notices: s.notices.map((x) =>
+          x.recipient === actor.id &&
+          x.booking === a[0] &&
+          noticeKind(x) === "message"
+            ? { ...x, read: true }
+            : x,
+        ),
         messages: {
           ...s.messages,
           [a[0]]: (s.messages[a[0]] ?? []).map((m) => ({

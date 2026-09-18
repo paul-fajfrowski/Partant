@@ -1,3 +1,5 @@
+import { NotificationsScreen } from "./NotificationsScreen";
+import { noticeKind } from "./noticeEvents";
 import { searchAddresses, distanceKm } from "../lib/geo";
 import CoachMap from "../components/CoachMap";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -47,6 +49,7 @@ import {
   initialStore,
   configFor,
   coachAccountId,
+  coachRecipient,
   allCoaches,
   now,
   setDemoClock,
@@ -218,7 +221,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   useEffect(() => {
     if (!emailWait) return;
     const timer = setInterval(() => {
-      setEmailWait(Math.max(0, Math.ceil((emailRetryAt.current - Date.now()) / 1000)));
+      setEmailWait(
+        Math.max(0, Math.ceil((emailRetryAt.current - Date.now()) / 1000)),
+      );
     }, 1000);
     return () => clearInterval(timer);
   }, [emailWait > 0]);
@@ -390,6 +395,13 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     if (screen === "chat" && booked && W.canRead(store, booked)) {
       setStore((s) => ({
         ...s,
+        notices: s.notices.map((n) =>
+          n.recipient === s.account?.id &&
+          n.booking === booked.id &&
+          noticeKind(n) === "message"
+            ? { ...n, read: true }
+            : n,
+        ),
         messages: {
           ...s.messages,
           [booked.id]: (s.messages[booked.id] ?? []).map((m) => ({
@@ -1207,10 +1219,16 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               })
             }
           >
-            {live && emailWait > 0 ? `Patienter ${emailWait} s avant un nouvel essai` : "Continuer avec mon e-mail"}
+            {live && emailWait > 0
+              ? `Patienter ${emailWait} s avant un nouvel essai`
+              : "Continuer avec mon e-mail"}
           </Button>
           {!!emailFeedback && (
-            <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ marginTop: 16 }}>
+            <View
+              accessibilityRole="alert"
+              accessibilityLiveRegion="polite"
+              style={{ marginTop: 16 }}
+            >
               <Note>{emailFeedback}</Note>
             </View>
           )}
@@ -2828,46 +2846,27 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   if (screen === "notifications")
     content = (
       <Section>
-        {notifications.length
-          ? notifications.map((n) => (
-              <Setting
-                key={n.id}
-                title={n.body}
-                description={n.read ? "Lu" : "Nouveau"}
-                icon="calendar"
-                onPress={() =>
-                  run(async () => {
-                    setStore((s) => ({
-                      ...s,
-                      notices: s.notices.map((x) =>
-                        x.id === n.id ? { ...x, read: true } : x,
-                      ),
-                    }));
-                    if (n.booking) {
-                      setSelectedBooking(n.booking);
-                      go("bookingDetail");
-                    } else if (n.id.startsWith("alert:")) go("alerts-native");
-                    else if (store.account?.role === "coach") {
-                      setConfig("documents");
-                      go("config");
-                    } else go("support-native");
-                  })
-                }
-              />
-            ))
-          : empty(
-              "Tout est à jour.",
-              "Vos réservations et leurs modifications apparaîtront ici.",
-              store.account?.role === "coach"
-                ? "Revenir à l’agenda"
-                : "Explorer les coachs",
-              () => {
-                if (store.account?.role === "coach") {
-                  setCoachTab("agenda");
-                  go("coach");
-                } else go("explore");
-              },
-            )}
+        <NotificationsScreen
+          key={store.account?.id ?? "guest"}
+          store={store}
+          busy={busy}
+          onOpen={(row) =>
+            run(() => {
+              setStore((s) => ({
+                ...s,
+                notices: s.notices.map((n) =>
+                  n.id === row.notice.id && n.recipient === s.account?.id
+                    ? { ...n, read: true }
+                    : n,
+                ),
+              }));
+              const target = row.target;
+              if (target.booking) setSelectedBooking(target.booking);
+              if (target.config) setConfig(target.config);
+              go(target.screen, target.focus ?? "");
+            })
+          }
+        />
       </Section>
     );
   if (screen === "messages")
@@ -2954,20 +2953,32 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             <Button
               disabled={!message.trim()}
               onPress={() => {
-                setStore((s) => ({
-                  ...s,
-                  messages: {
-                    ...s.messages,
-                    [booked.id]: [
-                      ...(s.messages[booked.id] ?? []),
-                      {
-                        who: s.account?.id ?? "",
-                        text: message.trim(),
-                        readBy: [s.account?.id ?? ""],
-                      },
-                    ],
-                  },
-                }));
+                setStore((s) => {
+                  const next = {
+                    ...s,
+                    messages: {
+                      ...s.messages,
+                      [booked.id]: [
+                        ...(s.messages[booked.id] ?? []),
+                        {
+                          who: s.account?.id ?? "",
+                          text: message.trim(),
+                          readBy: [s.account?.id ?? ""],
+                        },
+                      ],
+                    },
+                  };
+                  return s.connected
+                    ? next
+                    : W.notify(
+                        next,
+                        booked.clientId === s.account?.id
+                          ? coachRecipient(s, booked.coach)
+                          : booked.clientId,
+                        "Vous avez reçu un message.",
+                        booked.id,
+                      );
+                });
                 setMessage("");
               }}
             >

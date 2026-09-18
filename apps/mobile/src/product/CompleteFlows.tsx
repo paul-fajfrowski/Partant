@@ -1,3 +1,4 @@
+import { BookingNotificationHistory } from "./NotificationsScreen";
 import { placeTypes } from "./locations";
 import { setupSteps } from "./agendaTools";
 import React, { useEffect, useState } from "react";
@@ -348,8 +349,8 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
         {confirm && (
           <Note>
             <P>
-              Votre profil et vos messages seront anonymisés. Les
-              références des séances restent chez vos interlocuteurs.
+              Votre profil et vos messages seront anonymisés. Les références des
+              séances restent chez vos interlocuteurs.
             </P>
             <Button
               style={{ marginTop: 16 }}
@@ -720,7 +721,7 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
           Les réponses et décisions restent accessibles ici.
         </P>
         {(s.tickets ?? [])
-          .filter((t) => t.owner === me?.id)
+          .filter((t) => t.owner === me?.id && (!focus || t.id === focus))
           .map((t) => (
             <Note key={t.id} style={{ marginBottom: 16 }}>
               <H2>{t.kind}</H2>
@@ -730,6 +731,11 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
               </P>
             </Note>
           ))}
+        {focus && (
+          <TextButton onPress={() => go("support-native")}>
+            Voir toutes mes demandes
+          </TextButton>
+        )}
         <Button onPress={() => go("report-native")}>Créer une demande</Button>
       </>
     );
@@ -792,7 +798,9 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
         <Eyebrow>LES COULISSES DE LA RENCONTRE</Eyebrow>
         <H1 style={{ marginVertical: 20 }}>Chaque demande{"\n"}a une suite.</H1>
         <Note>
-          {s.connected ? "Espace réservé à l’équipe habilitée. Chaque décision est enregistrée et notifiée au coach." : "Équipe Partant · simulation. Aucun contrôle documentaire réel."}
+          {s.connected
+            ? "Espace réservé à l’équipe habilitée. Chaque décision est enregistrée et notifiée au coach."
+            : "Équipe Partant · simulation. Aucun contrôle documentaire réel."}
         </Note>
         <H2 style={{ marginVertical: 20 }}>Dossiers coach</H2>
         {allCoaches(s)
@@ -1226,6 +1234,7 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
       booking = s.bookings.find((b) => b.id === prop?.booking);
     if (!prop || !booking || !W.canRead(s, booking))
       return <Note>Proposition indisponible.</Note>;
+    const proposalState = W.effectiveProposalStatus(s, prop);
     return (
       <>
         <H1>Un autre moment ?</H1>
@@ -1255,10 +1264,10 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
               declined: "Refusée",
               withdrawn: "Retirée",
               expired: "Expirée",
-            }[prop.status]
+            }[proposalState]
           }
         </P>
-        {prop.status === "pending" &&
+        {proposalState === "pending" &&
           (me?.role === "coach" ? (
             <Button
               light
@@ -1514,20 +1523,11 @@ export function BookingExtras(p: FlowProps) {
           <Setting
             key={p.id}
             title={`${dayLabel(p.target.day, true)} · ${p.target.time}`}
-            description={`Proposition du coach · ${p.status}`}
+            description={`Proposition du coach · ${{ pending: "En attente de réponse", accepted: "Acceptée", declined: "Refusée", withdrawn: "Retirée", expired: "Expirée" }[W.effectiveProposalStatus(s, p)]}`}
             onPress={() => go("proposal-native", p.id)}
           />
         ))}
-      {!!b.changes?.length && (
-        <>
-          <H2 style={{ marginVertical: 20 }}>Historique des changements</H2>
-          {b.changes.map((x, i) => (
-            <P small key={i} style={{ marginBottom: 12 }}>
-              {x}
-            </P>
-          ))}
-        </>
-      )}
+      <BookingNotificationHistory store={s} booking={b.id} />
       <Rule />
       <Row between>
         <P>Paiements cumulés</P>

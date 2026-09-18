@@ -42,6 +42,7 @@ exports.asActor = asActor;
 exports.applyCommand = applyCommand;
 exports.project = project;
 exports.documents = documents;
+const noticeEvents_1 = load("noticeEvents.ts");
 /** Authoritative domain used by the Edge Function. No browser state is trusted. */
 const M = __importStar(load("model.ts"));
 const W = __importStar(load("workflows.ts"));
@@ -491,6 +492,11 @@ function applyCommand(source, actor, cmd) {
             W.owned(s, a[0]);
             n = {
                 ...s,
+                notices: s.notices.map((x) => x.recipient === actor.id &&
+                    x.booking === a[0] &&
+                    (0, noticeEvents_1.noticeKind)(x) === "message"
+                    ? { ...x, read: true }
+                    : x),
                 messages: {
                     ...s.messages,
                     [a[0]]: (s.messages[a[0]] ?? []).map((m) => ({
@@ -763,6 +769,51 @@ function documents(s) {
 }
 
 },
+"noticeEvents.ts":(module,exports,load)=>{
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.noticeKind = noticeKind;
+/** Legacy notices retain their body; new notices persist a stable semantic event. */
+function noticeKind(n) {
+    if (n.event)
+        return n.event;
+    const text = n.body.toLowerCase();
+    if (n.id.startsWith("reminder:") || n.category === "reminder")
+        return "reminder";
+    if (n.id.startsWith("alert:") || n.category === "availability")
+        return "availability";
+    if (text.startsWith("votre dossier"))
+        return "dossier";
+    if (text.startsWith("séance annulée"))
+        return "cancelled";
+    if (text.includes("propose un changement"))
+        return "proposal";
+    if (text.includes("proposition") || text.includes("garde la séance initiale"))
+        return "proposal-result";
+    if (text.includes("annulée"))
+        return "cancelled";
+    if (text.includes("transférée"))
+        return "transferred";
+    if (text.includes("séance modifiée"))
+        return "rescheduled";
+    if (text.includes("places modifiées"))
+        return "seats";
+    if (text.includes("message"))
+        return "message";
+    if (text.includes("répondu à votre avis"))
+        return "review-reply";
+    if (text.includes("avis"))
+        return "review";
+    if (text.includes("demande a reçu"))
+        return "support";
+    if (n.category === "booking" ||
+        text.includes("séance est confirmée") ||
+        text.includes("séance a été réservée"))
+        return "booking";
+    return "other";
+}
+
+},
 "model.ts":(module,exports,load)=>{
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
@@ -770,6 +821,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.openGroup = exports.reserve = exports.coachAccountId = exports.coachRecipient = exports.overlap = exports.endTime = exports.mins = exports.addDays = exports.today = exports.now = exports.setDemoClock = exports.fold = exports.goalsFor = exports.initialStore = exports.initialPreferences = exports.seedOffers = exports.seedCoaches = void 0;
+exports.noticeContext = noticeContext;
 exports.changeSport = changeSport;
 exports.dayLabel = dayLabel;
 exports.instant = instant;
@@ -796,6 +848,20 @@ exports.locationsReady = locationsReady;
 const demo_geography_json_1 = __importDefault(load("../reference/demo-geography.json"));
 const commands_1 = load("commands.ts");
 const prototype_json_1 = __importDefault(load("../reference/prototype.json"));
+function noticeContext(s, b) {
+    return {
+        day: b.day,
+        time: b.time,
+        serviceName: b.serviceName,
+        seats: b.seats,
+        kind: b.kind,
+        address: b.address,
+        locationName: b.locationName,
+        status: b.status,
+        clientName: b.clientName,
+        coachName: allCoaches(s).find((c) => c.id === b.coach)?.name ?? "Votre coach",
+    };
+}
 exports.seedCoaches = prototype_json_1.default.coaches.map((c) => ({
     ...c,
     id: String(c.id),
@@ -1025,6 +1091,9 @@ function _reserve(store, draft) {
             ...store.notices,
             {
                 category: "booking",
+                createdAt: (0, exports.now)(),
+                event: "booking",
+                context: noticeContext(store, b),
                 id: `${b.id}:coach`,
                 recipient: (0, exports.coachRecipient)(store, c.id),
                 body: "Une nouvelle séance a été réservée.",
@@ -1033,6 +1102,9 @@ function _reserve(store, draft) {
             },
             {
                 category: "booking",
+                createdAt: (0, exports.now)(),
+                event: "booking",
+                context: noticeContext(store, b),
                 id: `${b.id}:client`,
                 recipient: b.clientId,
                 body: "Votre séance est confirmée.",
@@ -1057,6 +1129,9 @@ function cancel(store, id) {
             ...store.notices,
             {
                 id: `${id}:cancel:coach`,
+                createdAt: (0, exports.now)(),
+                event: "cancelled",
+                context: noticeContext(store, { ...b, status: "cancelled" }),
                 recipient: (0, exports.coachRecipient)(store, b.coach),
                 body: "Une réservation a été annulée.",
                 read: false,
@@ -1064,6 +1139,9 @@ function cancel(store, id) {
             },
             {
                 id: `${id}:cancel:client`,
+                createdAt: (0, exports.now)(),
+                event: "cancelled",
+                context: noticeContext(store, { ...b, status: "cancelled" }),
                 recipient: b.clientId,
                 body: "Votre réservation a été annulée.",
                 read: false,
@@ -2369,10 +2447,12 @@ exports.clientConflict = clientConflict;
 exports.transferCandidates = transferCandidates;
 exports.beginPayment = beginPayment;
 exports.paymentResult = paymentResult;
+exports.effectiveProposalStatus = effectiveProposalStatus;
 exports.alertMatches = alertMatches;
 exports.maintain = maintain;
 exports.accountExport = accountExport;
 exports.sessionICS = sessionICS;
+const noticeEvents_1 = load("noticeEvents.ts");
 const commands_1 = load("commands.ts");
 const locations_1 = load("locations.ts");
 const model_1 = load("model.ts");
@@ -2484,7 +2564,7 @@ function loginDemo(s, email, name, role, signup) {
     }
     return (0, model_1.switchAccount)(next, a);
 }
-function notify(s, recipient, body, booking = "", id = (0, exports.uid)()) {
+function notify(s, recipient, body, booking = "", id = (0, exports.uid)(), detail = {}) {
     if (s.notices.some((n) => n.id === id))
         return s;
     return {
@@ -2496,6 +2576,12 @@ function notify(s, recipient, body, booking = "", id = (0, exports.uid)()) {
                 recipient,
                 body,
                 booking,
+                createdAt: (0, model_1.now)(),
+                event: (0, noticeEvents_1.noticeKind)({ body, id }),
+                context: s.bookings.find((b) => b.id === booking)
+                    ? (0, model_1.noticeContext)(s, s.bookings.find((b) => b.id === booking))
+                    : undefined,
+                ...detail,
                 read: false,
                 category: id.startsWith("reminder:")
                     ? "reminder"
@@ -2506,8 +2592,11 @@ function notify(s, recipient, body, booking = "", id = (0, exports.uid)()) {
         ],
     };
 }
-function notifyBoth(s, b, body) {
-    return notify(notify(s, b.clientId, body, b.id), (0, model_1.coachRecipient)(s, b.coach), body, b.id);
+function notifyBoth(s, b, body, detail = {}) {
+    return notify(notify(s, b.clientId, body, b.id, (0, exports.uid)(), {
+        previous: (0, model_1.noticeContext)(s, b),
+        ...detail,
+    }), (0, model_1.coachRecipient)(s, b.coach), body, b.id, (0, exports.uid)(), { previous: (0, model_1.noticeContext)(s, b), ...detail });
 }
 function canRead(s, b) {
     return (b.clientId === s.account?.id ||
@@ -2674,7 +2763,7 @@ function _cancelSession(s, id, reason) {
                 ],
             }
             : x),
-    }, b, `Séance annulée. ${amount} € de remboursement simulé. ${reason}`);
+    }, b, `Séance annulée. ${amount} € de remboursement simulé. ${reason}`, { event: "cancelled" });
 }
 function _partialCancel(s, id, seats) {
     const b = owned(s, id);
@@ -2704,7 +2793,7 @@ function _partialCancel(s, id, seats) {
                 ],
             }
             : x),
-    }, b, `Places modifiées : ${b.seats} → ${seats}.`);
+    }, b, `Places modifiées : ${b.seats} → ${seats}.`, { event: "seats" });
 }
 function clientConflict(s, b, day, time, duration) {
     return s.bookings.some((x) => x.id !== b.id &&
@@ -2761,7 +2850,7 @@ function _transfer(s, id, groupId, before, price, coachProposal = false) {
                 ],
             }
             : x),
-    }, b, "Votre réservation a été transférée. Actualisez votre calendrier.");
+    }, b, "Votre réservation a été transférée. Actualisez votre calendrier.", { event: "transferred" });
 }
 function _reschedule(s, id, day, time, address, fromCoach = false) {
     const b = owned(s, id);
@@ -2807,7 +2896,7 @@ function _reschedule(s, id, day, time, address, fromCoach = false) {
                 ],
             }
             : x),
-    }, b, `Séance modifiée : ${b.day} ${b.time} → ${day} ${time}.`);
+    }, b, `Séance modifiée : ${b.day} ${b.time} → ${day} ${time}.`, { event: "rescheduled" });
 }
 function _closeGroup(s, id, reason) {
     const g = s.groups?.find((g) => g.id === id);
@@ -2906,11 +2995,24 @@ function _addProposal(s, id, target, reason) {
             p,
         ],
     };
-    return notify(next, b.clientId, "Votre coach propose un changement.", id);
+    return notify(next, b.clientId, "Votre coach propose un changement.", id, (0, exports.uid)(), { event: "proposal", proposalId: p.id });
+}
+function effectiveProposalStatus(s, p) {
+    if (p.status !== "pending")
+        return p.status;
+    const b = s.bookings.find((b) => b.id === p.booking);
+    return !b ||
+        b.status !== "confirmed" ||
+        (0, exports.fingerprint)(b) !== p.before ||
+        (0, model_1.instant)(b.day, b.time) <= (0, model_1.now)() ||
+        (b.kind !== "Groupe" && (0, model_1.instant)(b.day, b.time) - (0, model_1.now)() < 7200000) ||
+        (0, model_1.instant)(p.target.day, p.target.time) <= (0, model_1.now)()
+        ? "expired"
+        : "pending";
 }
 function _answerProposal(s, id, answer) {
     const p = s.proposals?.find((p) => p.id === id);
-    if (!p || p.status !== "pending")
+    if (!p || effectiveProposalStatus(s, p) !== "pending")
         throw Error("Cette proposition n’est plus ouverte.");
     const b = owned(s, p.booking);
     if (answer === "withdrawn"
@@ -2939,7 +3041,7 @@ function _answerProposal(s, id, answer) {
         ? "Proposition acceptée."
         : answer === "declined"
             ? "Le client garde la séance initiale."
-            : "Proposition retirée.");
+            : "Proposition retirée.", { event: "proposal-result", proposalId: p.id });
 }
 function _saveReview(s, id, rating, text) {
     const b = owned(s, id);
@@ -2965,7 +3067,7 @@ function _saveReview(s, id, rating, text) {
                 hidden: false,
             },
         ],
-    }, (0, model_1.coachRecipient)(s, b.coach), "Un nouvel avis a été publié.", id);
+    }, (0, model_1.coachRecipient)(s, b.coach), "Un nouvel avis a été publié.", id, (0, exports.uid)(), { event: "review" });
 }
 function _replyReview(s, id, text) {
     const r = s.reviews?.find((r) => r.id === id);
@@ -2977,7 +3079,7 @@ function _replyReview(s, id, text) {
     return notify({
         ...s,
         reviews: s.reviews?.map((x) => (x.id === id ? { ...x, reply: text } : x)),
-    }, r.owner, "Votre coach a répondu à votre avis.", r.booking);
+    }, r.owner, "Votre coach a répondu à votre avis.", r.booking, (0, exports.uid)(), { event: "review-reply" });
 }
 function _report(s, values) {
     if (!s.account || !values.body?.trim())
@@ -3035,7 +3137,7 @@ function _resolveTicket(s, id, response, decision) {
     return notify({
         ...next,
         tickets: next.tickets?.map((t) => t.id === id ? { ...t, status: "resolved", response, decision } : t),
-    }, ticket.owner, "Votre demande a reçu une réponse.", ticket.booking);
+    }, ticket.owner, "Votre demande a reçu une réponse.", ticket.booking, (0, exports.uid)(), { event: "support", ticketId: ticket.id });
 }
 function _reviewDossier(s, id, status, reason) {
     if ((!s.testMode && !s.staff) || !reason.trim())
@@ -3061,7 +3163,7 @@ function _reviewDossier(s, id, status, reason) {
                 },
             },
         },
-    }, (0, model_1.coachRecipient)(s, id), "Votre dossier : " + reason);
+    }, (0, model_1.coachRecipient)(s, id), "Votre dossier : " + reason, "", (0, exports.uid)(), { event: "dossier" });
 }
 function alertMatches(s, a) {
     if (!a.active)
@@ -3134,6 +3236,22 @@ function maintain(s) {
                 },
             };
     }
+    for (const c of (0, model_1.allCoaches)(next)) {
+        const calendar = next.calendarStatus?.[c.id];
+        const recipient = (0, model_1.coachRecipient)(next, c.id);
+        const open = next.notices.filter((n) => n.recipient === recipient && n.event === "calendar" && !n.resolvedAt);
+        const problem = !!(calendar?.error || calendar?.conflicts?.length);
+        if (problem && !open.length)
+            next = notify(next, recipient, "Votre agenda nécessite une vérification.", "", (0, exports.uid)(), { event: "calendar" });
+        if (!problem && open.length)
+            next = {
+                ...next,
+                notices: next.notices.map((n) => open.some((x) => x.id === n.id) ? { ...n, resolvedAt: (0, model_1.now)() } : n),
+            };
+        const cfg = next.settings?.[c.id];
+        if (cfg?.dossier.status === "expired")
+            next = notify(next, recipient, "Votre dossier : justificatifs arrivés à expiration.", "", `dossier-expired:${c.id}:${cfg.dossier.expires}`, { event: "dossier" });
+    }
     for (const b of next.bookings) {
         if (b.status !== "confirmed" || (0, model_1.instant)(b.day, b.time) - (0, model_1.now)() > 86400000)
             continue;
@@ -3150,17 +3268,26 @@ function maintain(s) {
         : p);
     if (attempts?.some((p, i) => p !== next.attempts[i]))
         next = { ...next, attempts };
-    const proposals = next.proposals?.map((p) => {
-        const b = next.bookings.find((b) => b.id === p.booking);
-        return p.status === "pending" &&
-            (!b ||
-                b.status !== "confirmed" ||
-                (0, model_1.instant)(p.target.day, p.target.time) <= (0, model_1.now)())
-            ? { ...p, status: "expired" }
-            : p;
-    });
+    const proposals = next.proposals?.map((p) => p.status === "pending" && effectiveProposalStatus(next, p) === "expired"
+        ? { ...p, status: "expired" }
+        : p);
     if (proposals?.some((p, i) => p !== next.proposals[i]))
         next = { ...next, proposals };
+    // Recover actionable legacy proposals without assigning a guessed historical date.
+    for (const p of next.proposals ?? []) {
+        if (p.status !== "pending")
+            continue;
+        const b = next.bookings.find((b) => b.id === p.booking);
+        if (!b)
+            continue;
+        const candidates = next.proposals?.filter((x) => x.booking === b.id) ?? [];
+        const represented = next.notices.some((n) => n.recipient === b.clientId &&
+            n.booking === b.id &&
+            (0, noticeEvents_1.noticeKind)(n) === "proposal" &&
+            (n.proposalId === p.id || (!n.proposalId && candidates.length === 1)));
+        if (!represented)
+            next = notify(next, b.clientId, "Votre coach propose un changement.", b.id, `proposal-pending:${p.id}`, { event: "proposal", proposalId: p.id });
+    }
     for (const a of next.alerts ?? []) {
         const matches = alertMatches(next, a), keys = matches.map((m) => `${m.coach.id}|${a.day}|${m.time}|${m.offer.id}`), fresh = keys.some((k) => !a.seen.includes(k));
         if (JSON.stringify(keys) !== JSON.stringify(a.seen))
