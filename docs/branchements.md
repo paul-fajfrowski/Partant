@@ -1,5 +1,7 @@
 # Partant — branchements de développement
 
+> **Validation utilisateur — 18 septembre 2026 :** le propriétaire confirme que les connexions Apple et Google fonctionnent dans la simulation web ; son compte Google a été ajouté aux utilisateurs de test. Le blocage Google est levé pour ce compte. Cette validation ne couvre pas encore Google Calendar, les appareils natifs ni tous les cas secondaires d’authentification.
+
 État : 16 septembre 2026. Cible décidée : **React Native + TypeScript + Expo**. Voir [la décision persistante](decisions/001-react-native.md).
 
 ## État actuel — 18 septembre 2026

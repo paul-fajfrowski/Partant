@@ -1,5 +1,7 @@
 # Gel temporaire du périmètre MVP
 
+> **Validation utilisateur — 18 septembre 2026 :** le propriétaire confirme que les connexions Apple et Google fonctionnent dans la simulation web ; son compte Google a été ajouté aux utilisateurs de test. Le blocage Google est levé pour ce compte. Cette validation ne couvre pas encore Google Calendar, les appareils natifs ni tous les cas secondaires d’authentification.
+
 Décision utilisateur du 18 septembre 2026.
 
 Le périmètre fonctionnel actuel de Partant est temporairement figé. React Native + TypeScript + Expo reste la version de travail ; le prototype HTML validé reste la référence visuelle archivée.
