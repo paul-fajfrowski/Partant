@@ -186,9 +186,18 @@ ok(
 );
 assert.throws(() => W.answerProposal(s, third.id, "accepted"), /plus ouverte/);
 count++;
-s = W.cancelSession(s, draft.id, "Annuler cette proposition après notre message");
+s = W.cancelSession(
+  s,
+  draft.id,
+  "Annuler cette proposition après notre message",
+);
 rows = N.notificationRows(s);
-ok(rows.some(r=>r.notice.event==='cancelled'&&r.title==='Séance annulée'),'Free-text cancellation reason cannot change event category');
+ok(
+  rows.some(
+    (r) => r.notice.event === "cancelled" && r.title === "Séance annulée",
+  ),
+  "Free-text cancellation reason cannot change event category",
+);
 ok(
   rows.find((r) => r.notice.event === "booking").outcome ===
     "Séance annulée depuis",
@@ -339,5 +348,51 @@ ok(
   N.notificationRows(s).find((r) => r.notice.id === "ticket-test").target
     .focus === "t1",
   "Support deep link scoped to ticket",
+);
+const chapters = N.notificationChapters(s);
+const visibleRows = N.notificationRows(s);
+ok(
+  chapters.flatMap((c) => c.rows).length === visibleRows.length,
+  "Every visible event belongs to exactly one chapter",
+);
+ok(
+  new Set(chapters.flatMap((c) => c.rows.map((r) => r.notice.id))).size ===
+    visibleRows.length,
+  "No duplicate event across chapters",
+);
+ok(
+  chapters.every(
+    (c) =>
+      c.rows.length &&
+      c.unread === c.rows.filter((r) => !r.notice.read).length &&
+      c.actions === c.rows.filter((r) => r.actionable).length,
+  ),
+  "Nonempty chapters and accurate independent counters",
+);
+ok(
+  chapters.every((c) =>
+    c.rows.every(
+      (r, i) =>
+        !i ||
+        (c.rows[i - 1].notice.createdAt || 0) >= (r.notice.createdAt || 0),
+    ),
+  ),
+  "Newest first within each chapter",
+);
+ok(
+  N.notificationChapters({ ...s, notices: [] }).length === 0,
+  "Empty inbox has no empty chapters",
+);
+ok(
+  chapters
+    .flatMap((c) => c.rows)
+    .every((r) => r.notice.recipient === s.account.id),
+  "Chapters preserve account isolation",
+);
+ok(
+  visibleRows
+    .filter((r) => r.notice.event === "message")
+    .every((r) => !r.session),
+  "General messages have no imposed session subject",
 );
 console.log(`PASS ${count} notification domain checks.`);

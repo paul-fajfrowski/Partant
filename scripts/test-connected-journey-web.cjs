@@ -135,13 +135,14 @@ async function until(fn, label) {
       .find((x) => x && /notification/i.test(x));
     await H.click(label || "Notifications");
     await until(
-      () => H.d.body.textContent.includes("Votre activité, au fil du temps."),
+      () => H.d.body.textContent.includes("Nouvelles réservations"),
       "Coach notification inbox",
     );
     const notice =
       coachState.notices.find(
         (n) => n.booking === booking.id && n.event === "booking",
       ) || coachState.notices.find((n) => n.booking === booking.id);
+    await H.click("Nouvelles réservations");
     ok(
       H.d
         .querySelector(`[data-testid="notification-${notice.id}"]`)

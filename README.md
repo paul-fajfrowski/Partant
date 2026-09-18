@@ -19,11 +19,11 @@ La version native navigable reprend les actifs, les parcours client et les confi
 
 ## Messagerie — conversations par personne
 
-[Parcours, fiabilité des envois et recette](docs/messaging-14.md) : plusieurs séances réunies dans une conversation privée, recherche, chronologie, contexte de séance, brouillons et reprise sans doublon après une coupure réseau. Disponible en démo et connecté ; les brouillons restent propres à chaque appareil.
+[Présentation simplifiée et recette actuelle](docs/communication-15.md) : une conversation privée par personne, sans choix de séance avant l’envoi, avec accès facultatif aux réservations, recherche, chronologie, brouillons et reprise sans doublon après une coupure réseau. Les mécanismes de fiabilité sont décrits dans [la livraison 14](docs/messaging-14.md). Disponible en démo et connecté ; les brouillons restent propres à chaque appareil.
 
 ## Notifications — amélioration autorisée après le gel
 
-[Fil chronologique, réponses attendues, contexte des séances et résultats de recette](docs/notifications-13.md). Disponible en démo locale et sur le serveur de développement. La lecture reste distincte de la résolution ; les anciens événements sans date restent identifiés comme tels.
+[Rubriques par type, historique dans chaque rubrique et résultats de recette](docs/communication-15.md). Les états métier et accès directs de [la livraison 13](docs/notifications-13.md) sont conservés. Disponible en démo locale et sur le serveur de développement. La lecture reste distincte de la résolution ; les anciens événements sans date restent identifiés comme tels.
 
 ## Dernière livraison — intégrations 10
 

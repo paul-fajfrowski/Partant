@@ -1,16 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Pressable, TextInput } from "react-native";
-import {
-  H2,
-  P,
-  Row,
-  Photo,
-  Field,
-  Select,
-  Button,
-  TextButton,
-  Icon,
-} from "./ui";
+import { H2, P, Row, Photo, Field, Button, TextButton } from "./ui";
 import { tokens as t } from "./tokens";
 import { notificationGroup, sessionDate } from "./notifications";
 import type { Booking, Store } from "./model";
@@ -38,7 +28,14 @@ const dateLabel = (stamp?: number) => {
     read: true,
     createdAt: stamp,
   });
-  return label === "Cette semaine" ? new Intl.DateTimeFormat("fr-FR", {timeZone:"Europe/Paris",day:"numeric",month:"long",year:"numeric"}).format(stamp) : label;
+  return label === "Cette semaine"
+    ? new Intl.DateTimeFormat("fr-FR", {
+        timeZone: "Europe/Paris",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }).format(stamp)
+    : label;
 };
 const fold = (text: string) =>
   text
@@ -203,6 +200,7 @@ export function ConversationScreen({
   const [readError, setReadError] = useState(false),
     [readRevision, setReadRevision] = useState(0);
   const reading = useRef(false);
+  const [showSessions, setShowSessions] = useState(false);
   const booking = thread.bookings.find((b) => b.id === draft.booking) ?? entry;
   const readKey =
     thread.messages
@@ -244,9 +242,6 @@ export function ConversationScreen({
   const outgoing = draft.outgoing,
     visiblePending =
       outgoing && !thread.messages.some((m) => m.id === outgoing.id);
-  const pendingBooking = thread.bookings.find(
-    (b) => b.id === outgoing?.booking,
-  );
   let previous = "";
   return (
     <>
@@ -259,34 +254,36 @@ export function ConversationScreen({
           </P>
         </View>
       </Row>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Voir la séance liée à la conversation"
-        onPress={() => onBooking(booking.id)}
-        style={{
-          backgroundColor: t.fog,
-          borderRadius: 20,
-          padding: 16,
-          marginBottom: 24,
-        }}
-      >
-        <Row between>
-          <View style={{ flex: 1 }}>
-            <P bold>{booking.serviceName}</P>
-            <P small muted style={{ marginTop: 5 }}>
-              {sessionDate(booking.day, booking.time)}
-            </P>
-            <P small muted>
-              {booking.status === "cancelled"
-                ? "Séance annulée"
-                : booking.status === "completed"
-                  ? "Séance passée"
-                  : "Séance réservée"}
-            </P>
-          </View>
-          <Icon name="arrow" size={18} />
-        </Row>
-      </Pressable>
+      <TextButton onPress={() => setShowSessions(!showSessions)}>
+        {showSessions ? "Masquer nos séances" : "Voir nos séances"}
+      </TextButton>
+      {showSessions && (
+        <View style={{ marginBottom: 20 }}>
+          {thread.bookings.map((b) => (
+            <Pressable
+              key={b.id}
+              accessibilityRole="button"
+              accessibilityLabel={`Voir la séance : ${sessionDate(b.day, b.time)}`}
+              onPress={() => onBooking(b.id)}
+              style={{
+                paddingVertical: 14,
+                borderBottomWidth: 1,
+                borderBottomColor: t.border,
+              }}
+            >
+              <P bold>{b.serviceName}</P>
+              <P small muted>
+                {sessionDate(b.day, b.time)}
+                {b.status === "cancelled"
+                  ? " · Annulée"
+                  : b.status === "completed"
+                    ? " · Terminée"
+                    : ""}
+              </P>
+            </Pressable>
+          ))}
+        </View>
+      )}
       {!thread.messages.length && (
         <P muted style={{ marginVertical: 20 }}>
           Un objectif à préciser ou une question pratique ? Échangez ici.
@@ -296,8 +293,7 @@ export function ConversationScreen({
         const group = dateLabel(m.createdAt),
           heading = group !== previous;
         previous = group;
-        const mine = m.who === store.account?.id,
-          context = m.context ?? m.booking;
+        const mine = m.who === store.account?.id;
         return (
           <React.Fragment key={m.key}>
             {heading && (
@@ -323,24 +319,6 @@ export function ConversationScreen({
                 marginBottom: 12,
               }}
             >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Voir la séance du message : ${sessionDate(context.day, context.time)}`}
-                onPress={() => onBooking(m.booking.id)}
-              >
-                <P
-                  small
-                  style={{
-                    color: mine ? "#dedede" : t.muted,
-                    fontSize: 11,
-                    marginBottom: 8,
-                  }}
-                >
-                  {m.context ? "À propos de" : "Séance actuelle"} ·{" "}
-                  {context.serviceName} ·{" "}
-                  {sessionDate(context.day, context.time)}
-                </P>
-              </Pressable>
               <P style={{ color: mine ? t.white : t.ink, fontSize: 15 }}>
                 {m.text}
               </P>
@@ -373,12 +351,6 @@ export function ConversationScreen({
             marginVertical: 12,
           }}
         >
-          {pendingBooking && (
-            <P small muted style={{ marginBottom: 8 }}>
-              À propos de · {pendingBooking.serviceName} ·{" "}
-              {sessionDate(pendingBooking.day, pendingBooking.time)}
-            </P>
-          )}
           <P>{outgoing.text}</P>
           <P small muted style={{ marginTop: 8 }}>
             {outgoing.status === "sending"
@@ -400,17 +372,6 @@ export function ConversationScreen({
         <TextButton onPress={() => void markRead()}>
           Synchroniser la lecture
         </TextButton>
-      )}
-      {thread.bookings.length > 1 && (
-        <Select
-          label="Séance liée au prochain message"
-          value={booking.id}
-          items={thread.bookings.map((b) => [
-            b.id,
-            `${b.serviceName} · ${sessionDate(b.day, b.time)}`,
-          ])}
-          onChange={(id) => onEdit(draft.text, id)}
-        />
       )}
       <P small muted style={{ marginTop: 12, marginBottom: 8 }}>
         Votre message

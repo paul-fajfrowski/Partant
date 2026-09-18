@@ -106,6 +106,7 @@ const selected = (label) =>
     !d.body.textContent.includes("Message privé de Sarah"),
     "Other coach notifications are isolated",
   );
+  await click("Autres informations");
   d.querySelector('[data-testid="notification-coach-notice"]').click();
   await wait();
   ok(

@@ -208,15 +208,10 @@ const outbox = () => {
       (m) => m.id === uncertain.id,
     );
     ok(committed.length === 1, "First uncertain request actually committed");
-    const selector = [...H.d.querySelectorAll('[role="button"]')].find((e) =>
-      e
-        .getAttribute("aria-label")
-        ?.startsWith("Séance liée au prochain message :"),
+    ok(
+      !H.d.body.textContent.includes("Séance liée au prochain message"),
+      "Retry requires no session selection",
     );
-    selector.click();
-    await H.wait();
-    [...H.d.querySelectorAll('[role="radio"]')].at(-1).click();
-    await H.wait();
     H.input("Votre message", "Brouillon de la prochaine séance");
     await H.wait();
     blocked = false;
@@ -232,11 +227,9 @@ const outbox = () => {
     );
     ok(
       Object.values(JSON.parse(H.w.localStorage.getItem(draftKey))).some(
-        (d) =>
-          d.text === "Brouillon de la prochaine séance" &&
-          d.booking === secondId,
+        (d) => d.text === "Brouillon de la prochaine séance",
       ),
-      "Retry preserves new draft session choice",
+      "Retry preserves conversation draft",
     );
     ok(
       (await read(client)).messages[uncertain.booking].filter(

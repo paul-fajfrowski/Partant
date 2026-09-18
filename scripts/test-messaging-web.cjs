@@ -135,19 +135,22 @@ const text = () => H.d.body.textContent;
         "Brouillon conservé pour Alex",
       "Draft survives page reload",
     );
-    const select = [...H.d.querySelectorAll('[role="button"]')].find((e) =>
-      e
-        .getAttribute("aria-label")
-        ?.startsWith("Séance liée au prochain message :"),
+    ok(
+      !text().includes("Séance liée au prochain message") &&
+        !text().includes("À propos de"),
+      "Conversation has no session selector or repeated bubble context",
     );
-    select.click();
-    await H.wait();
-    const option = [...H.d.querySelectorAll('[role="radio"]')].find((e) =>
-      e.textContent.includes("11:00"),
+    await H.click("Voir nos séances");
+    ok(
+      text().includes("10:00") && text().includes("11:00"),
+      "Optional booking access includes both sessions",
     );
-    assert.ok(option);
-    option.click();
-    await H.wait();
+    await H.click("Masquer nos séances");
+    ok(
+      H.d.querySelector('textarea[aria-label="Votre message"]').value ===
+        "Brouillon conservé pour Alex",
+      "Booking access preserves draft",
+    );
     const send = [...H.d.querySelectorAll('[role="button"]')].find(
       (e) => e.textContent === "Envoyer",
     );
@@ -156,16 +159,17 @@ const text = () => H.d.body.textContent;
     await H.wait();
     await H.wait();
     ok(
-      saved().messages["thread-two"].filter((m) => m.who === coach.id)
-        .length === 1,
-      "Double tap sends once on selected session",
+      Object.values(saved().messages)
+        .flat()
+        .filter((m) => m.who === coach.id).length === 1,
+      "Double tap sends once in person conversation",
     );
-    const message = saved().messages["thread-two"].find(
-      (m) => m.who === coach.id,
-    );
+    const message = Object.values(saved().messages)
+      .flat()
+      .find((m) => m.who === coach.id);
     ok(
-      !!message.id && !!message.createdAt && message.context.time === "11:00",
-      "Message is dated and associated with selected session",
+      !!message.id && !!message.createdAt,
+      "Message has stable identifier and date",
     );
     ok(
       H.d.querySelector('textarea[aria-label="Votre message"]').value === "",
@@ -195,8 +199,9 @@ const text = () => H.d.body.textContent;
       "Drafts isolated by account",
     );
     ok(
-      saved()
-        .messages["thread-two"].find((m) => m.id === message.id)
+      Object.values(saved().messages)
+        .flat()
+        .find((m) => m.id === message.id)
         .readBy.includes(alex.id),
       "Recipient read receipt persists",
     );

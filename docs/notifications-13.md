@@ -1,5 +1,7 @@
 # Notifications utiles — 18 septembre 2026
 
+> Présentation actualisée par [la livraison 15](communication-15.md) : notifications par rubriques et conversation sans sélecteur de séance. Les éléments ci-dessous décrivent la livraison antérieure.
+
 Amélioration explicitement autorisée par le propriétaire après le gel du MVP : faciliter la lecture et l’action, sans ajouter de catégories ou de navigation superflues. React Native demeure la seule version de travail. Le prototype HTML archivé est inchangé.
 
 ## Expérience livrée

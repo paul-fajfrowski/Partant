@@ -175,6 +175,7 @@ export function notificationRows(s: Store): NotificationRow[] {
         );
       else if (kind === "cancelled") row.detail.push(n.body);
       if (kind === "message") {
+        row.session = "";
         row.target = b
           ? { screen: "chat", booking: b.id }
           : { screen: "messages" };
@@ -281,4 +282,46 @@ export function notificationRows(s: Store): NotificationRow[] {
       (a, b) => stamp(b.row.notice) - stamp(a.row.notice) || b.index - a.index,
     )
     .map((x) => x.row);
+}
+
+export type NotificationChapter = {
+  id: string;
+  title: string;
+  rows: NotificationRow[];
+  unread: number;
+  actions: number;
+};
+/** Stable headings; event chronology is preserved within each heading. */
+export function notificationChapters(s: Store): NotificationChapter[] {
+  const categories: [string, string, string[]][] = [
+    ["booking", "Nouvelles réservations", ["booking"]],
+    ["cancelled", "Séances annulées", ["cancelled"]],
+    ["changes", "Séances modifiées", ["rescheduled", "transferred", "seats"]],
+    [
+      "proposals",
+      "Propositions de changement",
+      ["proposal", "proposal-result"],
+    ],
+    ["messages", "Messages", ["message"]],
+    ["reminders", "Rappels de séance", ["reminder"]],
+    ["reviews", "Avis et réponses", ["review", "review-reply"]],
+    ["calendar", "Agenda", ["calendar"]],
+    ["dossier", "Dossier coach", ["dossier"]],
+    ["support", "Assistance", ["support"]],
+    ["availability", "Créneaux disponibles", ["availability"]],
+    ["other", "Autres informations", ["other"]],
+  ];
+  const rows = notificationRows(s);
+  return categories
+    .map(([id, title, kinds]) => {
+      const entries = rows.filter((r) => kinds.includes(noticeKind(r.notice)));
+      return {
+        id,
+        title,
+        rows: entries,
+        unread: entries.filter((r) => !r.notice.read).length,
+        actions: entries.filter((r) => r.actionable).length,
+      };
+    })
+    .filter((c) => c.rows.length);
 }

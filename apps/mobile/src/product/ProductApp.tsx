@@ -319,11 +319,15 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const activeConversation = booked
     ? conversations.find((c) => c.bookings.some((b) => b.id === booked.id))
     : undefined;
+  const [notificationChapter, setNotificationChapter] = useState<string | null>(
+    null,
+  );
   const lastIdentity = useRef(store.account?.id);
   useEffect(() => {
     if (lastIdentity.current !== store.account?.id) {
       history.current = [];
       resetFilters();
+      setNotificationChapter(null);
       lastIdentity.current = store.account?.id;
     }
   }, [store.account?.id]);
@@ -2821,6 +2825,8 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     content = (
       <Section>
         <NotificationsScreen
+          expanded={notificationChapter}
+          onExpand={setNotificationChapter}
           key={store.account?.id ?? "guest"}
           store={store}
           busy={busy}

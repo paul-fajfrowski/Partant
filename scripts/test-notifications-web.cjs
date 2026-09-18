@@ -92,28 +92,32 @@ const row = (id) => d.querySelector(`[data-testid="notification-${id}"]`);
     await click("Mon espace");
     await click("Mes notifications");
     ok(
-      d.body.textContent.includes("Aujourd’hui") &&
-        d.body.textContent.includes("Historique"),
-      "Receipt chronology and honest legacy section",
+      !row("booking-notice") && !row("proposal-notice"),
+      "Chapters start collapsed",
     );
     ok(
       !d.body.textContent.includes("Private secret notice"),
       "No other account notifications",
     );
+    await click("Nouvelles réservations");
+    ok(d.body.textContent.includes("Aujourd’hui"), "Chronology inside chapter");
     ok(
       row("booking-notice").textContent.includes("Coaching individuel"),
       "Session context visible",
     );
     ok(
       row("booking-notice").getAttribute("aria-label").startsWith("Non lue."),
-      "Unread conveyed accessibly",
+      "Opening chapter preserves unread state",
     );
-    await click("À traiter · 1");
+    await click("Autres informations");
     ok(
-      !!row("proposal-notice") &&
-        !row("booking-notice") &&
-        !row("message-notice"),
-      "Only required response in action filter",
+      d.body.textContent.includes("Historique") && !row("booking-notice"),
+      "Legacy chronology and one expanded chapter",
+    );
+    await click("Propositions de changement");
+    ok(
+      !!row("proposal-notice") && !row("old"),
+      "Proposal chapter opens independently",
     );
     row("proposal-notice").click();
     await wait();
@@ -127,19 +131,18 @@ const row = (id) => d.querySelector(`[data-testid="notification-${id}"]`);
       "Opening marks read",
     );
     await click("Retour");
-    await click("À traiter · 1");
     ok(!!row("proposal-notice"), "Read proposal still needs response");
     row("proposal-notice").click();
     await wait();
     await click("Garder ma séance initiale");
     ok(saved().proposals[0].status === "declined", "Response persisted");
     await click("Retour");
-    await click("À traiter");
     ok(
-      d.body.textContent.includes("Aucune action en attente."),
-      "Resolved action leaves filter",
+      !d
+        .querySelector('[data-testid="notification-chapter-proposals"]')
+        .textContent.includes("à traiter"),
+      "Resolved action clears chapter action count",
     );
-    await click("Tout");
     ok(
       row("proposal-notice").textContent.includes("Séance initiale conservée"),
       "Result remains in timeline",
@@ -153,6 +156,11 @@ const row = (id) => d.querySelector(`[data-testid="notification-${id}"]`);
       "Resolved proposal cannot be answered again",
     );
     await click("Retour");
+    await click("Messages");
+    ok(
+      !row("message-notice").textContent.includes("Coaching individuel"),
+      "General message has no imposed session subject",
+    );
     row("message-notice").click();
     await wait();
     ok(
@@ -168,6 +176,7 @@ const row = (id) => d.querySelector(`[data-testid="notification-${id}"]`);
       "Reading messages preserves booking unread state",
     );
     await click("Retour");
+    await click("Nouvelles réservations");
     row("booking-notice").click();
     await wait();
     ok(

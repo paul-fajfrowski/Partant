@@ -1,5 +1,7 @@
 # Messagerie par personne — 18 septembre 2026
 
+> Présentation actualisée par [la livraison 15](communication-15.md) : notifications par rubriques et conversation sans sélecteur de séance. Les éléments ci-dessous décrivent la livraison antérieure.
+
 Amélioration demandée et autorisée après le gel du MVP. React Native reste la version de travail ; le prototype HTML validé est conservé sans modification.
 
 ## Parcours livré
