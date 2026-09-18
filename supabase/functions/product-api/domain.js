@@ -42,6 +42,7 @@ exports.asActor = asActor;
 exports.applyCommand = applyCommand;
 exports.project = project;
 exports.documents = documents;
+const Messaging = __importStar(load("messaging.ts"));
 const noticeEvents_1 = load("noticeEvents.ts");
 /** Authoritative domain used by the Edge Function. No browser state is trusted. */
 const M = __importStar(load("model.ts"));
@@ -471,23 +472,12 @@ function applyCommand(source, actor, cmd) {
         case "report":
             n = W.report(s, pick(a[0], ["kind", "body", "coach", "booking", "review"]));
             break;
-        case "message": {
-            const b = W.owned(s, a[0]), text = string(a[1], 4000).trim();
-            if (!text)
-                throw Error("Écrivez un message.");
-            n = {
-                ...s,
-                messages: {
-                    ...s.messages,
-                    [b.id]: [
-                        ...(s.messages[b.id] ?? []),
-                        { who: actor.id, text, readBy: [actor.id] },
-                    ],
-                },
-            };
-            n = W.notify(n, b.clientId === actor.id ? b.coach : b.clientId, "Vous avez reçu un message.", b.id);
+        case "message":
+            n = Messaging.sendMessage(s, a[0], string(a[1], 4000), a[2]);
             break;
-        }
+        case "readConversation":
+            n = Messaging.readConversation(s, a[0], a[1]);
+            break;
         case "readMessages":
             W.owned(s, a[0]);
             n = {
@@ -769,48 +759,140 @@ function documents(s) {
 }
 
 },
-"noticeEvents.ts":(module,exports,load)=>{
+"messaging.ts":(module,exports,load)=>{
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.noticeKind = noticeKind;
-/** Legacy notices retain their body; new notices persist a stable semantic event. */
-function noticeKind(n) {
-    if (n.event)
-        return n.event;
-    const text = n.body.toLowerCase();
-    if (n.id.startsWith("reminder:") || n.category === "reminder")
-        return "reminder";
-    if (n.id.startsWith("alert:") || n.category === "availability")
-        return "availability";
-    if (text.startsWith("votre dossier"))
-        return "dossier";
-    if (text.startsWith("séance annulée"))
-        return "cancelled";
-    if (text.includes("propose un changement"))
-        return "proposal";
-    if (text.includes("proposition") || text.includes("garde la séance initiale"))
-        return "proposal-result";
-    if (text.includes("annulée"))
-        return "cancelled";
-    if (text.includes("transférée"))
-        return "transferred";
-    if (text.includes("séance modifiée"))
-        return "rescheduled";
-    if (text.includes("places modifiées"))
-        return "seats";
-    if (text.includes("message"))
-        return "message";
-    if (text.includes("répondu à votre avis"))
-        return "review-reply";
-    if (text.includes("avis"))
-        return "review";
-    if (text.includes("demande a reçu"))
-        return "support";
-    if (n.category === "booking" ||
-        text.includes("séance est confirmée") ||
-        text.includes("séance a été réservée"))
-        return "booking";
-    return "other";
+exports.messageKey = exports.conversationKey = void 0;
+exports.conversationFor = conversationFor;
+exports.conversations = conversations;
+exports.sendMessage = sendMessage;
+exports.receipts = receipts;
+exports.readConversation = readConversation;
+const model_1 = load("model.ts");
+const workflows_1 = load("workflows.ts");
+const noticeEvents_1 = load("noticeEvents.ts");
+const conversationKey = (b) => JSON.stringify([b.coach, b.clientId]);
+exports.conversationKey = conversationKey;
+const messageKey = (m, index) => m.id ?? `legacy:${index}`;
+exports.messageKey = messageKey;
+function conversationFor(s, id) {
+    return conversations(s).find((c) => c.bookings.some((b) => b.id === id));
+}
+function conversations(s) {
+    if (!s.account)
+        return [];
+    const buckets = new Map();
+    for (const b of s.bookings.filter((b) => (0, workflows_1.canRead)(s, b))) {
+        const key = (0, exports.conversationKey)(b);
+        buckets.set(key, [...(buckets.get(key) ?? []), b]);
+    }
+    return [...buckets]
+        .map(([id, bookings]) => {
+        const coach = (0, model_1.allCoaches)(s).find((c) => c.id === bookings[0].coach), isCoach = s.account.role === "coach";
+        const sorted = [...bookings].sort((a, b) => (a.day + a.time).localeCompare(b.day + b.time));
+        const upcoming = sorted.find((b) => b.status === "confirmed" && Date.parse(b.day + "T23:59:59Z") >= (0, model_1.now)());
+        const messages = bookings
+            .flatMap((b) => (s.messages[b.id] ?? []).map((m, i) => ({
+            ...m,
+            key: b.id + ":" + (0, exports.messageKey)(m, i),
+            booking: b,
+        })))
+            .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+        const latest = messages.at(-1);
+        return {
+            id,
+            name: isCoach
+                ? (s.identities?.find((a) => a.id === bookings[0].clientId)?.name ??
+                    bookings.at(-1).clientName)
+                : (coach?.name ?? "Votre coach"),
+            coachId: bookings[0].coach,
+            clientId: bookings[0].clientId,
+            photo: isCoach ? undefined : coach?.photoUri,
+            photoIndex: isCoach ? null : (coach?.photo ?? null),
+            bookings: sorted,
+            messages,
+            latest,
+            unread: messages.filter((m) => m.who !== s.account.id && !m.readBy?.includes(s.account.id)).length,
+            booking: upcoming ?? sorted.at(-1),
+        };
+    })
+        .sort((a, b) => (b.latest?.createdAt ?? 0) - (a.latest?.createdAt ?? 0) ||
+        Number(!!b.latest) - Number(!!a.latest) ||
+        (b.booking.day + b.booking.time).localeCompare(a.booking.day + a.booking.time));
+}
+/** One client-generated ID survives uncertain responses and manual retries. */
+function sendMessage(s, booking, text, id = (0, workflows_1.uid)()) {
+    const b = (0, workflows_1.owned)(s, booking), who = s.account.id, body = text.trim();
+    if (!body || body.length > 4000)
+        throw Error("Écrivez un message de 1 à 4 000 caractères.");
+    if (typeof id !== "string" || id.length > 100 || !id.length)
+        throw Error("Référence de message invalide.");
+    for (const [key, ms] of Object.entries(s.messages)) {
+        const existing = ms.find((m) => m.id === id);
+        if (existing) {
+            if (key === booking && existing.who === who && existing.text === body)
+                return s;
+            throw Error("Cette référence correspond à un autre message.");
+        }
+    }
+    const recipient = b.clientId === who ? (0, model_1.coachRecipient)(s, b.coach) : b.clientId;
+    if (s.deletedAccounts?.includes(recipient))
+        throw Error("Ce compte n’est plus disponible.");
+    return (0, workflows_1.notify)({
+        ...s,
+        messages: {
+            ...s.messages,
+            [booking]: [
+                ...(s.messages[booking] ?? []),
+                {
+                    id,
+                    who,
+                    text: body,
+                    createdAt: (0, model_1.now)(),
+                    readBy: [who],
+                    context: (0, model_1.noticeContext)(s, b),
+                },
+            ],
+        },
+    }, recipient, "Vous avez reçu un message.", booking, `message:${id}`, { event: "message", messageId: id });
+}
+function receipts(c) {
+    return c.bookings.map((b) => ({
+        booking: b.id,
+        keys: c.messages
+            .filter((m) => m.booking.id === b.id)
+            .map((m) => m.id ?? m.key.slice(b.id.length + 1)),
+    }));
+}
+/** Read only messages actually loaded by this account, including legacy index keys. */
+function readConversation(s, booking, seen) {
+    const anchor = (0, workflows_1.owned)(s, booking), who = s.account.id, key = (0, exports.conversationKey)(anchor);
+    if (!Array.isArray(seen) || seen.length > 1000)
+        throw Error("Lecture invalide.");
+    const next = { ...s, messages: { ...s.messages } };
+    const selected = new Map();
+    for (const item of seen) {
+        if (!item || !Array.isArray(item.keys) || item.keys.length > 10000)
+            throw Error("Lecture invalide.");
+        const b = (0, workflows_1.owned)(s, item.booking);
+        if ((0, exports.conversationKey)(b) !== key)
+            throw Error("Conversation inaccessible.");
+        const keys = new Set(item.keys);
+        selected.set(b.id, keys);
+        next.messages[b.id] = (s.messages[b.id] ?? []).map((m, i) => keys.has((0, exports.messageKey)(m, i)) && !m.readBy?.includes(who)
+            ? { ...m, readBy: [...(m.readBy ?? []), who] }
+            : m);
+    }
+    next.notices = s.notices.map((n) => {
+        const keys = selected.get(n.booking);
+        if (n.recipient !== who || !keys || (0, noticeEvents_1.noticeKind)(n) !== "message")
+            return n;
+        const read = n.messageId
+            ? keys.has(n.messageId)
+            : (next.messages[n.booking] ?? []).every((m) => m.who === who || m.readBy?.includes(who));
+        return read ? { ...n, read: true } : n;
+    });
+    return next;
 }
 
 },
@@ -1572,7 +1654,7 @@ function commandsFrom(before, after) {
     for (const [id, ms] of Object.entries(after.messages)) {
         const old = before.messages[id] ?? [];
         for (const m of ms.slice(old.length))
-            add("message", id, m.text);
+            add("message", id, m.text, m.id);
         if (ms.some((m, i) => i < old.length &&
             m.readBy?.includes(me ?? "") &&
             !old[i]?.readBy?.includes(me ?? "")))
@@ -3338,6 +3420,9 @@ function _deleteAccount(s) {
     if (coach &&
         (s.externalSessions ?? []).some((b) => b.coach === coach && !b.cancelled && (0, model_1.instant)(b.day, b.time) > (0, model_1.now)()))
         throw Error("Traitez vos rendez-vous directs avant de supprimer ce compte.");
+    const affected = new Set(s.bookings
+        .filter((b) => b.clientId === id || b.coach === coach)
+        .map((b) => b.id));
     let next = {
         ...s,
         identities: identities(s).filter((a) => a.id !== id),
@@ -3347,7 +3432,11 @@ function _deleteAccount(s) {
             ...(s.deletedAccounts ?? []),
             id,
         ],
-        notices: s.notices.filter((n) => n.recipient !== id),
+        notices: s.notices
+            .filter((n) => n.recipient !== id)
+            .map((n) => affected.has(n.booking)
+            ? { ...n, context: undefined, previous: undefined }
+            : n),
         attempts: s.attempts?.filter((p) => p.owner !== id),
         alerts: s.alerts?.filter((a) => a.owner !== id),
         bookings: s.bookings.map((b) => b.clientId === id
@@ -3361,7 +3450,12 @@ function _deleteAccount(s) {
             : b),
         messages: Object.fromEntries(Object.entries(s.messages).map(([k, ms]) => [
             k,
-            ms.map((m) => m.who === id ? { ...m, text: "Message supprimé", who: "deleted" } : m),
+            ms.map((m) => ({
+                ...(m.who === id
+                    ? { ...m, text: "Message supprimé", who: "deleted" }
+                    : m),
+                context: affected.has(k) ? undefined : m.context,
+            })),
         ])),
     };
     if (coach)
@@ -3470,6 +3564,51 @@ exports.report = (0, commands_1.recorded)("report", _report);
 exports.deleteAccount = (0, commands_1.recorded)("deleteAccount", _deleteAccount);
 exports.reviewDossier = (0, commands_1.recorded)("reviewDossier", _reviewDossier);
 exports.resolveTicket = (0, commands_1.recorded)("resolveTicket", _resolveTicket);
+
+},
+"noticeEvents.ts":(module,exports,load)=>{
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.noticeKind = noticeKind;
+/** Legacy notices retain their body; new notices persist a stable semantic event. */
+function noticeKind(n) {
+    if (n.event)
+        return n.event;
+    const text = n.body.toLowerCase();
+    if (n.id.startsWith("reminder:") || n.category === "reminder")
+        return "reminder";
+    if (n.id.startsWith("alert:") || n.category === "availability")
+        return "availability";
+    if (text.startsWith("votre dossier"))
+        return "dossier";
+    if (text.startsWith("séance annulée"))
+        return "cancelled";
+    if (text.includes("propose un changement"))
+        return "proposal";
+    if (text.includes("proposition") || text.includes("garde la séance initiale"))
+        return "proposal-result";
+    if (text.includes("annulée"))
+        return "cancelled";
+    if (text.includes("transférée"))
+        return "transferred";
+    if (text.includes("séance modifiée"))
+        return "rescheduled";
+    if (text.includes("places modifiées"))
+        return "seats";
+    if (text.includes("message"))
+        return "message";
+    if (text.includes("répondu à votre avis"))
+        return "review-reply";
+    if (text.includes("avis"))
+        return "review";
+    if (text.includes("demande a reçu"))
+        return "support";
+    if (n.category === "booking" ||
+        text.includes("séance est confirmée") ||
+        text.includes("séance a été réservée"))
+        return "booking";
+    return "other";
+}
 
 },
 "locations.ts":(module,exports,load)=>{

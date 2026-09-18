@@ -17,6 +17,10 @@ Consulter [la décision](docs/decisions/001-react-native.md) et [l’état exact
 
 La version native navigable reprend les actifs, les parcours client et les configurations coach du prototype. Voir [le suivi précis de parité](docs/parite-prototype-react-native.md) et [le lancement React Native](apps/mobile/README.md). Les parcours avancés et les lieux par plage sont désormais raccordés au serveur de développement : voir [la livraison 9](docs/connected-product-9.md). Les intégrations externes, paiements/communications et la validation sur appareils restent à traiter. Voir [la recette native](docs/recette-react-native.md).
 
+## Messagerie — conversations par personne
+
+[Parcours, fiabilité des envois et recette](docs/messaging-14.md) : plusieurs séances réunies dans une conversation privée, recherche, chronologie, contexte de séance, brouillons et reprise sans doublon après une coupure réseau. Disponible en démo et connecté ; les brouillons restent propres à chaque appareil.
+
 ## Notifications — amélioration autorisée après le gel
 
 [Fil chronologique, réponses attendues, contexte des séances et résultats de recette](docs/notifications-13.md). Disponible en démo locale et sur le serveur de développement. La lecture reste distincte de la résolution ; les anciens événements sans date restent identifiés comme tels.

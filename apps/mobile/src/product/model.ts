@@ -96,6 +96,14 @@ export type NoticeContext = Pick<
   | "status"
   | "clientName"
 > & { coachName: string; locationName?: string };
+export type Message = {
+  id?: string;
+  who: string;
+  text: string;
+  readBy?: string[];
+  createdAt?: number;
+  context?: NoticeContext;
+};
 export type Notice = {
   createdAt?: number;
   event?: NoticeEvent;
@@ -103,6 +111,7 @@ export type Notice = {
   previous?: NoticeContext;
   proposalId?: string;
   ticketId?: string;
+  messageId?: string;
   resolvedAt?: number;
   category?: "booking" | "changes" | "reminder" | "availability";
   id: string;
@@ -208,7 +217,7 @@ export type Store = ExtendedStore & {
   closed: string[];
   published: boolean;
   offers: Offer[];
-  messages: Record<string, { who: string; text: string; readBy?: string[] }[]>;
+  messages: Record<string, Message[]>;
 };
 export const seedCoaches: Coach[] = reference.coaches.map((c) => ({
   ...c,

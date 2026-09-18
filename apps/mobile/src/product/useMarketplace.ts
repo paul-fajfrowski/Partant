@@ -1,3 +1,4 @@
+import * as Messaging from "./messaging";
 import { useEffect, useRef, useState, Dispatch, SetStateAction } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../lib/supabase";
@@ -34,12 +35,17 @@ const connectedInitial = (): Store => ({
 });
 export function useMarketplace(live: boolean) {
   // A visible QA replay gets its own demo storage; connected sessions are unaffected.
-  const previewKey = useRef((() => {
-    const run = Platform.OS === "web" && !live
-      ? new URLSearchParams(window.location.search).get("recette") : null;
-    return run && /^[a-zA-Z0-9-]{1,64}$/.test(run)
-      ? `partant-native-recette-${run}` : "partant-native-preview-v1";
-  })()).current;
+  const previewKey = useRef(
+    (() => {
+      const run =
+        Platform.OS === "web" && !live
+          ? new URLSearchParams(window.location.search).get("recette")
+          : null;
+      return run && /^[a-zA-Z0-9-]{1,64}$/.test(run)
+        ? `partant-native-recette-${run}`
+        : "partant-native-preview-v1";
+    })(),
+  ).current;
   const [store, update] = useState<Store>(() =>
     live ? connectedInitial() : newPreviewStore(),
   );
@@ -124,14 +130,91 @@ export function useMarketplace(live: boolean) {
     }
     if (token !== epoch.current) throw Error("Le compte actif a changé.");
     version.current = data.version;
-    if (data.deleted) await supabase.auth.signOut();
+    if (data.deleted) {
+      const owner = current.current.account?.id;
+      if (owner)
+        await AsyncStorage.removeItem(`partant-messages-v1:connected:${owner}`);
+      await supabase.auth.signOut();
+    }
     return data.store;
   }
+  async function messagingCommand(command: Command) {
+    const account = current.current.account?.id;
+    const token = epoch.current;
+    if (!account) throw Error("Reconnectez-vous pour envoyer un message.");
+    if (!live) {
+      const next =
+        command.name === "message"
+          ? Messaging.sendMessage(
+              current.current,
+              command.args[0],
+              command.args[1],
+              command.args[2],
+            )
+          : Messaging.readConversation(
+              current.current,
+              command.args[0],
+              command.args[1],
+            );
+      assign(next);
+      return;
+    }
+    jobs.current++;
+    setPending(jobs.current);
+    const job = queue.current
+      .then(async () => {
+        if (token !== epoch.current || account !== current.current.account?.id)
+          throw Error("Le compte actif a changé.");
+        try {
+          const saved = await execute([command]);
+          if (jobs.current === 1) assign(saved);
+        } catch (error) {
+          // A timeout can follow a committed message. Reconcile its stable ID before retrying.
+          if (
+            token === epoch.current &&
+            account === current.current.account?.id
+          ) {
+            try {
+              const data = await invoke({});
+              if (token === epoch.current) {
+                version.current = data.version;
+                if (jobs.current === 1) assign(data.store);
+                if (
+                  command.name === "message" &&
+                  data.store.messages[command.args[0]]?.some(
+                    (m) =>
+                      m.id === command.args[2] &&
+                      m.who === account &&
+                      m.text === command.args[1].trim(),
+                  )
+                )
+                  return;
+              }
+            } catch {}
+          }
+          throw error;
+        }
+      })
+      .finally(() => {
+        jobs.current = Math.max(0, jobs.current - 1);
+        if (active.current) setPending(jobs.current);
+      });
+    queue.current = job.catch(() => {});
+    return job;
+  }
+  const sendMessage = (booking: string, text: string, id: string) =>
+    messagingCommand({ name: "message", args: [booking, text, id] });
+  const readConversation = (booking: string, seen: Messaging.ReadReceipt[]) =>
+    messagingCommand({ name: "readConversation", args: [booking, seen] });
   const setStore: Dispatch<SetStateAction<Store>> = (updateValue) => {
     const before = current.current;
     const after =
       typeof updateValue === "function" ? updateValue(before) : updateValue;
     if (!live) {
+      if (before.account && after.deletedAccounts?.includes(before.account.id))
+        void AsyncStorage.removeItem(
+          `partant-messages-v1:${previewKey}:${before.account.id}`,
+        );
       assign(after);
       return;
     }
@@ -198,10 +281,9 @@ export function useMarketplace(live: boolean) {
   }, [live]);
   useEffect(() => {
     if (ready && !live)
-      AsyncStorage.setItem(
-        previewKey,
-        JSON.stringify(store),
-      ).catch(() => setError("Le stockage local est indisponible."));
+      AsyncStorage.setItem(previewKey, JSON.stringify(store)).catch(() =>
+        setError("Le stockage local est indisponible."),
+      );
   }, [store, ready]);
   useEffect(() => {
     if (!live) return;
@@ -341,6 +423,9 @@ export function useMarketplace(live: boolean) {
   });
   return {
     store,
+    sendMessage,
+    readConversation,
+    localScope: live ? "connected" : previewKey,
     setStore,
     ready,
     error,

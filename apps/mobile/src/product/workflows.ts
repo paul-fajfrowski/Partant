@@ -166,7 +166,7 @@ export function notify(
   booking = "",
   id = uid(),
   detail: Partial<
-    Pick<Notice, "event" | "previous" | "proposalId" | "ticketId">
+    Pick<Notice, "event" | "previous" | "proposalId" | "ticketId" | "messageId">
   > = {},
 ): Store {
   if (s.notices.some((n) => n.id === id)) return s;
@@ -840,7 +840,9 @@ function _saveReview(s: Store, id: string, rating: number, text: string) {
     },
     coachRecipient(s, b.coach),
     "Un nouvel avis a été publié.",
-    id, uid(), { event: "review" },
+    id,
+    uid(),
+    { event: "review" },
   );
 }
 function _replyReview(s: Store, id: string, text: string) {
@@ -859,7 +861,9 @@ function _replyReview(s: Store, id: string, text: string) {
     },
     r.owner,
     "Votre coach a répondu à votre avis.",
-    r.booking, uid(), { event: "review-reply" },
+    r.booking,
+    uid(),
+    { event: "review-reply" },
   );
 }
 function _report(s: Store, values: Partial<Ticket>) {
@@ -969,7 +973,9 @@ function _reviewDossier(
     },
     coachRecipient(s, id),
     "Votre dossier : " + reason,
-    "", uid(), { event: "dossier" },
+    "",
+    uid(),
+    { event: "dossier" },
   );
 }
 export function alertMatches(s: Store, a: AvailabilityAlert) {
@@ -1229,6 +1235,11 @@ function _deleteAccount(s: Store) {
     throw Error(
       "Traitez vos rendez-vous directs avant de supprimer ce compte.",
     );
+  const affected = new Set(
+    s.bookings
+      .filter((b) => b.clientId === id || b.coach === coach)
+      .map((b) => b.id),
+  );
   let next = {
     ...s,
     identities: identities(s).filter((a) => a.id !== id),
@@ -1244,7 +1255,13 @@ function _deleteAccount(s: Store) {
       ...((s as Store & { deletedAccounts?: string[] }).deletedAccounts ?? []),
       id,
     ],
-    notices: s.notices.filter((n) => n.recipient !== id),
+    notices: s.notices
+      .filter((n) => n.recipient !== id)
+      .map((n) =>
+        affected.has(n.booking)
+          ? { ...n, context: undefined, previous: undefined }
+          : n,
+      ),
     attempts: s.attempts?.filter((p) => p.owner !== id),
     alerts: s.alerts?.filter((a) => a.owner !== id),
     bookings: s.bookings.map((b) =>
@@ -1261,9 +1278,12 @@ function _deleteAccount(s: Store) {
     messages: Object.fromEntries(
       Object.entries(s.messages).map(([k, ms]) => [
         k,
-        ms.map((m) =>
-          m.who === id ? { ...m, text: "Message supprimé", who: "deleted" } : m,
-        ),
+        ms.map((m) => ({
+          ...(m.who === id
+            ? { ...m, text: "Message supprimé", who: "deleted" }
+            : m),
+          context: affected.has(k) ? undefined : m.context,
+        })),
       ]),
     ),
   };

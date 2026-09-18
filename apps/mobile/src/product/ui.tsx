@@ -46,8 +46,10 @@ export function P({
   small = false,
   bold = false,
   style,
+  numberOfLines,
 }: {
   children: React.ReactNode;
+  numberOfLines?: number;
   muted?: boolean;
   small?: boolean;
   bold?: boolean;
@@ -55,6 +57,7 @@ export function P({
 }) {
   return (
     <Text
+      numberOfLines={numberOfLines}
       style={[
         s.text,
         muted && { color: t.muted },

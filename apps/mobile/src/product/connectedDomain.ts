@@ -1,3 +1,4 @@
+import * as Messaging from "./messaging";
 import { noticeKind } from "./noticeEvents";
 /** Authoritative domain used by the Edge Function. No browser state is trusted. */
 import * as M from "./model";
@@ -516,28 +517,12 @@ export function applyCommand(
         pick(a[0], ["kind", "body", "coach", "booking", "review"]),
       );
       break;
-    case "message": {
-      const b = W.owned(s, a[0]),
-        text = string(a[1], 4000).trim();
-      if (!text) throw Error("Écrivez un message.");
-      n = {
-        ...s,
-        messages: {
-          ...s.messages,
-          [b.id]: [
-            ...(s.messages[b.id] ?? []),
-            { who: actor.id, text, readBy: [actor.id] },
-          ],
-        },
-      };
-      n = W.notify(
-        n,
-        b.clientId === actor.id ? b.coach : b.clientId,
-        "Vous avez reçu un message.",
-        b.id,
-      );
+    case "message":
+      n = Messaging.sendMessage(s, a[0], string(a[1], 4000), a[2]);
       break;
-    }
+    case "readConversation":
+      n = Messaging.readConversation(s, a[0], a[1]);
+      break;
     case "readMessages":
       W.owned(s, a[0]);
       n = {

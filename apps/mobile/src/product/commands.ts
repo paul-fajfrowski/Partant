@@ -54,7 +54,7 @@ export function commandsFrom(before: Store, after: Store): Command[] {
       add("readNotice", n.id);
   for (const [id, ms] of Object.entries(after.messages)) {
     const old = before.messages[id] ?? [];
-    for (const m of ms.slice(old.length)) add("message", id, m.text);
+    for (const m of ms.slice(old.length)) add("message", id, m.text, m.id);
     if (
       ms.some(
         (m, i) =>

@@ -1,5 +1,7 @@
+import { MessagesScreen, ConversationScreen } from "./MessagesScreen";
+import { useMessageDrafts } from "./useMessageDrafts";
+import * as Messaging from "./messaging";
 import { NotificationsScreen } from "./NotificationsScreen";
-import { noticeKind } from "./noticeEvents";
 import { searchAddresses, distanceKm } from "../lib/geo";
 import CoachMap from "../components/CoachMap";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -49,7 +51,6 @@ import {
   initialStore,
   configFor,
   coachAccountId,
-  coachRecipient,
   allCoaches,
   now,
   setDemoClock,
@@ -138,6 +139,11 @@ const euro = (n: number) =>
 export default function ProductApp({ live = false }: { live?: boolean }) {
   const market = useMarketplace(live);
   const { store, setStore } = market;
+  const messageDrafts = useMessageDrafts(
+    store,
+    market.localScope,
+    market.sendMessage,
+  );
   const [sectorPosition, setSectorPosition] = useState<
     import("../lib/geo").Place | null
   >(null);
@@ -265,7 +271,6 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const [agendaOfferId, setAgendaOfferId] = useState("");
   const configSave = useRef<(() => void) | null>(null);
   const [config, setConfig] = useState("profile");
-  const [message, setMessage] = useState("");
   const [configName, setConfigName] = useState("Thomas Martin");
   const [configBio, setConfigBio] = useState(reference.coaches[0].bio);
   const [offerName, setOfferName] = useState("");
@@ -309,21 +314,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               : "changes"
         ]),
   ).length;
-  const conversations = store.bookings.filter(
-    (b) =>
-      b.clientId === store.account?.id ||
-      (store.account?.role === "coach" && b.coach === activeCoach),
-  );
-  const unreadMessages = conversations.reduce(
-    (total, b) =>
-      total +
-      (store.messages[b.id] ?? []).filter(
-        (m) =>
-          m.who !== store.account?.id &&
-          !m.readBy?.includes(store.account?.id ?? ""),
-      ).length,
-    0,
-  );
+  const conversations = Messaging.conversations(store);
+  const unreadMessages = conversations.reduce((n, c) => n + c.unread, 0);
+  const activeConversation = booked
+    ? conversations.find((c) => c.bookings.some((b) => b.id === booked.id))
+    : undefined;
   const lastIdentity = useRef(store.account?.id);
   useEffect(() => {
     if (lastIdentity.current !== store.account?.id) {
@@ -391,27 +386,6 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     });
     return () => listener.remove();
   }, [screen, modal, step]);
-  useEffect(() => {
-    if (screen === "chat" && booked && W.canRead(store, booked)) {
-      setStore((s) => ({
-        ...s,
-        notices: s.notices.map((n) =>
-          n.recipient === s.account?.id &&
-          n.booking === booked.id &&
-          noticeKind(n) === "message"
-            ? { ...n, read: true }
-            : n,
-        ),
-        messages: {
-          ...s.messages,
-          [booked.id]: (s.messages[booked.id] ?? []).map((m) => ({
-            ...m,
-            readBy: [...new Set([...(m.readBy ?? []), s.account!.id])],
-          })),
-        },
-      }));
-    }
-  }, [screen, selectedBooking]);
   function go(next: string, target = "") {
     if (next === "groups-saved") {
       while (
@@ -2872,125 +2846,48 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   if (screen === "messages")
     content = (
       <Section>
-        {conversations.map((b) => (
-          <Setting
-            key={b.id}
-            title={
-              store.account?.role === "coach"
-                ? b.clientName
-                : (coaches.find((c) => c.id === b.coach)?.name ?? "Votre coach")
-            }
-            description={`${dayLabel(b.day, true)} · ${b.time}${(store.messages[b.id] ?? []).some((m) => m.who !== store.account?.id && !m.readBy?.includes(store.account?.id ?? "")) ? " · Nouveau message" : ""}`}
-            icon="message"
-            onPress={() => {
-              setSelectedBooking(b.id);
-              go("chat");
-            }}
-          />
-        ))}
-        {!conversations.length &&
-          empty(
-            "La conversation commence ici.",
-            store.account?.role === "coach"
-              ? "Vos échanges avec vos clients apparaîtront après une première réservation."
-              : "Après votre réservation, retrouvez vos échanges avec votre coach.",
-            store.account?.role === "coach"
-              ? "Revenir à l’agenda"
-              : "Découvrir les coachs",
-            () => {
-              if (store.account?.role === "coach") {
-                setCoachTab("agenda");
-                go("coach");
-              } else go("explore");
-            },
-          )}
+        <MessagesScreen
+          store={store}
+          drafts={messageDrafts.drafts}
+          onOpen={(c) => {
+            const saved = messageDrafts.drafts[c.id]?.booking;
+            setSelectedBooking(
+              c.bookings.some((b) => b.id === saved) ? saved! : c.booking.id,
+            );
+            go("chat");
+          }}
+        />
       </Section>
     );
-  if (screen === "chat" && booked)
+  if (screen === "chat" && booked && activeConversation)
     content = (
       <Section>
-        {summary(booked)}
-        <Rule />
-        {
-          <>
-            {(store.messages[booked.id] ?? []).map((m, i) => (
-              <View
-                key={i}
-                style={{
-                  backgroundColor: m.who === store.account?.id ? t.ink : t.fog,
-                  paddingVertical: 12,
-                  paddingHorizontal: 16,
-                  borderRadius: 15,
-                  alignSelf:
-                    m.who === store.account?.id ? "flex-end" : "flex-start",
-                  maxWidth: "86%",
-                  marginBottom: 15,
-                }}
-              >
-                <P
-                  style={{
-                    fontSize: 14,
-                    color: m.who === store.account?.id ? "#fff" : t.ink,
-                  }}
-                >
-                  {m.text}
-                </P>
-                {m.who === store.account?.id && (
-                  <P small style={{ color: "#bbb", marginTop: 6 }}>
-                    {(m.readBy ?? []).some((id) => id !== m.who)
-                      ? "Lu"
-                      : "Envoyé"}
-                  </P>
-                )}
-              </View>
-            ))}
-            <Field
-              label="Votre message"
-              value={message}
-              onChange={setMessage}
-              multiline
-            />
-            <Button
-              disabled={!message.trim()}
-              onPress={() => {
-                setStore((s) => {
-                  const next = {
-                    ...s,
-                    messages: {
-                      ...s.messages,
-                      [booked.id]: [
-                        ...(s.messages[booked.id] ?? []),
-                        {
-                          who: s.account?.id ?? "",
-                          text: message.trim(),
-                          readBy: [s.account?.id ?? ""],
-                        },
-                      ],
-                    },
-                  };
-                  return s.connected
-                    ? next
-                    : W.notify(
-                        next,
-                        booked.clientId === s.account?.id
-                          ? coachRecipient(s, booked.coach)
-                          : booked.clientId,
-                        "Vous avez reçu un message.",
-                        booked.id,
-                      );
-                });
-                setMessage("");
-              }}
-            >
-              Envoyer
-            </Button>
-            <P small muted style={{ marginTop: 16 }}>
-              {live
-                ? "Conversation privée, partagée avec votre interlocuteur."
-                : "Conversation de démonstration conservée sur cet appareil."}
-            </P>
-          </>
-        }
+        <ConversationScreen
+          key={`${store.account?.id}:${activeConversation.id}`}
+          store={store}
+          thread={activeConversation}
+          entry={booked}
+          draft={messageDrafts.drafts[activeConversation.id] ?? { text: "" }}
+          ready={messageDrafts.ready}
+          storageError={messageDrafts.error}
+          onEdit={(text, id) =>
+            messageDrafts.edit(activeConversation.id, text, id)
+          }
+          onSend={(id, retry) =>
+            messageDrafts.submit(activeConversation.id, id, retry)
+          }
+          onRead={market.readConversation}
+          onBooking={(id) => {
+            setSelectedBooking(id);
+            go("bookingDetail");
+          }}
+          onScrollEnd={() =>
+            setTimeout(
+              () => scroll.current?.scrollToEnd({ animated: true }),
+              80,
+            )
+          }
+        />
       </Section>
     );
   if (screen === "coach") {

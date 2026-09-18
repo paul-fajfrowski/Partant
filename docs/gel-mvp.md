@@ -30,3 +30,5 @@ Le dépôt GitHub contient les sources React Native, le prototype et ses actifs,
 ## Amélioration autorisée après le gel
 
 Le propriétaire a demandé puis autorisé la simplification des notifications client/coach. Voir [les changements et la recette](notifications-13.md). Cette autorisation ne rouvre pas le périmètre des paiements ou communications externes.
+
+Le propriétaire a également autorisé les améliorations de messagerie : conversation par personne, chronologie, contexte et envoi fiable. Voir [la livraison 14](messaging-14.md). Les intégrations reportées restent hors périmètre.
