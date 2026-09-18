@@ -30,7 +30,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import * as Crypto from "expo-crypto";
 import reference from "../reference/prototype.json";
 import communes from "../reference/communes-idf.json";
-import { errorMessage } from "../lib/errors";
+import { errorMessage, isEmailRateLimit } from "../lib/errors";
 import { tokens as t } from "./tokens";
 import {
   Account,
@@ -211,6 +211,22 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const [modal, setModal] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
+  const actionInFlight = useRef(false);
+  const [emailFeedback, setEmailFeedback] = useState("");
+  const [emailWait, setEmailWait] = useState(0);
+  const emailRetryAt = useRef(0);
+  useEffect(() => {
+    if (!emailWait) return;
+    const timer = setInterval(() => {
+      setEmailWait(Math.max(0, Math.ceil((emailRetryAt.current - Date.now()) / 1000)));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [emailWait > 0]);
+  function pauseEmailRequests() {
+    emailRetryAt.current = Date.now() + 60000;
+    setEmailWait(60);
+  }
+
   const initial = useRef(false);
   const [role, setRole] = useState<"client" | "coach">("client");
   const [signup, setSignup] = useState(false);
@@ -441,13 +457,15 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     setModal("");
   }
   async function run(fn: () => Promise<void> | void) {
-    if (busy) return;
+    if (actionInFlight.current) return;
+    actionInFlight.current = true;
     setBusy(true);
     try {
       await fn();
     } catch (e) {
       setNotice(errorMessage(e));
     } finally {
+      actionInFlight.current = false;
       setBusy(false);
     }
   }
@@ -1169,18 +1187,33 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             onChange={setEmail}
           />
           <Button
-            disabled={busy}
+            disabled={busy || (live && emailWait > 0)}
             onPress={() =>
               run(async () => {
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
-                  throw Error("Indiquez une adresse e-mail valide.");
-                if (live) await market.sendCode(email.trim(), signup);
-                go("code");
+                setEmailFeedback("");
+                try {
+                  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+                    throw Error("Indiquez une adresse e-mail valide.");
+                  if (live) {
+                    if (Date.now() < emailRetryAt.current) return;
+                    await market.sendCode(email.trim(), signup);
+                    pauseEmailRequests();
+                  }
+                  go("code");
+                } catch (error) {
+                  if (live && isEmailRateLimit(error)) pauseEmailRequests();
+                  setEmailFeedback(errorMessage(error));
+                }
               })
             }
           >
-            Continuer avec mon e-mail
+            {live && emailWait > 0 ? `Patienter ${emailWait} s avant un nouvel essai` : "Continuer avec mon e-mail"}
           </Button>
+          {!!emailFeedback && (
+            <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ marginTop: 16 }}>
+              <Note>{emailFeedback}</Note>
+            </View>
+          )}
         </View>
         {live && (providers.google || providers.apple) && (
           <View style={{ gap: 12, marginTop: 24 }}>

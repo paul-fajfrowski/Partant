@@ -85,3 +85,13 @@ L’advisor constate sept tables privées sans policy : accès client volontaire
 - [Google Calendar, création d’événements et identifiants](https://developers.google.com/workspace/calendar/api/v3/reference/events/insert)
 - [Planification d’Edge Functions](https://supabase.com/docs/guides/functions/schedule-functions)
 - [Usage des tuiles OpenStreetMap](https://operations.osmfoundation.org/policies/tiles/)
+
+## Recette du 18 septembre : blocages de connexion
+
+Le premier essai utilisateur a révélé `403 org_internal` chez Google : l’audience OAuth est interne. Dans Google Auth Platform → Audience, passer en **Externe**, conserver **Test**, puis ajouter les comptes de test (également nécessaires pour Calendar). Ce réglage doit être effectué par le propriétaire dans Google Cloud. Les clés et les retours OAuth n’ont pas à être recréés. [Documentation Google](https://support.google.com/cloud/answer/15549945?hl=en).
+
+L’envoi OTP a renvoyé `email rate limit exceeded`. Le service SMTP fourni par défaut est limité à deux envois par heure par projet et aux adresses de l’équipe ; aucune confirmation e-mail n’a été désactivée. **L’utilisateur reporte explicitement tout branchement SMTP et achat de domaine** : essais connectés via Google/Apple, démo locale pour les parcours simulés. [Limites Supabase](https://supabase.com/docs/guides/auth/auth-smtp).
+
+L’interface conserve désormais l’erreur e-mail en français sur l’écran, empêche un double clic de lancer deux actions et impose une pause locale de 60 secondes après un envoi ou un quota e-mail atteint. Cette pause n’annonce pas le rétablissement du quota serveur. Les boutons sociaux restent disponibles. Le message de code envoyé n’apparaît qu’après succès du serveur.
+
+Validation : TypeScript, export web, tests DOM avec réponses Auth contrôlées (quota, absence d’envoi fictif, double clic, disponibilité des boutons sociaux, succès vers la vérification). Aucun e-mail réel envoyé par ces tests. L’audience Google et les échanges OAuth réels restent à valider par le propriétaire.
