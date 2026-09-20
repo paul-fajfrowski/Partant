@@ -1,8 +1,12 @@
 # Partant
 
+## Retours et sorties de parcours — livraison 20
+
+[Corrections et recette de navigation](docs/navigation-20.md). Retour et fermeture vers le bon espace, inscription quittable, retour e-mail sans perte de séance, confirmation sans retour au paiement. Apple natif iPhone confirmé fonctionnel par le propriétaire.
+
 ## Connexion iPhone et espaces — livraison 19
 
-[Changements, configuration Xcode et recette restante](docs/native-auth-19.md). Apple natif iOS, séparation client/coach, découverte sans faux profil invité et reprise après connexion. Le workspace iOS est versionné. Domaine Google personnalisé et validation Apple sur iPhone restent à faire ; aucun paiement réel.
+[Changements, configuration Xcode et recette restante](docs/native-auth-19.md). Apple natif iOS, séparation client/coach, découverte sans faux profil invité et reprise après connexion. Le workspace iOS est versionné. Domaine Google personnalisé et cas secondaires natifs restent à vérifier ; Apple sur iPhone est validé par le propriétaire. Aucun paiement réel.
 
 > **Validation utilisateur — 18 septembre 2026 :** le propriétaire confirme que les connexions Apple et Google fonctionnent dans la simulation web ; son compte Google a été ajouté aux utilisateurs de test. Le blocage Google est levé pour ce compte. Cette validation ne couvre pas encore Google Calendar, les appareils natifs ni tous les cas secondaires d’authentification.
 

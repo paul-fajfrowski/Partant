@@ -541,18 +541,56 @@ export function Pagebar({
   title,
   onBack,
   right,
+  onHome,
+  homeLabel = "Revenir à l’accueil",
+  disabled = false,
 }: {
   title: string;
   onBack: () => void;
   right?: React.ReactNode;
+  onHome?: () => void;
+  homeLabel?: string;
+  disabled?: boolean;
 }) {
   return (
     <View style={s.pagebar}>
-      <IconButton name="back" onPress={onBack} label="Retour" />
-      <Text style={{ fontFamily: t.bold, fontSize: 15, color: t.ink }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Retour"
+        disabled={disabled}
+        onPress={onBack}
+        style={[s.iconButton, { opacity: disabled ? 0.4 : 1 }]}
+      >
+        <Icon name="back" />
+      </Pressable>
+      <Text
+        style={{
+          flex: 1,
+          flexShrink: 1,
+          marginHorizontal: 10,
+          fontFamily: t.bold,
+          fontSize: 15,
+          color: t.ink,
+        }}
+      >
         {title}
       </Text>
-      <View style={{ minWidth: 44 }}>{right}</View>
+      <View
+        style={{ flexDirection: "row", alignItems: "center", minWidth: 44 }}
+      >
+        {right}
+        {onHome && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={homeLabel}
+            disabled={disabled}
+            onPress={onHome}
+            style={[s.iconButton, { opacity: disabled ? 0.4 : 1 }]}
+          >
+            <Icon name="close" />
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }

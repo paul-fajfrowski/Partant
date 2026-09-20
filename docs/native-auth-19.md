@@ -1,5 +1,8 @@
 # Livraison 19 — connexion iPhone et espaces personnels
 
+> Mise à jour du 20 septembre : le propriétaire confirme le bon fonctionnement de la connexion Apple native sur son iPhone, de la séparation client/coach et des accès protégés. Les cas secondaires restent à tester ; voir aussi [Navigation 20](navigation-20.md).
+
+
 20 septembre 2026. Changements autorisés par le propriétaire après le premier build réussi sur iPhone. Source de travail : `apps/mobile`. Le prototype HTML archivé n’est pas modifié.
 
 ## Livré

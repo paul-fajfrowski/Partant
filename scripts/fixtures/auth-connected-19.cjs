@@ -23,6 +23,7 @@ let base = W.loginDemo(
 const client = base.account,
   coach = W.identities(base).find((a) => a.role === "coach");
 const all = M.allCoaches(base);
+let completed = process.env.PARTANT_QA_SCENARIO !== "incomplete";
 let logged = false,
   revision = 0;
 base = {
@@ -68,7 +69,7 @@ const token = [
 function snapshot() {
   return {
     ...base,
-    account: logged ? account : null,
+    account: logged && completed ? account : null,
     identities: logged ? [account] : [],
     bookings: logged ? base.bookings : [],
     notices: logged ? base.notices : [],
@@ -106,6 +107,9 @@ exports.fetch = (input, init = {}) => {
     return reply({});
   }
   if (url.includes("/functions/v1/product-api")) {
+    // Simulate a valid auth session whose product profile still needs completion.
+    if (body.register && process.env.PARTANT_QA_SCENARIO !== "incomplete")
+      completed = true;
     for (const command of body.commands ?? []) {
       if (command.name === "favorites") base.favorites = command.args[0];
       if (command.name === "report")

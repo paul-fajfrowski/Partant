@@ -1,3 +1,9 @@
+import {
+  rootScreens,
+  mainScreen,
+  fallbackScreen,
+  canReturnTo,
+} from "./navigation";
 import { MessagesScreen, ConversationScreen } from "./MessagesScreen";
 import { useMessageDrafts } from "./useMessageDrafts";
 import * as Messaging from "./messaging";
@@ -238,6 +244,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const [emailFeedback, setEmailFeedback] = useState("");
   const [authFeedback, setAuthFeedback] = useState("");
   const [emailWait, setEmailWait] = useState(0);
+  const [codeRecipient, setCodeRecipient] = useState("");
   const emailRetryAt = useRef(0);
   useEffect(() => {
     if (!emailWait) return;
@@ -308,7 +315,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     reference.coaches[0].address,
   );
   const pref = store.preferences;
-  const coach = coaches.find((c) => c.id === coachId) ?? coaches[0];
+  const coach = coaches.find((c) => c.id === coachId);
   const offers = store.offers.filter((o) => o.coach === coach?.id && o.active);
   const offer = offers.find((o) => o.id === offerId) ?? offers[0];
   const booked = store.bookings.find(
@@ -386,6 +393,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     )
       return;
     routedAccount.current = store.account.id;
+    setCodeRecipient("");
     initial.current = true;
     if (!live) {
       if (["welcome", "completeAccount", "login"].includes(screen))
@@ -476,14 +484,14 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         setModal("");
         return true;
       }
-      if (history.current.length) {
+      if (history.current.length || !rootScreens.includes(screen)) {
         back();
         return true;
       }
       return false;
     });
     return () => listener.remove();
-  }, [screen, modal, step]);
+  });
   function requestAuth(destination: string, extra: Partial<AuthJourney> = {}) {
     const journey: AuthJourney = {
       screen: destination,
@@ -560,22 +568,77 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       setConfig(target);
       next = "config";
     }
-    history.current.push({
-      screen,
-      focus,
-      config,
-      coachTab,
-      day,
-      coachId,
-      offerId,
-      selectedBooking,
-    });
+    const isRoot = rootScreens.includes(next);
+    if (isRoot || next === "confirmation") history.current = [];
+    // A confirmed session must never lead back into its checkout.
+    if (screen === "confirmation" && !isRoot) {
+      history.current = [];
+      history.current.push({
+        screen:
+          mainScreen(store.account?.role) === "coach" ? "coach" : "bookings",
+        focus: "",
+        config,
+        coachTab: "agenda",
+        day,
+        coachId,
+        offerId,
+        selectedBooking,
+      });
+    } else if (
+      !isRoot &&
+      next !== "confirmation" &&
+      (next !== screen || target !== focus)
+    )
+      history.current.push({
+        screen,
+        focus,
+        config,
+        coachTab,
+        day,
+        coachId,
+        offerId,
+        selectedBooking,
+      });
     setFocus(target);
     setScreen(next);
     setModal("");
   }
+  function leaveToMain() {
+    if (busy || (live && market.pending > 0)) return;
+    if (
+      live &&
+      screen === "completeAccount" &&
+      market.session &&
+      !store.account
+    ) {
+      setModal("leave-registration");
+      return;
+    }
+    pendingJourney.current = null;
+    newRegistration.current = false;
+    setPendingCheckout(false);
+    if (live) void clearJourney();
+    setStep(0);
+    go(mainScreen(store.account?.role));
+    setCoachTab("agenda");
+  }
   function back() {
-    if (["login", "code"].includes(screen)) {
+    if (modal) {
+      setModal("");
+      return;
+    }
+    if (busy || (live && market.pending > 0)) return;
+    if (screen === "completeAccount") {
+      leaveToMain();
+      return;
+    }
+    if (screen === "confirmation") {
+      go(store.account?.role === "coach" ? "coach" : "bookings");
+      setCoachTab("agenda");
+      return;
+    }
+    // Editing the e-mail address is still part of the same booking journey.
+    if (screen === "login") {
       pendingJourney.current = null;
       if (live) void clearJourney();
     }
@@ -583,11 +646,22 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       setStep(step - 1);
       return;
     }
-    const previous = history.current.pop();
-    setScreen(
-      previous?.screen ??
-        (store.account?.role === "coach" ? "coach" : "explore"),
-    );
+    let previous = history.current.pop();
+    while (
+      previous &&
+      (!canReturnTo(previous.screen, store.account?.role, live) ||
+        (previous.screen === screen &&
+          previous.focus === focus &&
+          previous.config === config))
+    ) {
+      previous = history.current.pop();
+    }
+    const destination =
+      previous?.screen ?? fallbackScreen(screen, store.account?.role);
+    setScreen(destination);
+    if (!previous && destination === "coach") setCoachTab("agenda");
+    if (screen === "code") setCode("");
+    setAuthFeedback("");
     if (previous) {
       setConfig(previous.config);
       setCoachTab(previous.coachTab);
@@ -792,6 +866,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     go("setup");
   }
   function chooseOffer(o: Offer) {
+    if (!coach) return;
     setOfferId(o.id);
     setEditBookingOffer(false);
     if (o.kind === "Groupe") {
@@ -1174,6 +1249,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const barTitle: Record<string, string> = {
     login: role === "coach" ? "Espace coach" : "Espace particulier",
     code: "Connexion",
+    completeAccount: "Créer mon espace",
+    "become-coach": "Devenir coach",
+    confirmation: "Séance confirmée",
     onboarding: "Votre rythme",
     profile: "Votre coach",
     setup: "Votre séance",
@@ -1369,6 +1447,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   if (live) {
                     if (Date.now() < emailRetryAt.current) return;
                     await market.sendCode(email.trim(), signup);
+                    setCodeRecipient(email.trim().toLowerCase());
                     pauseEmailRequests();
                   }
                   go("code");
@@ -1383,6 +1462,17 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               ? `Patienter ${emailWait} s avant un nouvel essai`
               : "Continuer avec mon e-mail"}
           </Button>
+          {live &&
+            codeRecipient === email.trim().toLowerCase() &&
+            !!codeRecipient && (
+              <TextButton
+                onPress={() => {
+                  if (!busy) go("code");
+                }}
+              >
+                Saisir le code déjà reçu
+              </TextButton>
+            )}
           {!!emailFeedback && (
             <View
               accessibilityRole="alert"
@@ -4162,6 +4252,35 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     checklist: "Votre activité prend forme",
   };
   let modalBody: React.ReactNode = null;
+  if (modal === "leave-registration")
+    modalBody = (
+      <>
+        <H2>Continuer sans terminer l’inscription ?</H2>
+        <P muted style={{ marginVertical: 16 }}>
+          Votre espace n’est pas encore créé. Vous pourrez vous reconnecter plus
+          tard pour le compléter.
+        </P>
+        <Button onPress={() => setModal("")}>Terminer mon inscription</Button>
+        <TextButton
+          onPress={() =>
+            run(async () => {
+              try {
+                await market.signOut();
+              } catch (error) {
+                setModal("");
+                throw error;
+              }
+              pendingJourney.current = null;
+              newRegistration.current = false;
+              setPendingCheckout(false);
+              go("explore");
+            })
+          }
+        >
+          Quitter et explorer
+        </TextButton>
+      </>
+    );
   if (modal === "open-group")
     modalBody = (
       <>
@@ -4439,7 +4558,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                       style={styles.slot}
                       onPress={() =>
                         run(async () => {
-                          if (modal === "booking-date" && draft) {
+                          if (modal === "booking-date" && draft && coach) {
                             const allowed = formatsAt(
                               store,
                               coach,
@@ -4782,7 +4901,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           <TextButton
             onPress={() => {
               setStore(initialStore);
-              setScreen("welcome");
+              go("welcome");
               setModal("");
             }}
           >
@@ -5111,6 +5230,22 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         </Button>
       </View>
     );
+  // Every secondary screen retains a way out, including unavailable data states.
+  const pageTitle =
+    barTitle[screen] ?? (!rootScreens.includes(screen) ? "Partant" : undefined);
+  if (!content)
+    content = (
+      <Section>
+        {empty(
+          "Cet écran n’est plus disponible.",
+          "Retrouvez vos séances ou poursuivez depuis votre espace.",
+          store.account?.role === "coach"
+            ? "Revenir à mon agenda"
+            : "Revenir à l’exploration",
+          leaveToMain,
+        )}
+      </Section>
+    );
   const body = (
     <View
       style={[
@@ -5154,10 +5289,17 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           </P>
         </Row>
       )}
-      {barTitle[screen] && (
+      {pageTitle && (
         <Pagebar
-          title={barTitle[screen]}
+          title={pageTitle}
           onBack={back}
+          disabled={busy || (live && market.pending > 0)}
+          onHome={leaveToMain}
+          homeLabel={
+            store.account?.role === "coach"
+              ? "Revenir à mon agenda"
+              : "Revenir à l’exploration"
+          }
           right={
             screen === "profile" && coach ? (
               <IconButton
@@ -5215,12 +5357,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               }}
               key={id}
               onPress={() => {
-                history.current = [];
-                setModal("");
-                if (coachBottom) {
-                  setCoachTab(id);
-                  setScreen("coach");
-                } else setScreen(id);
+                if (busy || (live && market.pending > 0)) return;
+                go(coachBottom ? "coach" : id);
+                if (coachBottom) setCoachTab(id);
               }}
               style={styles.navItem}
             >
