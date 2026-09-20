@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "bookings": 144,
+    "clients": 36,
+    "notices": 446,
+    "messages": 216,
+    "weeks": 6,
+    "generatedAt": "2026-09-20T17:11:48.417Z"
+  },
+  "chapters": [
+    {
+      "id": "booking",
+      "title": "Nouvelles réservations",
+      "total": 144,
+      "unread": 12,
+      "actions": 0
+    },
+    {
+      "id": "cancelled",
+      "title": "Séances annulées",
+      "total": 24,
+      "unread": 4,
+      "actions": 0
+    },
+    {
+      "id": "changes",
+      "title": "Séances modifiées",
+      "total": 36,
+      "unread": 4,
+      "actions": 0
+    },
+    {
+      "id": "reviews",
+      "title": "Avis et réponses",
+      "total": 24,
+      "unread": 0,
+      "actions": 0
+    },
+    {
+      "id": "calendar",
+      "title": "Agenda",
+      "total": 1,
+      "unread": 0,
+      "actions": 1
+    },
+    {
+      "id": "dossier",
+      "title": "Dossier coach",
+      "total": 1,
+      "unread": 0,
+      "actions": 1
+    }
+  ],
+  "observations": {
+    "bookingRowsMounted": 10,
+    "rowsBeforeCancelledHeader": 10,
+    "generalNotifications": 230,
+    "distinctConversations": 36
+  },
+  "limits": "DOM fonctionnel ; aucune mesure de rendu, de défilement en pixels ou de fluidité sur téléphone."
+}

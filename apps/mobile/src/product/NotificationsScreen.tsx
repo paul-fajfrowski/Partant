@@ -6,6 +6,8 @@ import type { Store } from "./model";
 import { noticeKind } from "./noticeEvents";
 import {
   notificationRows,
+  notificationWindow,
+  NOTIFICATION_PAGE_SIZE,
   notificationChapters,
   notificationGroup,
   notificationTime,
@@ -17,26 +19,79 @@ export function NotificationsScreen({
   busy,
   expanded,
   onExpand,
+  limits,
+  onLimit,
+  actionsOnly,
+  onModeChange,
 }: {
   store: Store;
   onOpen: (row: NotificationRow) => void;
   busy: boolean;
   expanded: string | null;
   onExpand: (id: string | null) => void;
+  limits: Record<string, number>;
+  onLimit: (key: string, count: number) => void;
+  actionsOnly: boolean;
+  onModeChange: (active: boolean, firstChapter: string | null) => void;
 }) {
-  const chapters = notificationChapters(store);
+  const allChapters = notificationChapters(store);
+  const actionCount = allChapters.reduce((n, c) => n + c.actions, 0);
+  const chapters = actionsOnly
+    ? allChapters.filter((c) => c.actions > 0)
+    : allChapters;
   return (
     <>
+      {actionCount > 0 && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: actionsOnly }}
+          accessibilityLabel={`${actionCount} action${actionCount > 1 ? "s" : ""} à traiter`}
+          testID="pending-actions"
+          onPress={() =>
+            onModeChange(
+              !actionsOnly,
+              allChapters.find((c) => c.actions > 0)?.id ?? null,
+            )
+          }
+          style={({ pressed }) => ({
+            alignSelf: "flex-start",
+            maxWidth: "100%",
+            minHeight: t.touch,
+            justifyContent: "center",
+            backgroundColor: actionsOnly ? t.ink : t.white,
+            borderWidth: 1,
+            borderColor: actionsOnly ? t.ink : t.muted,
+            borderRadius: t.pill,
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            marginBottom: 12,
+            opacity: pressed ? 0.7 : 1,
+          })}
+        >
+          <P small bold style={{ color: actionsOnly ? t.white : t.ink }}>
+            {actionCount} action{actionCount > 1 ? "s" : ""} à traiter
+          </P>
+        </Pressable>
+      )}
+      {actionsOnly && (
+        <TextButton onPress={() => onModeChange(false, null)}>
+          Toutes les notifications
+        </TextButton>
+      )}
       {!chapters.length && (
         <View style={{ paddingVertical: 30 }}>
-          <H2>Tout est à jour.</H2>
+          <H2>{actionsOnly ? "Tout est traité." : "Tout est à jour."}</H2>
           <P muted style={{ marginTop: 10 }}>
-            Vos réservations et leurs changements apparaîtront ici.
+            {actionsOnly
+              ? "Retrouvez les événements dans l’historique."
+              : "Vos réservations et leurs changements apparaîtront ici."}
           </P>
         </View>
       )}
       {chapters.map((chapter) => {
         const open = expanded === chapter.id;
+        const pageKey = `${actionsOnly ? "actions" : "all"}:${chapter.id}`;
+        const page = notificationWindow(chapter, limits[pageKey], actionsOnly);
         let previous = "";
         return (
           <View key={chapter.id}>
@@ -74,7 +129,7 @@ export function NotificationsScreen({
             </Pressable>
             {open && (
               <View style={{ paddingLeft: 10 }}>
-                {chapter.rows.map((row) => {
+                {page.rows.map((row) => {
                   const day = notificationGroup(row.notice),
                     heading = day !== previous;
                   previous = day;
@@ -153,6 +208,29 @@ export function NotificationsScreen({
                     </View>
                   );
                 })}
+                <P small muted style={{ marginTop: 14 }}>
+                  {page.rows.length} sur {page.total}
+                  {actionsOnly ? " actions en attente" : " notifications"}
+                </P>
+                {page.remaining > 0 && (
+                  <TextButton
+                    onPress={() =>
+                      onLimit(
+                        pageKey,
+                        page.rows.length + NOTIFICATION_PAGE_SIZE,
+                      )
+                    }
+                  >
+                    Voir les précédents
+                  </TextButton>
+                )}
+                {page.rows.length > NOTIFICATION_PAGE_SIZE && (
+                  <TextButton
+                    onPress={() => onLimit(pageKey, NOTIFICATION_PAGE_SIZE)}
+                  >
+                    Réduire l’historique
+                  </TextButton>
+                )}
               </View>
             )}
           </View>

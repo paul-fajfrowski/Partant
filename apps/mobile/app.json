@@ -9,7 +9,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.paulfajfrowski.partant",
-      "appleTeamId": "4STLA425HP"
+      "appleTeamId": "4STLA425HP",
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
@@ -34,7 +35,9 @@
           "cameraPermission": false,
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-apple-authentication",
+      "./plugins/withPartantIos.cjs"
     ],
     "scheme": "partant"
   }

@@ -350,7 +350,10 @@ ok(
   "Support deep link scoped to ticket",
 );
 const chapters = N.notificationChapters(s);
-const visibleRows = N.notificationRows(s);
+const inboxIds = new Set(N.notificationInboxNotices(s).map((n) => n.id));
+const visibleRows = N.notificationRows(s).filter((r) =>
+  inboxIds.has(r.notice.id),
+);
 ok(
   chapters.flatMap((c) => c.rows).length === visibleRows.length,
   "Every visible event belongs to exactly one chapter",
@@ -389,10 +392,83 @@ ok(
     .every((r) => r.notice.recipient === s.account.id),
   "Chapters preserve account isolation",
 );
+const messageOnly = {
+  ...s,
+  notices: [
+    {
+      id: "chat-explicit",
+      event: "message",
+      recipient: s.account.id,
+      booking: "",
+      body: "Un message",
+      read: false,
+    },
+    {
+      id: "chat-legacy",
+      recipient: s.account.id,
+      booking: "",
+      body: "Vous avez reçu un message.",
+      read: false,
+    },
+    {
+      id: "foreign",
+      event: "booking",
+      recipient: "someone-else",
+      booking: "",
+      body: "Réservation",
+      read: false,
+    },
+  ],
+};
 ok(
-  visibleRows
-    .filter((r) => r.notice.event === "message")
-    .every((r) => !r.session),
-  "General messages have no imposed session subject",
+  N.notificationInboxNotices(messageOnly).length === 0,
+  "Explicit and legacy messages excluded from general badge",
 );
+ok(
+  N.notificationChapters(messageOnly).length === 0,
+  "Messages alone leave general notifications empty",
+);
+ok(
+  messageOnly.notices.length === 3 && !messageOnly.notices[0].read,
+  "Filtering does not delete or mark messages read",
+);
+{
+  const sourceRows = Array.from({ length: 24 }, (_, i) => ({
+    ...visibleRows[0],
+    notice: { ...visibleRows[0].notice, id: "page-" + i },
+    actionable: i === 23,
+  }));
+  const sourceChapter = {
+    id: "test",
+    title: "Test",
+    rows: sourceRows,
+    unread: 0,
+    actions: 1,
+  };
+  const first = N.notificationWindow(sourceChapter);
+  ok(
+    first.rows.length === 10 && first.remaining === 14,
+    "First page contains ten with accurate remainder",
+  );
+  const next = N.notificationWindow(sourceChapter, 20);
+  ok(
+    next.rows.length === 20 &&
+      next.rows[0].notice.id === first.rows[0].notice.id,
+    "Append preserves chronology and prefix",
+  );
+  ok(
+    N.notificationWindow(sourceChapter, 30).remaining === 0 &&
+      N.notificationWindow(sourceChapter, 30).rows.length === 24,
+    "Last page is complete without duplicates",
+  );
+  const actions = N.notificationWindow(sourceChapter, 10, true);
+  ok(
+    actions.rows.length === 1 && actions.rows[0].notice.id === "page-23",
+    "Old action beyond initial history remains reachable directly",
+  );
+  ok(
+    N.notificationWindow(sourceChapter, NaN).rows.length === 10,
+    "Invalid limit safely uses first page",
+  );
+}
 console.log(`PASS ${count} notification domain checks.`);

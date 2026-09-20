@@ -284,6 +284,13 @@ export function notificationRows(s: Store): NotificationRow[] {
     .map((x) => x.row);
 }
 
+/** General notifications exclude chat events; Messages owns their unread state. */
+export function notificationInboxNotices(s: Store): Notice[] {
+  return s.notices.filter(
+    (n) => n.recipient === s.account?.id && noticeKind(n) !== "message",
+  );
+}
+
 export type NotificationChapter = {
   id: string;
   title: string;
@@ -302,7 +309,6 @@ export function notificationChapters(s: Store): NotificationChapter[] {
       "Propositions de changement",
       ["proposal", "proposal-result"],
     ],
-    ["messages", "Messages", ["message"]],
     ["reminders", "Rappels de séance", ["reminder"]],
     ["reviews", "Avis et réponses", ["review", "review-reply"]],
     ["calendar", "Agenda", ["calendar"]],
@@ -311,7 +317,8 @@ export function notificationChapters(s: Store): NotificationChapter[] {
     ["availability", "Créneaux disponibles", ["availability"]],
     ["other", "Autres informations", ["other"]],
   ];
-  const rows = notificationRows(s);
+  const inboxIds = new Set(notificationInboxNotices(s).map((n) => n.id));
+  const rows = notificationRows(s).filter((r) => inboxIds.has(r.notice.id));
   return categories
     .map(([id, title, kinds]) => {
       const entries = rows.filter((r) => kinds.includes(noticeKind(r.notice)));
@@ -324,4 +331,23 @@ export function notificationChapters(s: Store): NotificationChapter[] {
       };
     })
     .filter((c) => c.rows.length);
+}
+
+export const NOTIFICATION_PAGE_SIZE = 10;
+export function notificationWindow(
+  chapter: NotificationChapter,
+  limit = NOTIFICATION_PAGE_SIZE,
+  actionsOnly = false,
+) {
+  const eligible = actionsOnly
+    ? chapter.rows.filter((r) => r.actionable)
+    : chapter.rows;
+  const count = Number.isFinite(limit)
+    ? Math.max(NOTIFICATION_PAGE_SIZE, Math.floor(limit))
+    : NOTIFICATION_PAGE_SIZE;
+  return {
+    rows: eligible.slice(0, count),
+    total: eligible.length,
+    remaining: Math.max(0, eligible.length - count),
+  };
 }

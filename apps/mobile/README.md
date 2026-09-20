@@ -56,3 +56,7 @@ Les tests DOM utilisent des simulations des API de polices et de mise en page. U
 `src/product/ui.tsx` centralise les composants et `tokens.ts` la DA. `src/product/model.ts` contient les règles de démo ; le mode connecté délègue les invariants à Supabase. `src/reference` contient les données extraites du prototype. Le fichier HTML source reste inchangé.
 
 Les modules Expo ImagePicker, FileSystem et Sharing servent à importer un portrait et exporter ICS/CSV/JSON. Les documents de vérification et paiements restent fictifs. `workflows.ts` contient les opérations locales, `CoachConfiguration.tsx` les réglages et `CompleteFlows.tsx` les parcours avancés. Voir [la recette](../../docs/recette-react-native.md).
+
+## Mise à jour iPhone — 20 septembre
+
+Voir [la livraison 19](../../docs/native-auth-19.md). Le workspace `ios/Partant.xcworkspace` est désormais versionné. Après `npm ci`, exécuter `pod install` dans `ios`. Ne pas régénérer iOS avec `--clean` pour rouvrir le projet. Apple utilise un module natif ; reconstruire depuis Xcode après cette mise à jour. Le `.env` local choisit `EXPO_PUBLIC_DATA_MODE=connected`, les simulations fictives utilisent explicitement `?data=preview`.

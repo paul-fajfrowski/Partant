@@ -2,9 +2,17 @@ import { MessagesScreen, ConversationScreen } from "./MessagesScreen";
 import { useMessageDrafts } from "./useMessageDrafts";
 import * as Messaging from "./messaging";
 import { NotificationsScreen } from "./NotificationsScreen";
+import { notificationInboxNotices } from "./notifications";
 import { searchAddresses, distanceKm } from "../lib/geo";
 import CoachMap from "../components/CoachMap";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import AppleSignInButton from "../components/AppleSignInButton";
+import {
+  readJourney,
+  saveJourney,
+  clearJourney,
+  type AuthJourney,
+} from "./authJourney";
 import { signInSocial, socialProviders } from "../lib/auth";
 import { placeTypes } from "./locations";
 import { AgendaTools } from "./AgendaToolsScreen";
@@ -14,7 +22,7 @@ import * as W from "./workflows";
 import { CompleteFlows, BookingExtras } from "./CompleteFlows";
 import { CoachConfiguration } from "./CoachConfiguration";
 import { exportFile } from "./deviceFiles";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
@@ -203,8 +211,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         .catch(() => {});
   }, [live]);
   useEffect(() => {
-    if (!live || !market.session || store.account) return;
+    if (!live || !market.profileReady || !market.session || store.account)
+      return;
+    let cancelled = false;
     AsyncStorage.getItem("partant-auth-intent").then((raw) => {
+      if (cancelled) return;
       if (raw) {
         try {
           const intent = JSON.parse(raw);
@@ -214,7 +225,10 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       }
       setScreen("completeAccount");
     });
-  }, [live, market.session?.user.id, store.account?.id]);
+    return () => {
+      cancelled = true;
+    };
+  }, [live, market.profileReady, market.session?.user.id, store.account?.id]);
   const [mapCoach, setMapCoach] = useState("0");
   const scroll = useRef<ScrollView>(null);
   const [modal, setModal] = useState("");
@@ -222,6 +236,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const [busy, setBusy] = useState(false);
   const actionInFlight = useRef(false);
   const [emailFeedback, setEmailFeedback] = useState("");
+  const [authFeedback, setAuthFeedback] = useState("");
   const [emailWait, setEmailWait] = useState(0);
   const emailRetryAt = useRef(0);
   useEffect(() => {
@@ -241,6 +256,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const initial = useRef(false);
   const [role, setRole] = useState<"client" | "coach">("client");
   const [signup, setSignup] = useState(false);
+  const [coachApplication, setCoachApplication] = useState("");
   const [email, setEmail] = useState(live ? "" : "alex@example.test");
   const [name, setName] = useState(live ? "" : "Alex");
   const [code, setCode] = useState("");
@@ -299,9 +315,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     (b) => b.id === selectedBooking && W.canRead(store, b),
   );
   const activeCoach = coachAccountId(store);
-  const notifications = store.notices.filter(
-    (n) => n.recipient === store.account?.id,
-  );
+  const notifications = notificationInboxNotices(store);
   const unread = notifications.filter(
     (n) =>
       !n.read &&
@@ -322,12 +336,22 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const [notificationChapter, setNotificationChapter] = useState<string | null>(
     null,
   );
+  const [notificationLimits, setNotificationLimits] = useState<
+    Record<string, number>
+  >({});
+  const [notificationActionsOnly, setNotificationActionsOnly] = useState(false);
+  const notificationOffset = useRef(0);
+  const notificationRestore = useRef<number | null>(null);
   const lastIdentity = useRef(store.account?.id);
   useEffect(() => {
     if (lastIdentity.current !== store.account?.id) {
       history.current = [];
       resetFilters();
       setNotificationChapter(null);
+      setNotificationLimits({});
+      setNotificationActionsOnly(false);
+      notificationOffset.current = 0;
+      notificationRestore.current = null;
       lastIdentity.current = store.account?.id;
     }
   }, [store.account?.id]);
@@ -347,15 +371,69 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       window.history.replaceState({}, "", "/?data=connected");
     }
   }, [live, store.account?.id]);
+  const routedAccount = useRef<string | null>(null);
+  const newRegistration = useRef(false);
+  const pendingJourney = useRef<AuthJourney | null>(null);
   useEffect(() => {
-    if (market.ready && !initial.current) {
-      if (store.account) {
-        initial.current = true;
-        if (["welcome", "completeAccount", "login"].includes(screen))
-          setScreen(store.account.role === "coach" ? "coach" : "explore");
-      }
+    if (!store.account) {
+      routedAccount.current = null;
+      return;
     }
-  }, [market.ready, store.account?.id, screen]);
+    if (
+      !market.ready ||
+      (live && !market.profileReady) ||
+      routedAccount.current === store.account.id
+    )
+      return;
+    routedAccount.current = store.account.id;
+    initial.current = true;
+    if (!live) {
+      if (["welcome", "completeAccount", "login"].includes(screen))
+        setScreen(store.account.role === "coach" ? "coach" : "explore");
+      return;
+    }
+    const account = store.account;
+    let cancelled = false;
+    (async () => {
+      const journey = pendingJourney.current ?? (await readJourney());
+      if (cancelled) return;
+      pendingJourney.current = null;
+      await clearJourney();
+      await AsyncStorage.removeItem("partant-auth-intent");
+      if (cancelled) return;
+      history.current = [];
+      setModal("");
+      setRole(account.role);
+      if (account.role === "coach") {
+        setScreen("coach");
+        return;
+      }
+      if (journey) {
+        setCoachId(journey.coachId);
+        setOfferId(journey.offerId);
+        setDay(journey.day);
+        setFocus(journey.focus);
+        if (journey.draft)
+          setDraft({
+            ...journey.draft,
+            clientId: account.id,
+            clientName: account.name,
+          });
+        if (journey.favorite)
+          setStore((s) => ({
+            ...s,
+            favorites: [...new Set([...s.favorites, journey.favorite!])],
+          }));
+        setScreen(journey.screen);
+      } else setScreen(newRegistration.current ? "onboarding" : "explore");
+      newRegistration.current = false;
+    })().catch(() => {
+      if (!cancelled) setScreen(account.role === "coach" ? "coach" : "explore");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [market.ready, market.profileReady, store.account?.id]);
   useEffect(() => {
     if (market.error) {
       setNotice(market.error);
@@ -368,8 +446,24 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       return () => clearTimeout(timer);
     }
   }, [notice]);
-  useEffect(() => {
-    scroll.current?.scrollTo({ y: 0, animated: false });
+  function restoreNotificationScroll() {
+    const target = notificationRestore.current;
+    if (target === null) return;
+    scroll.current?.scrollTo({ y: target, animated: false });
+    requestAnimationFrame(() => {
+      if (notificationRestore.current === target)
+        notificationRestore.current = null;
+    });
+  }
+  useLayoutEffect(() => {
+    if (screen !== "notifications") {
+      notificationRestore.current = null;
+      scroll.current?.scrollTo({ y: 0, animated: false });
+      return;
+    }
+    notificationRestore.current = notificationOffset.current;
+    const frame = requestAnimationFrame(restoreNotificationScroll);
+    return () => cancelAnimationFrame(frame);
   }, [screen, step, config]);
   useEffect(() => {
     setDemoClock(live ? 0 : (store.clockHours ?? 0));
@@ -390,7 +484,62 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     });
     return () => listener.remove();
   }, [screen, modal, step]);
+  function requestAuth(destination: string, extra: Partial<AuthJourney> = {}) {
+    const journey: AuthJourney = {
+      screen: destination,
+      focus: "",
+      coachId,
+      offerId,
+      day,
+      expires: Date.now() + 30 * 60 * 1000,
+      ...extra,
+    };
+    pendingJourney.current = journey;
+    if (live)
+      void saveJourney(journey).catch(() =>
+        setNotice(
+          "La reprise sera disponible tant que l’application reste ouverte.",
+        ),
+      );
+    setRole("client");
+    setSignup(false);
+    go("login");
+  }
   function go(next: string, target = "") {
+    if (
+      next === "welcome" ||
+      (next === "explore" && ["login", "code"].includes(screen))
+    ) {
+      pendingJourney.current = null;
+      newRegistration.current = false;
+      if (live) void clearJourney();
+    }
+    if (
+      live &&
+      !store.account &&
+      [
+        "notifications",
+        "messages",
+        "account-native",
+        "alerts-native",
+        "new-alert",
+        "support-native",
+        "report-native",
+        "conversation",
+      ].includes(next)
+    ) {
+      requestAuth(next, { focus: target });
+      return;
+    }
+    if (
+      live &&
+      store.account?.role === "coach" &&
+      ["explore", "favorites", "bookings", "account"].includes(next)
+    ) {
+      setScreen("coach");
+      return;
+    }
+
     if (next === "groups-saved") {
       while (
         history.current.length &&
@@ -426,6 +575,10 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     setModal("");
   }
   function back() {
+    if (["login", "code"].includes(screen)) {
+      pendingJourney.current = null;
+      if (live) void clearJourney();
+    }
     if (screen === "onboarding" && step > 0) {
       setStep(step - 1);
       return;
@@ -450,10 +603,17 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     if (actionInFlight.current) return;
     actionInFlight.current = true;
     setBusy(true);
+    setAuthFeedback("");
     try {
       await fn();
     } catch (e) {
-      setNotice(errorMessage(e));
+      if (
+        screen === "login" ||
+        screen === "code" ||
+        screen === "completeAccount"
+      )
+        setAuthFeedback(errorMessage(e));
+      else setNotice(errorMessage(e));
     } finally {
       actionInFlight.current = false;
       setBusy(false);
@@ -463,6 +623,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     setStore((s) => ({ ...s, preferences: { ...s.preferences, ...p } }));
   }
   function favorite(id: string) {
+    if (live && !store.account) {
+      requestAuth("favorites", { favorite: id });
+      return;
+    }
+
     setStore((s) => ({
       ...s,
       favorites: s.favorites.includes(id)
@@ -666,6 +831,10 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       return;
     }
     if (!store.account || store.account.role !== "client") {
+      if (live) {
+        requestAuth("setup", { draft });
+        return;
+      }
       setPendingCheckout(true);
       setRole("client");
       if (!live) setEmail("alex@example.test");
@@ -709,9 +878,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     go("confirmation");
   }
   async function verify() {
-    if (live)
+    if (live) {
+      newRegistration.current = signup;
       await market.verifyCode(email.trim(), code.trim(), name.trim(), role);
-    else {
+      setCode("");
+      return;
+    } else {
       if (code !== "123456")
         throw Error("Utilisez le code de démonstration 123456.");
       setStore(W.loginDemo(store, email, name, role, signup));
@@ -1100,7 +1272,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             Créer mon compte
           </TextButton>
           <TextButton muted onPress={() => go("explore")}>
-            Explorer d’abord
+            Explorer sans compte
           </TextButton>
           <P small muted style={{ textAlign: "center", marginTop: 12 }}>
             {live
@@ -1128,13 +1300,22 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           active={role === "coach"}
           onPress={() => setRole("coach")}
         />
+        {!!authFeedback && (
+          <View
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+            style={{ marginTop: 16 }}
+          >
+            <Note>{authFeedback}</Note>
+          </View>
+        )}
         <Button
           disabled={busy}
           onPress={() =>
             run(async () => {
               if (name.trim().length < 2) throw Error("Précisez votre nom.");
+              newRegistration.current = true;
               await market.finishSocial(name.trim(), role);
-              go(role === "coach" ? "coach" : "onboarding");
             })
           }
         >
@@ -1160,8 +1341,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           {signup ? "Votre prochaine étape." : "Heureux de vous revoir."}
         </H1>
         <P muted>
-          Un code pour vous connecter.{"\n"}Un compte pour retrouver vos
-          séances.
+          {role === "coach"
+            ? "Retrouvez votre activité et vos prochains clients."
+            : "Retrouvez vos coachs, vos séances et vos échanges."}
         </P>
         <View style={{ marginTop: 24 }}>
           {signup && (
@@ -1215,25 +1397,52 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           <View style={{ gap: 12, marginTop: 24 }}>
             {(["google", "apple"] as const)
               .filter((p) => providers[p])
-              .map((p) => (
-                <Button
-                  key={p}
-                  light
-                  disabled={busy}
-                  onPress={() =>
-                    run(async () => {
-                      await signInSocial(p, { name: signup ? name : "", role });
-                    })
-                  }
-                >
-                  Continuer avec {p === "google" ? "Google" : "Apple"}
-                </Button>
-              ))}
+              .map((p) =>
+                p === "apple" && Platform.OS === "ios" ? (
+                  <AppleSignInButton
+                    key={p}
+                    disabled={busy}
+                    onPress={() =>
+                      run(async () => {
+                        await signInSocial("apple", {
+                          name: signup ? name : "",
+                          role,
+                        });
+                      })
+                    }
+                  />
+                ) : (
+                  <Button
+                    key={p}
+                    light
+                    disabled={busy}
+                    onPress={() =>
+                      run(async () => {
+                        await signInSocial(p, {
+                          name: signup ? name : "",
+                          role,
+                        });
+                      })
+                    }
+                  >
+                    Continuer avec {p === "google" ? "Google" : "Apple"}
+                  </Button>
+                ),
+              )}
+          </View>
+        )}
+        {!!authFeedback && (
+          <View
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+            style={{ marginTop: 16 }}
+          >
+            <Note>{authFeedback}</Note>
           </View>
         )}
         <Note style={{ marginTop: 24 }}>
           {live ? (
-            "Vous recevrez un lien ou un code selon le modèle d’e-mail configuré dans Supabase. En développement, l’envoi est limité aux adresses autorisées."
+            "Recevez un lien ou un code personnel dans votre boîte e-mail. Aucun mot de passe à retenir."
           ) : (
             <P style={{ fontSize: 14 }}>
               Démo : aucun e-mail ne sera envoyé. Le code à saisir à l’étape
@@ -1246,11 +1455,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           )}
         </Note>
         <TextButton style={{ marginTop: 24 }} onPress={() => go("explore")}>
-          Continuer sans compte
+          Explorer sans compte
         </TextButton>
         <P small muted style={{ marginTop: 24 }}>
           {live
-            ? "Connexion sécurisée par Supabase. Aucun paiement ne sera effectué."
+            ? "Vos coordonnées servent à gérer votre compte et vos séances. Aucun paiement à la connexion."
             : "Vos essais restent sur cet appareil. Aucun compte n’est créé auprès d’un service externe."}
         </P>
       </Section>
@@ -1276,6 +1485,15 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             Me connecter
           </Button>
         </View>
+        {!!authFeedback && (
+          <View
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+            style={{ marginTop: 16 }}
+          >
+            <Note>{authFeedback}</Note>
+          </View>
+        )}
         {!live && (
           <Note style={{ marginTop: 24 }}>Code de démonstration : 123456</Note>
         )}
@@ -1830,7 +2048,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             }}
           >
             Des coachs indépendants. Du temps pour vous.{"\n\n"}
-            {"Démo · profils et créneaux fictifs"}
+            {!live && "Démo · profils et créneaux fictifs"}
           </P>
         </View>
       </>
@@ -1855,7 +2073,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               </Row>
             ) : (
               <P small muted>
-                Profil en développement
+                {live ? "Vérification en attente" : "Profil de démonstration"}
               </P>
             )}
             {coach.rating && (
@@ -1996,7 +2214,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               <Row>
                 <Icon name="shield" />
                 <View style={{ flex: 1 }}>
-                  <P bold>Identité et justificatifs vérifiés</P>
+                  <P bold>
+                    {coach.verified
+                      ? "Identité et justificatifs vérifiés"
+                      : "Qualifications déclarées par le coach"}
+                  </P>
                   <P small muted>
                     {coach.cert}
                   </P>
@@ -2006,7 +2228,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                 Langues : {coach.langs}
               </P>
               <P small muted style={{ marginTop: 16 }}>
-                Les vérifications et avis de ce prototype sont fictifs.
+                {live
+                  ? coach.verified
+                    ? "Le dossier de ce coach a été validé par l’équipe Partant."
+                    : "La vérification du dossier n’est pas encore validée."
+                  : "Les vérifications et avis de ce prototype sont fictifs."}
               </P>
             </>
           }
@@ -2105,7 +2331,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         ))}
         {draft.format === "Domicile" && (
           <Field
-            label="Adresse fictive du rendez-vous"
+            label={
+              live ? "Adresse du rendez-vous" : "Adresse fictive du rendez-vous"
+            }
             value={draft.address}
             onChange={(address) => setDraft({ ...draft, address })}
           />
@@ -2149,7 +2377,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         </View>
         <P small muted>
           Quelques mots suffisent. Évitez les informations médicales ou
-          sensibles dans ce prototype.
+          sensibles.
         </P>
         <Note style={{ marginTop: 24 }}>
           Annulation gratuite jusqu’à{" "}
@@ -2251,7 +2479,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         )}
         <Note style={{ marginTop: 24 }}>
           {live
-            ? "Cette réservation est un test sans paiement. Le branchement Stripe reste reporté."
+            ? "Cette version de test n’effectue aucun paiement."
             : "Paiement simulé : aucun débit ne sera effectué."}
         </Note>
         <P small muted style={{ marginTop: 24 }}>
@@ -2445,7 +2673,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         </TextButton>
         <P small muted style={{ marginTop: 24, textAlign: "center" }}>
           {live
-            ? "Réservation enregistrée dans Supabase · aucun paiement encaissé"
+            ? "Réservation enregistrée · aucun paiement encaissé"
             : "Confirmation de démonstration · aucun débit réel"}
         </P>
       </Section>
@@ -2792,17 +3020,26 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           onPress={() => setModal("trust")}
         />
         <Rule />
-        <Setting
-          title="Passer côté coach"
-          icon="user"
-          description="Accéder à votre activité professionnelle"
-          onPress={() => {
-            setRole("coach");
-            setEmail(live ? "" : "thomas@example.test");
-            setSignup(false);
-            go("login");
-          }}
-        />
+        {live ? (
+          <Setting
+            title="Devenir coach"
+            icon="user"
+            description="Préparer votre activité professionnelle"
+            onPress={() => go("become-coach")}
+          />
+        ) : (
+          <Setting
+            title="Passer côté coach"
+            icon="user"
+            description="Accéder à votre activité professionnelle"
+            onPress={() => {
+              setRole("coach");
+              setEmail(live ? "" : "thomas@example.test");
+              setSignup(false);
+              go("login");
+            }}
+          />
+        )}
         <TextButton
           onPress={() =>
             run(async () => {
@@ -2817,14 +3054,113 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           muted
           onPress={() => (live ? setModal("about") : go("tools"))}
         >
-          À propos de ce prototype
+          {live ? "À propos de Partant" : "À propos de ce prototype"}
         </TextButton>
+      </Section>
+    );
+  if (!store.account && ["account", "favorites", "bookings"].includes(screen))
+    content = (
+      <Section>
+        <Eyebrow>PARTANT, À VOTRE RYTHME</Eyebrow>
+        <H1 style={{ marginTop: 20 }}>
+          {screen === "favorites"
+            ? "Gardez vos coachs favoris."
+            : screen === "bookings"
+              ? "Vos prochaines séances commencent ici."
+              : "Un compte pour passer à l’action."}
+        </H1>
+        <P muted style={{ marginVertical: 20 }}>
+          Explorez les coachs et leurs disponibilités librement. Connectez-vous
+          pour réserver et retrouver vos échanges.
+        </P>
+        <Button onPress={() => requestAuth(screen)}>Me connecter</Button>
+        <TextButton
+          onPress={() => {
+            requestAuth(screen);
+            setSignup(true);
+          }}
+        >
+          Créer mon compte
+        </TextButton>
+        <TextButton muted onPress={() => go("explore")}>
+          Continuer à explorer
+        </TextButton>
+      </Section>
+    );
+  if (screen === "become-coach")
+    content = (
+      <Section>
+        <Eyebrow>VOTRE FUTURE ACTIVITÉ</Eyebrow>
+        <H1 style={{ marginTop: 20 }}>Accompagnez les prochains partants.</H1>
+        <P muted style={{ marginVertical: 20 }}>
+          Votre compte client reste actif. Préparez votre passage professionnel
+          avec l’équipe Partant, sans perdre vos séances.
+        </P>
+        <View style={{ marginVertical: 12 }}>
+          <H2>Votre pratique et votre approche</H2>
+          <P muted>
+            Les disciplines que vous enseignez et les personnes que vous
+            accompagnez.
+          </P>
+        </View>
+        <View style={{ marginVertical: 12 }}>
+          <H2>Vos qualifications</H2>
+          <P muted>
+            Un dossier à vérifier avant la publication de votre profil.
+          </P>
+        </View>
+        <View style={{ marginVertical: 12 }}>
+          <H2>Vos offres et vos disponibilités</H2>
+          <P muted>Vous choisissez vos tarifs, vos lieux et vos horaires.</P>
+        </View>
+        <P muted style={{ marginVertical: 20 }}>
+          Indiquez vos disciplines, votre secteur et votre expérience. L’équipe
+          vous répondra dans « Aide & mes demandes ».
+        </P>
+        <Field
+          label="Votre projet de coaching"
+          value={coachApplication}
+          onChange={setCoachApplication}
+        />
+        <Button
+          disabled={busy || market.pending > 0}
+          onPress={() =>
+            run(async () => {
+              if (coachApplication.trim().length < 20)
+                throw Error(
+                  "Décrivez votre projet en quelques mots (20 caractères minimum).",
+                );
+              await market.submitCoachApplication(coachApplication.trim());
+              setCoachApplication("");
+              setNotice(
+                "Votre demande est enregistrée. Retrouvez son suivi ici.",
+              );
+              go("support-native");
+            })
+          }
+        >
+          Envoyer ma demande
+        </Button>
+        <P small muted style={{ marginTop: 16 }}>
+          L’envoi ne change pas votre rôle et ne publie aucun profil.
+        </P>
       </Section>
     );
   if (screen === "notifications")
     content = (
       <Section>
         <NotificationsScreen
+          limits={notificationLimits}
+          onLimit={(key, count) =>
+            setNotificationLimits((current) => ({ ...current, [key]: count }))
+          }
+          actionsOnly={notificationActionsOnly}
+          onModeChange={(active, first) => {
+            setNotificationActionsOnly(active);
+            setNotificationChapter(active ? first : null);
+            notificationOffset.current = 0;
+            scroll.current?.scrollTo({ y: 0, animated: false });
+          }}
           expanded={notificationChapter}
           onExpand={setNotificationChapter}
           key={store.account?.id ?? "guest"}
@@ -2931,8 +3267,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             <IconButton
               name="user"
               color="#fff"
-              label="Passer côté client"
+              label={live ? "Mon compte professionnel" : "Passer côté client"}
               onPress={() => {
+                if (live) {
+                  go("account-native");
+                  return;
+                }
                 setRole("client");
                 go("account");
               }}
@@ -4394,8 +4734,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           Identité, qualifications et avis accompagnent votre choix.
         </P>
         <Note style={{ marginTop: 20 }}>
-          Dans le prototype, profils, vérifications et avis sont fictifs. Aucun
-          badge réel n’est attribué automatiquement à un compte Supabase.
+          {live
+            ? "Le badge de vérification est attribué après validation du dossier par l’équipe Partant. Les avis sont liés à des séances réalisées."
+            : "Dans la démonstration, les profils, vérifications et avis sont fictifs."}
         </Note>
       </>
     );
@@ -4416,23 +4757,27 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     modalBody = (
       <>
         <P>
-          Le prototype HTML validé est la référence de cette application React
-          Native.
+          Partant vous aide à trouver un coach disponible et à organiser vos
+          séances près de chez vous.
         </P>
         <P muted style={{ marginTop: 16 }}>
           {live
             ? "Comptes et données partagés sur le serveur de développement. Réservations sans encaissement ; les paiements et intégrations externes restent à activer."
             : "Comptes, paiements, avis et vérifications fictifs. Données conservées sur cet appareil uniquement."}
         </P>
-        <Button
-          light
-          style={{ marginTop: 24 }}
-          onPress={() =>
-            Linking.openURL("http://127.0.0.1:8766/partant.html?version=a1-a9")
-          }
-        >
-          Voir la référence validée
-        </Button>
+        {!live && (
+          <Button
+            light
+            style={{ marginTop: 24 }}
+            onPress={() =>
+              Linking.openURL(
+                "http://127.0.0.1:8766/partant.html?version=a1-a9",
+              )
+            }
+          >
+            Voir la référence validée
+          </Button>
+        )}
         {!live && (
           <TextButton
             onPress={() => {
@@ -4831,6 +5176,21 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       >
         <ScrollView
           ref={scroll}
+          testID="product-scroll"
+          scrollEventThrottle={16}
+          onScroll={(event) => {
+            if (
+              screen === "notifications" &&
+              notificationRestore.current === null
+            )
+              notificationOffset.current = Math.max(
+                0,
+                event.nativeEvent.contentOffset.y,
+              );
+          }}
+          onContentSizeChange={() => {
+            if (screen === "notifications") restoreNotificationScroll();
+          }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ flexGrow: 1 }}

@@ -1,10 +1,9 @@
 const fs = require("node:fs"),
   path = require("node:path"),
   assert = require("node:assert/strict");
-const {
-  JSDOM,
-  VirtualConsole,
-} = require("../work/qa-runtime/node_modules/jsdom");
+const { JSDOM, VirtualConsole } = require(
+  process.env.PARTANT_QA_JSDOM ?? "../work/qa-runtime/node_modules/jsdom",
+);
 const root = path.resolve(__dirname, "..");
 const html = fs.readFileSync(
   path.join(root, "apps/mobile/dist/index.html"),
@@ -24,7 +23,7 @@ vc.on("error", (...a) => errors.push(a.join(" ")));
 const dom = new JSDOM(
   html.replace(/<script[^>]*src="[^"]+"[^>]*><\/script>/g, ""),
   {
-    url: process.env.PARTANT_QA_URL ?? "http://127.0.0.1:8081/",
+    url: process.env.PARTANT_QA_URL ?? "http://127.0.0.1:8081/?data=preview",
     runScripts: "dangerously",
     pretendToBeVisual: true,
     virtualConsole: vc,
@@ -42,7 +41,9 @@ const dom = new JSDOM(
       });
       w.TextEncoder = TextEncoder;
       w.TextDecoder = TextDecoder;
-      w.fetch = fetch;
+      w.fetch = process.env.PARTANT_QA_FETCH_MODULE
+        ? require(process.env.PARTANT_QA_FETCH_MODULE).fetch
+        : fetch;
       w.Headers = Headers;
       w.Request = Request;
       w.Response = Response;
@@ -83,8 +84,10 @@ Object.defineProperty(w.document.documentElement, "clientHeight", {
   get: () => 844,
 });
 if (process.env.PARTANT_QA_SESSION) {
-  const saved=JSON.parse(fs.readFileSync(process.env.PARTANT_QA_SESSION,'utf8'));
-  w.localStorage.setItem(saved.key,JSON.stringify(saved.session));
+  const saved = JSON.parse(
+    fs.readFileSync(process.env.PARTANT_QA_SESSION, "utf8"),
+  );
+  w.localStorage.setItem(saved.key, JSON.stringify(saved.session));
 }
 for (const script of scripts) w.eval(script);
 const wait = () => new Promise((r) => setTimeout(r, 150));
@@ -93,18 +96,24 @@ function ok(value, msg) {
   assert.ok(value, msg);
   count++;
 }
-function button(text) {
+function findButton(text) {
   const el = [
     ...d.querySelectorAll('[role="button"],button,[role="tab"],[role="radio"]'),
   ].find(
     (el) =>
       el.textContent.trim() === text || el.getAttribute("aria-label") === text,
   );
-  assert.ok(el, `Missing button ${text}\n${d.body.textContent.slice(-1000)}`);
   return el;
 }
 async function click(text) {
-  button(text).click();
+  let el;
+  for (let attempt = 0; attempt < 40; attempt++) {
+    el = findButton(text);
+    if (el) break;
+    await wait();
+  }
+  assert.ok(el, `Missing button ${text}\n${d.body.textContent.slice(-1000)}`);
+  el.click();
   await wait();
 }
 function input(label, value) {

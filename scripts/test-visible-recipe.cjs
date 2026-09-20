@@ -1,7 +1,7 @@
 // Executes the visible replay controller against the actual exported application in DOM.
 // This validates actions and storage isolation, not pixels or a native device.
 const fs=require('node:fs'),assert=require('node:assert/strict');
-process.env.PARTANT_QA_URL='http://127.0.0.1:8081/?recette=visible-qa';
+process.env.PARTANT_QA_URL='http://127.0.0.1:8081/?data=preview&recette=visible-qa';
 const H=require('./native-web-harness.cjs');
 const {JSDOM}=require('../work/qa-runtime/node_modules/jsdom');
 const parent=new JSDOM(fs.readFileSync('apps/mobile/public/recette.html','utf8').replace('<script src="recette.js"></script>',''),{url:'http://127.0.0.1:8081/recette.html',runScripts:'dangerously',pretendToBeVisual:true});

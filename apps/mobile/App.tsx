@@ -33,8 +33,9 @@ export default function App() {
       ) : (
         <ProductApp
           live={
-            (params?.get("data") ?? process.env.EXPO_PUBLIC_DATA_MODE) ===
-            "connected"
+            (params?.get("data") ??
+              process.env.EXPO_PUBLIC_DATA_MODE ??
+              (Platform.OS === "web" ? "preview" : "connected")) === "connected"
           }
         />
       )}

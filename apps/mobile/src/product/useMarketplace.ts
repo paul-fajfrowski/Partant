@@ -55,6 +55,9 @@ export function useMarketplace(live: boolean) {
     [error, setError] = useState(""),
     [pending, setPending] = useState(0);
   const [session, setSession] = useState<Session | null>(null);
+  const [loadedIdentity, setLoadedIdentity] = useState<
+    string | null | undefined
+  >(undefined);
   const identity = useRef<string | undefined>(undefined),
     version = useRef<number | undefined>(undefined),
     active = useRef(true);
@@ -97,6 +100,7 @@ export function useMarketplace(live: boolean) {
     if (token !== epoch.current || jobs.current || !active.current) return;
     version.current = data.version;
     assign(data.store);
+    setLoadedIdentity(identity.current ?? null);
   }
   async function execute(
     commands: Command[],
@@ -369,13 +373,40 @@ export function useMarketplace(live: boolean) {
     version.current = loaded.version;
     const saved = await execute([], { name, role });
     assign(saved);
+    setLoadedIdentity(data.user.id);
   }
   async function finishSocial(name: string, role: "client" | "coach") {
     if (!session?.user)
       throw Error("Connectez-vous avant de compléter votre compte.");
     await queue.current;
     assign(await execute([], { name, role }));
+    setLoadedIdentity(session.user.id);
     await AsyncStorage.removeItem("partant-auth-intent");
+  }
+  async function submitCoachApplication(body: string) {
+    if (current.current.account?.role !== "client")
+      throw Error("Cette demande est réservée à votre compte client.");
+    if (
+      current.current.tickets?.some(
+        (t) =>
+          t.owner === current.current.account?.id &&
+          t.kind === "Assistance" &&
+          t.body.startsWith("Candidature coach :") &&
+          t.status === "open",
+      )
+    )
+      throw Error(
+        "Une demande est déjà en cours. Retrouvez-la dans Aide & mes demandes.",
+      );
+    await queue.current;
+    assign(
+      await execute([
+        {
+          name: "report",
+          args: [{ kind: "Assistance", body: "Candidature coach : " + body }],
+        },
+      ]),
+    );
   }
   async function book(draft: Booking) {
     await queue.current;
@@ -395,6 +426,10 @@ export function useMarketplace(live: boolean) {
     await queue.current;
     epoch.current++;
     if (live) {
+      await AsyncStorage.multiRemove([
+        "partant-auth-intent",
+        "partant-auth-journey-v1",
+      ]);
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       assign(connectedInitial());
@@ -423,6 +458,9 @@ export function useMarketplace(live: boolean) {
   });
   return {
     store,
+    profileReady:
+      !live || (ready && loadedIdentity === (session?.user.id ?? null)),
+    submitCoachApplication,
     sendMessage,
     readConversation,
     localScope: live ? "connected" : previewKey,

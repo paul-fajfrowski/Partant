@@ -1,5 +1,9 @@
 # Partant
 
+## Connexion iPhone et espaces — livraison 19
+
+[Changements, configuration Xcode et recette restante](docs/native-auth-19.md). Apple natif iOS, séparation client/coach, découverte sans faux profil invité et reprise après connexion. Le workspace iOS est versionné. Domaine Google personnalisé et validation Apple sur iPhone restent à faire ; aucun paiement réel.
+
 > **Validation utilisateur — 18 septembre 2026 :** le propriétaire confirme que les connexions Apple et Google fonctionnent dans la simulation web ; son compte Google a été ajouté aux utilisateurs de test. Le blocage Google est levé pour ce compte. Cette validation ne couvre pas encore Google Calendar, les appareils natifs ni tous les cas secondaires d’authentification.
 
 Marketplace locale de coachs sportifs — application React Native, backend Supabase de développement et prototype HTML de référence.
@@ -23,6 +27,10 @@ La version native navigable reprend les actifs, les parcours client et les confi
 
 ## Notifications — amélioration autorisée après le gel
 
+[Historique progressif et accès aux actions en attente](docs/notifications-paging-17.md) : 10 événements au départ, chargement par 10, liste et position conservées au retour d’un détail.
+
+[Messages retirés des notifications et de leur compteur](docs/notifications-without-messages-16.md) : les échanges et leur badge restent uniquement dans la messagerie.
+
 [Rubriques par type, historique dans chaque rubrique et résultats de recette](docs/communication-15.md). Les états métier et accès directs de [la livraison 13](docs/notifications-13.md) sont conservés. Disponible en démo locale et sur le serveur de développement. La lecture reste distincte de la résolution ; les anciens événements sans date restent identifiés comme tels.
 
 ## Dernière livraison — intégrations 10
@@ -30,6 +38,8 @@ La version native navigable reprend les actifs, les parcours client et les confi
 [État exact, activation Google et limites](docs/integrations-10.md) : carte réelle, géocodage IGN, retours de connexion, écran d’agendas et synchronisation Google côté serveur. Les identifiants OAuth sont installés ; les connexions Google/Apple web sont validées par le propriétaire. Le consentement et les échanges Google Calendar réels restent à tester. Microsoft/Stripe sont reportés. Les blocages Google et e-mail constatés lors de la recette sont documentés dans cette livraison.
 
 ## Recette et simulation mobile
+
+[Simulation de volume coach](docs/simulation-volume-coach.md) : 144 séances, 36 clients et 446 notifications fictives pour évaluer les rubriques actuelles. [Lancer le parcours visible](http://127.0.0.1:8081/coach-volume.html?autoplay=1). Les messages sont désormais retirés des notifications générales : [état actuel et suite proposée](docs/notifications-without-messages-16.md). La [limitation des listes et l’accès aux actions sont maintenant implémentés](docs/notifications-paging-17.md).
 
 [Résultats de la recette du 18 septembre et limites](docs/recette-2026-09-18.md). Après l’export web, le serveur local propose une [recette visible automatique](http://127.0.0.1:8081/recette.html?autoplay=1) et un [aperçu téléphone interactif](http://127.0.0.1:8081/simulation.html). Le déroulé visible utilise la démo isolée ; les essais Supabase sont effectués séparément.
 

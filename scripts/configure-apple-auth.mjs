@@ -32,7 +32,7 @@ fs.chmodSync(folder, 0o700);
 try {
   fs.mkdirSync(path.join(folder, "supabase"));
   fs.writeFileSync(path.join(folder, "supabase/config.toml"),
-    `project_id = "partant-development"\n[auth.external.apple]\nenabled = true\nclient_id = ${JSON.stringify(servicesId)}\nsecret = ${JSON.stringify(secret)}\n`,
+    `project_id = "partant-development"\n[auth.external.apple]\nenabled = true\nclient_id = ${JSON.stringify(servicesId + ",com.paulfajfrowski.partant")}\nsecret = ${JSON.stringify(secret)}\n`,
     { mode: 0o600 });
   const args = ["--project-ref", "jhhsysjdeyqsuztjtgea", "--workdir", folder];
   const run = (operation) => spawnSync("supabase", ["config", ...operation, ...args], {

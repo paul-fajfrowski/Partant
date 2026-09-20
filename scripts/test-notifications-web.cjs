@@ -132,11 +132,22 @@ const row = (id) => d.querySelector(`[data-testid="notification-${id}"]`);
     );
     await click("Retour");
     ok(!!row("proposal-notice"), "Read proposal still needs response");
+    await click("1 action à traiter");
+    ok(
+      !!row("proposal-notice"),
+      "Read pending proposal reachable from shortcut",
+    );
     row("proposal-notice").click();
     await wait();
     await click("Garder ma séance initiale");
     ok(saved().proposals[0].status === "declined", "Response persisted");
     await click("Retour");
+    ok(
+      d.body.textContent.includes("Tout est traité."),
+      "Resolved last action leaves a clear empty state",
+    );
+    await click("Toutes les notifications");
+    await click("Propositions de changement");
     ok(
       !d
         .querySelector('[data-testid="notification-chapter-proposals"]')
@@ -156,26 +167,15 @@ const row = (id) => d.querySelector(`[data-testid="notification-${id}"]`);
       "Resolved proposal cannot be answered again",
     );
     await click("Retour");
-    await click("Messages");
     ok(
-      !row("message-notice").textContent.includes("Coaching individuel"),
-      "General message has no imposed session subject",
-    );
-    row("message-notice").click();
-    await wait();
-    ok(
-      d.body.textContent.includes("À bientôt pour votre séance !"),
-      "Notification goes directly to conversation",
+      !d.querySelector('[data-testid="notification-chapter-messages"]') &&
+        !row("message-notice"),
+      "No duplicate messaging chapter",
     );
     ok(
-      saved().notices.find((n) => n.id === "message-notice").read,
-      "Message notice cleared",
+      !saved().notices.find((n) => n.id === "message-notice").read,
+      "Browsing notifications does not consume messages",
     );
-    ok(
-      !saved().notices.find((n) => n.id === "booking-notice").read,
-      "Reading messages preserves booking unread state",
-    );
-    await click("Retour");
     await click("Nouvelles réservations");
     row("booking-notice").click();
     await wait();

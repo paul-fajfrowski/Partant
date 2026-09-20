@@ -16,3 +16,13 @@ dist/
 client_secret*.json
 **/client_secret*.json
 *.p8
+
+# Generated iOS dependencies, caches and personal Xcode state
+**/ios/Pods/
+**/ios/build/
+**/xcuserdata/
+**/*.xcuserstate
+**/.xcode.env.local
+**/.DerivedData/
+**/.build/
+work/
