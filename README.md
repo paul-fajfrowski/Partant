@@ -1,5 +1,9 @@
 # Partant
 
+## Audit des dépendances — livraison 22
+
+[Corrections, contrôles et limites de compilation](docs/dependency-audit-22.md). Versions Expo alignées, module natif dédupliqué, audit npm sans vulnérabilité connue et correctif C++ reproductible. Le nouveau build iPhone reste à valider dans Xcode ; les warnings fournisseurs ne sont pas masqués.
+
 ## Connexion par e-mail — livraison 21
 
 [Parcours corrigé et analyse Xcode](docs/email-auth-21.md). L’application annonce le lien réellement envoyé ; le code reste facultatif. La personnalisation des e-mails attend le branchement SMTP reporté. Les retours de navigation sont validés par le propriétaire sur iPhone.

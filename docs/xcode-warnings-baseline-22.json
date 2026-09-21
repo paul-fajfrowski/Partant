@@ -1,0 +1,3886 @@
+{
+  "scope": "Compiler file:line:column warnings only; repeated identical diagnostics deduplicated after path normalization. Not a build result or unique bug count.",
+  "occurrences": 1783,
+  "uniqueDiagnostics": 552,
+  "compilerErrors": 0,
+  "buildSucceededMarker": false,
+  "byCategory": {
+    "Autre": 8,
+    "Interface / protocole natif": 35,
+    "API obsolète": 55,
+    "Nullabilité / conversion optionnelle": 32,
+    "Global JavaScript déclaré par le runtime": 34,
+    "Concurrence Swift": 47,
+    "Énumération SDK à compléter": 1,
+    "Ordre des initialiseurs C++": 32,
+    "Extension C++": 5,
+    "Conversion entière": 9,
+    "Headers de frameworks précompilés": 294
+  },
+  "diagnostics": [
+    {
+      "path": "arm64-apple-ios-simulator.swiftmodule",
+      "line": 1,
+      "column": 1,
+      "message": "reference to type 'CKShareMetadata' broken by a context change; 'CKShareMetadata' was expected to be in 'UIKit', but now a candidate is found only in 'CloudKit'",
+      "category": "Autre"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/Expo/Expo/ExpoReactNativeFactory.h",
+      "line": 11,
+      "column": 58,
+      "message": "cannot find protocol definition for 'RCTHostDelegate'",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core-prebuilt/React_RCTAppDelegate/RCTAppSetupUtils.h",
+      "line": 36,
+      "column": 34,
+      "message": "'JSExecutorFactory' is deprecated: This API will be removed along with the legacy architecture. [-Wdeprecated-declarations]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core-prebuilt/React_RCTAppDelegate/RCTUIConfiguratorProtocol.h",
+      "line": 40,
+      "column": 28,
+      "message": "'RCTRootView' is deprecated: This API will be removed along with the legacy architecture.",
+      "category": "API obsolète"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core-prebuilt/React_RCTAppDelegate/RCTUIConfiguratorProtocol.h",
+      "line": 40,
+      "column": 28,
+      "message": "'RCTRootView' is deprecated: This API will be removed along with the legacy architecture. [-Wdeprecated-declarations]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core/React/RCTHTTPRequestHandler.h",
+      "line": 11,
+      "column": 35,
+      "message": "pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core/React/RCTHTTPRequestHandler.h",
+      "line": 24,
+      "column": 52,
+      "message": "block pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core/React/RCTModalHostView.h",
+      "line": 55,
+      "column": 31,
+      "message": "'RCTModalHostView' is deprecated: This API will be removed along with the legacy architecture.",
+      "category": "API obsolète"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core/React/RCTModalHostView.h",
+      "line": 58,
+      "column": 31,
+      "message": "'RCTModalHostView' is deprecated: This API will be removed along with the legacy architecture.",
+      "category": "API obsolète"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core/React/RCTMultipartDataTask.h",
+      "line": 15,
+      "column": 18,
+      "message": "pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core/React/RCTMultipartDataTask.h",
+      "line": 26,
+      "column": 65,
+      "message": "block pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core/React/RCTMultipartDataTask.h",
+      "line": 30,
+      "column": 4,
+      "message": "pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core/React/RCTMultipartDataTask.h",
+      "line": 30,
+      "column": 36,
+      "message": "pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core/React/RCTMultipartDataTask.h",
+      "line": 31,
+      "column": 30,
+      "message": "block pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core/React/RCTMultipartDataTask.h",
+      "line": 32,
+      "column": 30,
+      "message": "block pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core/React/RCTShadowView+Internal.h",
+      "line": 16,
+      "column": 40,
+      "message": "'RCTRootShadowView' is deprecated: This API will be removed along with the legacy architecture.",
+      "category": "API obsolète"
+    },
+    {
+      "path": "ios/Pods/Headers/Public/React-Core/React/RCTWebSocketModule.h",
+      "line": 23,
+      "column": 21,
+      "message": "pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 869,
+      "column": 13,
+      "message": "the variable \"Promise\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 3523,
+      "column": 25,
+      "message": "the variable \"ErrorUtils\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 3570,
+      "column": 39,
+      "message": "the variable \"FormData\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 3571,
+      "column": 45,
+      "message": "the variable \"AbortSignal\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 6161,
+      "column": 71,
+      "message": "the variable \"performance\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 18572,
+      "column": 7,
+      "message": "the variable \"setTimeout\" was not declared in function \"logUncaughtError\"",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 21350,
+      "column": 31,
+      "message": "the variable \"nativeFabricUIManager\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 21414,
+      "column": 21,
+      "message": "the variable \"clearTimeout\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 26203,
+      "column": 15,
+      "message": "the variable \"Blob\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 26342,
+      "column": 24,
+      "message": "the variable \"FileReader\" was not declared in function \"readBlobAsArrayBuffer\"",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 26397,
+      "column": 44,
+      "message": "the variable \"URLSearchParams\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 26650,
+      "column": 23,
+      "message": "the variable \"XMLHttpRequest\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 30873,
+      "column": 22,
+      "message": "the variable \"DOMException\" was not declared in function \"timeout\"",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 31610,
+      "column": 35,
+      "message": "the variable \"TransformStream\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 31612,
+      "column": 25,
+      "message": "the variable \"TextDecoder\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 31649,
+      "column": 25,
+      "message": "the variable \"TextEncoder\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 33524,
+      "column": 19,
+      "message": "the variable \"URL\" was not declared in function \"getBundleUrl\"",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 33935,
+      "column": 50,
+      "message": "the variable \"Request\" was not declared in anonymous arrow function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 37330,
+      "column": 13,
+      "message": "the variable \"clearImmediate\" was not declared in anonymous arrow function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 38893,
+      "column": 32,
+      "message": "the variable \"requestAnimationFrame\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 55493,
+      "column": 22,
+      "message": "the variable \"ReadableStream\" was not declared in function \"wrapWithConsumption\"",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 55764,
+      "column": 18,
+      "message": "the variable \"Headers\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 56395,
+      "column": 16,
+      "message": "Direct call to eval(), but lexical scope is not supported.",
+      "category": "Autre"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 57465,
+      "column": 21,
+      "message": "the variable \"Image\" was not declared in anonymous arrow function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 59081,
+      "column": 19,
+      "message": "the variable \"setInterval\" was not declared in anonymous arrow function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 59084,
+      "column": 20,
+      "message": "the variable \"clearInterval\" was not declared in anonymous arrow function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 59267,
+      "column": 20,
+      "message": "the variable \"cancelAnimationFrame\" was not declared in anonymous arrow function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 59594,
+      "column": 27,
+      "message": "the variable \"Intl\" was not declared in function \"dateStrip\"",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 66314,
+      "column": 12,
+      "message": "the variable \"atob\" was not declared in anonymous arrow function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 66325,
+      "column": 26,
+      "message": "the variable \"fetch\" was not declared in function \"fetchUriData\"",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 79553,
+      "column": 12,
+      "message": "the variable \"btoa\" was not declared in function \"uint8ArrayToBase64\"",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 92995,
+      "column": 28,
+      "message": "the variable \"Worker\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 111164,
+      "column": 7,
+      "message": "the variable \"__magic__\" was not declared in function \"polyfillGlobalThis\"",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 115175,
+      "column": 18,
+      "message": "the variable \"WritableStream\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "main.jsbundle",
+      "line": 115185,
+      "column": 18,
+      "message": "the variable \"Response\" was not declared in anonymous function",
+      "category": "Global JavaScript déclaré par le runtime"
+    },
+    {
+      "path": "node_modules/@react-native-community/slider/ios/RNCSliderComponentView.mm",
+      "line": 22,
+      "column": 17,
+      "message": "method definition for 'discreteValue:' not found [-Wincomplete-implementation]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/@react-native-community/slider/ios/RNCSliderComponentView.mm",
+      "line": 287,
+      "column": 23,
+      "message": "null passed to a callee that requires a non-null argument [-Wnonnull]",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/@react-native-community/slider/ios/RNCSliderComponentView.mm",
+      "line": 288,
+      "column": 26,
+      "message": "null passed to a callee that requires a non-null argument [-Wnonnull]",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationExceptions.swift",
+      "line": 4,
+      "column": 13,
+      "message": "class 'InvalidScopeException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationExceptions.swift",
+      "line": 10,
+      "column": 13,
+      "message": "class 'InvalidOperationException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationExceptions.swift",
+      "line": 16,
+      "column": 13,
+      "message": "class 'RequestCanceledException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationExceptions.swift",
+      "line": 22,
+      "column": 13,
+      "message": "class 'InvalidResponseException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationExceptions.swift",
+      "line": 28,
+      "column": 13,
+      "message": "class 'RequestNotHandledException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationExceptions.swift",
+      "line": 34,
+      "column": 13,
+      "message": "class 'RequestFailedException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationExceptions.swift",
+      "line": 40,
+      "column": 13,
+      "message": "class 'RequestNotInteractiveException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationExceptions.swift",
+      "line": 46,
+      "column": 13,
+      "message": "class 'RequestUnknownException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationExceptions.swift",
+      "line": 52,
+      "column": 13,
+      "message": "class 'RequestMatchedExcludedCredentialException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationExceptions.swift",
+      "line": 59,
+      "column": 3,
+      "message": "switch must be exhaustive",
+      "category": "Énumération SDK à compléter"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationRequest.swift",
+      "line": 53,
+      "column": 16,
+      "message": "expression implicitly coerced from 'String?' to 'Any'",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationRequest.swift",
+      "line": 54,
+      "column": 15,
+      "message": "expression implicitly coerced from 'String?' to 'Any'",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationRequest.swift",
+      "line": 56,
+      "column": 16,
+      "message": "expression implicitly coerced from 'String?' to 'Any'",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationRequest.swift",
+      "line": 57,
+      "column": 28,
+      "message": "expression implicitly coerced from 'String?' to 'Any'",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationRequest.swift",
+      "line": 58,
+      "column": 24,
+      "message": "expression implicitly coerced from 'String?' to 'Any'",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationRequest.swift",
+      "line": 84,
+      "column": 45,
+      "message": "'keyWindow' was deprecated in iOS 13.0: Should not be used for applications that support multiple scenes as it returns a key window across all connected scenes [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationUtils.swift",
+      "line": 66,
+      "column": 19,
+      "message": "expression implicitly coerced from 'String?' to 'Any'",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationUtils.swift",
+      "line": 67,
+      "column": 19,
+      "message": "expression implicitly coerced from 'String?' to 'Any'",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationUtils.swift",
+      "line": 68,
+      "column": 18,
+      "message": "expression implicitly coerced from 'String?' to 'Any'",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationUtils.swift",
+      "line": 69,
+      "column": 19,
+      "message": "expression implicitly coerced from 'String?' to 'Any'",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationUtils.swift",
+      "line": 70,
+      "column": 19,
+      "message": "expression implicitly coerced from 'String?' to 'Any'",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/expo-apple-authentication/ios/AppleAuthenticationUtils.swift",
+      "line": 71,
+      "column": 17,
+      "message": "expression implicitly coerced from 'String?' to 'Any'",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/expo-auth-session/node_modules/expo-application/ios/ApplicationExceptions.swift",
+      "line": 3,
+      "column": 22,
+      "message": "class 'UrlDocumentDirectoryException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-auth-session/node_modules/expo-application/ios/ApplicationExceptions.swift",
+      "line": 9,
+      "column": 22,
+      "message": "class 'InstallationTimeException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-auth-session/node_modules/expo-application/ios/ApplicationExceptions.swift",
+      "line": 15,
+      "column": 22,
+      "message": "class 'DateCastException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-auth-session/node_modules/expo-constants/ios/ConstantsModule.swift",
+      "line": 12,
+      "column": 5,
+      "message": "'Constants' is deprecated: Use `Constant` or `Property` instead [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-auth-session/node_modules/expo-constants/ios/EXConstantsService.m",
+      "line": 20,
+      "column": 17,
+      "message": "method definition for 'deviceYear' not found [-Wincomplete-implementation]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/expo-auth-session/node_modules/expo-constants/ios/EXConstantsService.m",
+      "line": 67,
+      "column": 55,
+      "message": "'statusBarFrame' is deprecated: first deprecated in iOS 13.0 - Use the statusBarManager property of the window scene instead. [-Wdeprecated-declarations]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-crypto/ios/CryptoModule.swift",
+      "line": 65,
+      "column": 21,
+      "message": "class 'LossyConversionException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-crypto/ios/CryptoModule.swift",
+      "line": 71,
+      "column": 21,
+      "message": "class 'FailedGeneratingRandomBytesException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-crypto/ios/DigestAlgorithm.swift",
+      "line": 46,
+      "column": 14,
+      "message": "'CC_MD2' was deprecated in iOS 13.0: This function is cryptographically broken and should not be used in security contexts. Clients should migrate to SHA256 (or stronger). [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-crypto/ios/DigestAlgorithm.swift",
+      "line": 48,
+      "column": 14,
+      "message": "'CC_MD4' was deprecated in iOS 13.0: This function is cryptographically broken and should not be used in security contexts. Clients should migrate to SHA256 (or stronger). [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-crypto/ios/DigestAlgorithm.swift",
+      "line": 50,
+      "column": 14,
+      "message": "'CC_MD5' was deprecated in iOS 13.0: This function is cryptographically broken and should not be used in security contexts. Clients should migrate to SHA256 (or stronger). [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-document-picker/ios/DocumentPickerModule.swift",
+      "line": 189,
+      "column": 13,
+      "message": "'kUTTypeItem' was deprecated in iOS 15.0: Use UTTypeItem or UTType.item (swift) instead. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-document-picker/ios/DocumentPickerModule.swift",
+      "line": 191,
+      "column": 13,
+      "message": "'kUTTypeImage' was deprecated in iOS 15.0: Use UTTypeImage or UTType.image (swift) instead. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-document-picker/ios/DocumentPickerModule.swift",
+      "line": 193,
+      "column": 13,
+      "message": "'kUTTypeVideo' was deprecated in iOS 15.0: Use UTTypeVideo or UTType.video (swift) instead. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-document-picker/ios/DocumentPickerModule.swift",
+      "line": 195,
+      "column": 13,
+      "message": "'kUTTypeAudio' was deprecated in iOS 15.0: Use UTTypeAudio or UTType.audio (swift) instead. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-document-picker/ios/DocumentPickerModule.swift",
+      "line": 197,
+      "column": 13,
+      "message": "'kUTTypeText' was deprecated in iOS 15.0: Use UTTypeText or UTType.text (swift) instead. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-document-picker/ios/DocumentPickerModule.swift",
+      "line": 199,
+      "column": 20,
+      "message": "'UTTypeCreatePreferredIdentifierForTag' was deprecated in iOS 15.0: Use the UTType class instead. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-document-picker/ios/DocumentPickerModule.swift",
+      "line": 200,
+      "column": 9,
+      "message": "'kUTTagClassMIMEType' was deprecated in iOS 15.0: Use UTTagClassMIMEType instead. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-document-picker/ios/DocumentPickerModule.swift",
+      "line": 206,
+      "column": 15,
+      "message": "'kUTTypeItem' was deprecated in iOS 15.0: Use UTTypeItem or UTType.item (swift) instead. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-document-picker/ios/Exceptions.swift",
+      "line": 3,
+      "column": 22,
+      "message": "class 'InvalidFileException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-document-picker/ios/Exceptions.swift",
+      "line": 9,
+      "column": 22,
+      "message": "class 'PickingInProgressException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-document-picker/ios/Exceptions.swift",
+      "line": 15,
+      "column": 22,
+      "message": "class 'MissingViewControllerException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 5,
+      "column": 22,
+      "message": "class 'PermissionsModuleNotFoundException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 11,
+      "column": 22,
+      "message": "class 'FileSystemModuleNotFoundException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 17,
+      "column": 22,
+      "message": "class 'MissingCameraPermissionException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 23,
+      "column": 22,
+      "message": "class 'MissingMicrophonePermissionException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 29,
+      "column": 22,
+      "message": "class 'MissingCurrentViewControllerException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 35,
+      "column": 22,
+      "message": "class 'MaxDurationWhileEditingExceededException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 41,
+      "column": 22,
+      "message": "class 'InvalidMediaTypeException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 47,
+      "column": 22,
+      "message": "class 'FailedToCreateGifException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 53,
+      "column": 22,
+      "message": "class 'FailedToExportGifException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 59,
+      "column": 22,
+      "message": "class 'FailedToWriteImageException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 65,
+      "column": 22,
+      "message": "class 'FailedToReadImageException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 71,
+      "column": 22,
+      "message": "class 'FailedToReadImageDataException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 77,
+      "column": 22,
+      "message": "class 'FailedToReadVideoSizeException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 83,
+      "column": 22,
+      "message": "class 'FailedToReadVideoException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 89,
+      "column": 22,
+      "message": "class 'FailedToTranscodeVideoException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 95,
+      "column": 22,
+      "message": "class 'UnsupportedVideoExportPresetException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 101,
+      "column": 22,
+      "message": "class 'FailedToPickVideoException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 107,
+      "column": 22,
+      "message": "class 'FailedToReadImageDataForBase64Exception' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImagePickerExceptions.swift",
+      "line": 113,
+      "column": 22,
+      "message": "class 'FailedToPickLivePhotoException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImageUtils.swift",
+      "line": 70,
+      "column": 35,
+      "message": "'referenceURL' was deprecated in iOS 11.0: Will be removed in a future release, use PHPicker. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImageUtils.swift",
+      "line": 236,
+      "column": 37,
+      "message": "'referenceURL' was deprecated in iOS 11.0: Will be removed in a future release, use PHPicker. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImageUtils.swift",
+      "line": 241,
+      "column": 26,
+      "message": "'fetchAssets(withALAssetURLs:options:)' was deprecated in iOS 11: Will be removed in a future release [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImageUtils.swift",
+      "line": 281,
+      "column": 37,
+      "message": "'referenceURL' was deprecated in iOS 11.0: Will be removed in a future release, use PHPicker. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/ImageUtils.swift",
+      "line": 286,
+      "column": 26,
+      "message": "'fetchAssets(withALAssetURLs:options:)' was deprecated in iOS 11: Will be removed in a future release [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/StatusBarVisibilityController.swift",
+      "line": 13,
+      "column": 56,
+      "message": "'isStatusBarHidden' was deprecated in iOS 13.0: Use the statusBarManager property of the window scene instead. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/VideoUtils.swift",
+      "line": 24,
+      "column": 25,
+      "message": "'duration' was deprecated in iOS 16.0: Use load(.duration) instead [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/VideoUtils.swift",
+      "line": 24,
+      "column": 56,
+      "message": "'duration' was deprecated in iOS 16.0: Use load(.duration) instead [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/VideoUtils.swift",
+      "line": 29,
+      "column": 34,
+      "message": "'tracks(withMediaType:)' was deprecated in iOS 16.0: Use loadTracks(withMediaType:) instead [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/VideoUtils.swift",
+      "line": 33,
+      "column": 27,
+      "message": "'naturalSize' was deprecated in iOS 16.0: Use load(.naturalSize) instead [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/VideoUtils.swift",
+      "line": 33,
+      "column": 59,
+      "message": "'preferredTransform' was deprecated in iOS 16.0: Use load(.preferredTransform) instead [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-image-picker/ios/VideoUtils.swift",
+      "line": 38,
+      "column": 55,
+      "message": "'referenceURL' was deprecated in iOS 11.0: Will be removed in a future release, use PHPicker. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-sharing/ios/SharingModule.swift",
+      "line": 69,
+      "column": 19,
+      "message": "value 'self' was defined but never used; consider replacing with boolean test [#NoUsage]",
+      "category": "Autre"
+    },
+    {
+      "path": "node_modules/expo-web-browser/ios/WebAuthSession.swift",
+      "line": 9,
+      "column": 33,
+      "message": "'keyWindow' was deprecated in iOS 13.0: Should not be used for applications that support multiple scenes as it returns a key window across all connected scenes [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo-web-browser/ios/WebBrowserExceptions.swift",
+      "line": 5,
+      "column": 13,
+      "message": "class 'WebBrowserAlreadyOpenException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-web-browser/ios/WebBrowserExceptions.swift",
+      "line": 11,
+      "column": 13,
+      "message": "class 'WebBrowserInvalidURLException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-web-browser/ios/WebBrowserExceptions.swift",
+      "line": 17,
+      "column": 13,
+      "message": "class 'WebBrowserNotOpenException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-web-browser/ios/WebBrowserExceptions.swift",
+      "line": 23,
+      "column": 13,
+      "message": "class 'WebAuthSessionFailedToStartException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo-web-browser/ios/WebBrowserSession.swift",
+      "line": 33,
+      "column": 54,
+      "message": "'keyWindow' was deprecated in iOS 13.0: Should not be used for applications that support multiple scenes as it returns a key window across all connected scenes [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/EXAppDelegatesLoader.m",
+      "line": 14,
+      "column": 43,
+      "message": "cannot find protocol definition for 'EXAppDelegateSubscriberProtocol'",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/EXLegacyAppDelegateWrapper.m",
+      "line": 78,
+      "column": 1,
+      "message": "implementing deprecated method [-Wdeprecated-implementations]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/EXLegacyAppDelegateWrapper.m",
+      "line": 106,
+      "column": 22,
+      "message": "'application:performFetchWithCompletionHandler:' is deprecated: first deprecated in iOS 13.0 - Use a BGAppRefreshTask in the BackgroundTasks framework instead [-Wdeprecated-declarations]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/ExpoReactNativeFactory.h",
+      "line": 11,
+      "column": 58,
+      "message": "cannot find protocol definition for 'RCTHostDelegate'",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/ExpoReactNativeFactory.mm",
+      "line": 25,
+      "column": 17,
+      "message": "class 'EXReactNativeFactory' does not conform to protocol 'RCTHostDelegate' [-Wprotocol]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/ExpoReactNativeFactory.swift",
+      "line": 85,
+      "column": 36,
+      "message": "'newArchEnabled()' is deprecated: This will be removed in a future version of React Native [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/ExpoReactNativeFactory.swift",
+      "line": 89,
+      "column": 27,
+      "message": "'createRootView(with:moduleName:initProps:)' is deprecated: createRootViewWithBridge:moduleName:initProps is deprecated and will be removed when removing the legacy architecture. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/ExpoReactNativeFactory.swift",
+      "line": 95,
+      "column": 20,
+      "message": "'createBridge(with:launchOptions:)' is deprecated: createBridgeWithDelegate:launchOptions: is deprecated and will be removed when removing the legacy architecture. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/ExpoReactNativeFactory.swift",
+      "line": 106,
+      "column": 20,
+      "message": "'loadSource(for:onProgress:onComplete:)' is deprecated: This API will be removed along with the legacy architecture. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/ExpoReactNativeFactory.swift",
+      "line": 109,
+      "column": 74,
+      "message": "'extraModules(for:)' is deprecated: This API will be removed along with the legacy architecture. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/ExpoReactNativeFactory.swift",
+      "line": 111,
+      "column": 22,
+      "message": "'extraModules(for:)' is deprecated: This API will be removed along with the legacy architecture. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/ExpoReactNativeFactory.swift",
+      "line": 115,
+      "column": 74,
+      "message": "'extraLazyModuleClasses(for:)' is deprecated: This API will be removed along with the legacy architecture. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/ExpoReactNativeFactory.swift",
+      "line": 117,
+      "column": 22,
+      "message": "'extraLazyModuleClasses(for:)' is deprecated: This API will be removed along with the legacy architecture. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/ExpoReactNativeFactory.swift",
+      "line": 121,
+      "column": 74,
+      "message": "'bridge(_:didNotFindModule:)' is deprecated: This API will be removed along with the legacy architecture. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/ExpoReactNativeFactory.swift",
+      "line": 123,
+      "column": 22,
+      "message": "'bridge(_:didNotFindModule:)' is deprecated: This API will be removed along with the legacy architecture. [#DeprecatedDeclaration]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/expo/ios/AppDelegates/ExpoReactNativeFactory.swift",
+      "line": 140,
+      "column": 15,
+      "message": "value 'delegate' was defined but never used; consider replacing with boolean test [#NoUsage]",
+      "category": "Autre"
+    },
+    {
+      "path": "node_modules/expo/ios/EXAppDefinesLoader.m",
+      "line": 13,
+      "column": 8,
+      "message": "unused variable 'APP_DEBUG' [-Wunused-variable]",
+      "category": "Autre"
+    },
+    {
+      "path": "node_modules/expo/ios/Fetch/FetchExceptions.swift",
+      "line": 5,
+      "column": 22,
+      "message": "class 'FetchUnknownException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo/ios/Fetch/FetchExceptions.swift",
+      "line": 11,
+      "column": 22,
+      "message": "class 'FetchRequestCanceledException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo/ios/Fetch/FetchExceptions.swift",
+      "line": 17,
+      "column": 22,
+      "message": "class 'FetchRedirectException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo/ios/Fetch/FetchExceptions.swift",
+      "line": 23,
+      "column": 22,
+      "message": "class 'FetchBlobModuleUnavailableException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo/ios/Fetch/NativeResponse.swift",
+      "line": 187,
+      "column": 9,
+      "message": "capture of 'completionHandler' with non-Sendable type '(URLRequest?) -> Void' in a '@Sendable' closure [#SendableClosureCaptures]",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo/node_modules/expo-asset/ios/AssetModule.swift",
+      "line": 4,
+      "column": 22,
+      "message": "class 'UnableToDownloadAssetException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/expo/node_modules/expo-asset/ios/AssetModule.swift",
+      "line": 10,
+      "column": 22,
+      "message": "class 'UnableToSaveAssetToDirectoryException' must restate inherited '@unchecked Sendable' conformance",
+      "category": "Concurrence Swift"
+    },
+    {
+      "path": "node_modules/react-native-safe-area-context/ios/Fabric/RNCSafeAreaProviderComponentView.mm",
+      "line": 110,
+      "column": 27,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'left' will be initialized after field 'bottom' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-safe-area-context/ios/Fabric/RNCSafeAreaProviderComponentView.mm",
+      "line": 111,
+      "column": 26,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'bottom' will be initialized after field 'right' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Elements/RNSVGClipPath.mm",
+      "line": 51,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Elements/RNSVGForeignObject.mm",
+      "line": 71,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Elements/RNSVGGroup.mm",
+      "line": 56,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Elements/RNSVGLinearGradient.mm",
+      "line": 87,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Elements/RNSVGMarker.mm",
+      "line": 81,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Elements/RNSVGMask.mm",
+      "line": 75,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Elements/RNSVGPath.mm",
+      "line": 55,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Elements/RNSVGPattern.mm",
+      "line": 89,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Elements/RNSVGRadialGradient.mm",
+      "line": 93,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Elements/RNSVGSvgView.h",
+      "line": 37,
+      "column": 44,
+      "message": "auto property synthesis will not synthesize property 'hitTestEdgeInsets'; it will be implemented by its superclass, use @dynamic to acknowledge intention [-Wobjc-property-synthesis]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Elements/RNSVGSymbol.mm",
+      "line": 59,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Elements/RNSVGUse.mm",
+      "line": 71,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Filters/RNSVGFeBlend.mm",
+      "line": 49,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Filters/RNSVGFeColorMatrix.mm",
+      "line": 55,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Filters/RNSVGFeComposite.mm",
+      "line": 57,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Filters/RNSVGFeFlood.mm",
+      "line": 51,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Filters/RNSVGFeGaussianBlur.mm",
+      "line": 51,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Filters/RNSVGFeMerge.mm",
+      "line": 51,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Filters/RNSVGFeOffset.mm",
+      "line": 57,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Filters/RNSVGFilter.mm",
+      "line": 72,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Shapes/RNSVGCircle.mm",
+      "line": 66,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Shapes/RNSVGEllipse.mm",
+      "line": 70,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Shapes/RNSVGLine.mm",
+      "line": 70,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Shapes/RNSVGRect.mm",
+      "line": 78,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Text/RNSVGText.mm",
+      "line": 62,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Text/RNSVGTextPath.mm",
+      "line": 62,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Text/RNSVGTSpan.mm",
+      "line": 74,
+      "column": 1,
+      "message": "method possibly missing a [super updateProps:oldProps:] call [-Wobjc-missing-super-calls]",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Text/RNSVGTSpan.mm",
+      "line": 930,
+      "column": 21,
+      "message": "variable length arrays in C++ are a Clang extension [-Wvla-cxx-extension]",
+      "category": "Extension C++"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Text/RNSVGTSpan.mm",
+      "line": 931,
+      "column": 21,
+      "message": "variable length arrays in C++ are a Clang extension [-Wvla-cxx-extension]",
+      "category": "Extension C++"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Text/RNSVGTSpan.mm",
+      "line": 932,
+      "column": 20,
+      "message": "variable length arrays in C++ are a Clang extension [-Wvla-cxx-extension]",
+      "category": "Extension C++"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Text/RNSVGTSpan.mm",
+      "line": 943,
+      "column": 27,
+      "message": "variable length arrays in C++ are a Clang extension [-Wvla-cxx-extension]",
+      "category": "Extension C++"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Utils/RCTConvert+RNSVG.mm",
+      "line": 241,
+      "column": 28,
+      "message": "variable length arrays in C++ are a Clang extension [-Wvla-cxx-extension]",
+      "category": "Extension C++"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Utils/RNSVGFabricConversions.h",
+      "line": 17,
+      "column": 11,
+      "message": "'static' function 'RNSVGConvertFollyDynamicToId' declared in header file should be declared 'static inline' [-Wunneeded-internal-declaration]",
+      "category": "Autre"
+    },
+    {
+      "path": "node_modules/react-native-svg/apple/Utils/RNSVGFabricConversions.h",
+      "line": 246,
+      "column": 19,
+      "message": "unused function 'intToRNSVGVBMOS' [-Wunused-function]",
+      "category": "Autre"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 103,
+      "column": 30,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'lockIdentifier' will be initialized after field 'title' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 105,
+      "column": 34,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'navigationType' will be initialized after field 'canGoBack' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 108,
+      "column": 32,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'isTopFrame' will be initialized after field 'loading' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 120,
+      "column": 30,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'lockIdentifier' will be initialized after field 'title' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 122,
+      "column": 34,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'navigationType' will be initialized after field 'canGoBack' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 124,
+      "column": 32,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'canGoForward' will be initialized after field 'loading' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 136,
+      "column": 30,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'lockIdentifier' will be initialized after field 'title' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 139,
+      "column": 34,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'description' will be initialized after field 'canGoBack' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 141,
+      "column": 32,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'canGoForward' will be initialized after field 'loading' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 153,
+      "column": 30,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'lockIdentifier' will be initialized after field 'title' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 156,
+      "column": 32,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'canGoForward' will be initialized after field 'loading' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 168,
+      "column": 30,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'lockIdentifier' will be initialized after field 'title' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 170,
+      "column": 34,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'navigationType' will be initialized after field 'canGoBack' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 172,
+      "column": 32,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'canGoForward' will be initialized after field 'loading' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 184,
+      "column": 30,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'lockIdentifier' will be initialized after field 'title' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 187,
+      "column": 32,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'canGoForward' will be initialized after field 'loading' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 199,
+      "column": 30,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'lockIdentifier' will be initialized after field 'title' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 202,
+      "column": 32,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'canGoForward' will be initialized after field 'loading' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 212,
+      "column": 28,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'selectedText' will be initialized after field 'key' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 213,
+      "column": 30,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'key' will be initialized after field 'label' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 231,
+      "column": 30,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'x' will be initialized after field 'y' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 233,
+      "column": 37,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'contentOffset' will be initialized after field 'contentInset' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 237,
+      "column": 35,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'top' will be initialized after field 'bottom' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 241,
+      "column": 35,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'width' will be initialized after field 'height' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 245,
+      "column": 35,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'width' will be initialized after field 'height' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 257,
+      "column": 30,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'lockIdentifier' will be initialized after field 'title' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 259,
+      "column": 36,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'statusCode' will be initialized after field 'description' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 260,
+      "column": 34,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'description' will be initialized after field 'canGoBack' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 262,
+      "column": 32,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'canGoForward' will be initialized after field 'loading' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 349,
+      "column": 17,
+      "message": "implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]",
+      "category": "Conversion entière"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 351,
+      "column": 24,
+      "message": "implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]",
+      "category": "Conversion entière"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 353,
+      "column": 24,
+      "message": "implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]",
+      "category": "Conversion entière"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 355,
+      "column": 24,
+      "message": "implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]",
+      "category": "Conversion entière"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 357,
+      "column": 24,
+      "message": "implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]",
+      "category": "Conversion entière"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 359,
+      "column": 24,
+      "message": "implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]",
+      "category": "Conversion entière"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 361,
+      "column": 24,
+      "message": "implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]",
+      "category": "Conversion entière"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 363,
+      "column": 24,
+      "message": "implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]",
+      "category": "Conversion entière"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 365,
+      "column": 24,
+      "message": "implicit conversion loses integer precision: 'WKDataDetectorTypes' (aka 'unsigned long') to 'RNCWebViewDataDetectorTypesMask' (aka 'unsigned int') [-Wshorten-64-to-32]",
+      "category": "Conversion entière"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 377,
+      "column": 23,
+      "message": "ISO C++ requires field designators to be specified in declaration order; field 'right' will be initialized after field 'bottom' [-Wreorder-init-list]",
+      "category": "Ordre des initialiseurs C++"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 436,
+      "column": 36,
+      "message": "null passed to a callee that requires a non-null argument [-Wnonnull]",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebView.mm",
+      "line": 451,
+      "column": 34,
+      "message": "null passed to a callee that requires a non-null argument [-Wnonnull]",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebViewImpl.m",
+      "line": 185,
+      "column": 51,
+      "message": "'statusBarStyle' is deprecated: first deprecated in iOS 13.0 - Use the statusBarManager property of the window scene instead. [-Wdeprecated-declarations]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebViewImpl.m",
+      "line": 186,
+      "column": 52,
+      "message": "'statusBarHidden' is deprecated: first deprecated in iOS 13.0 - Use the statusBarManager property of the window scene instead. [-Wdeprecated-declarations]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebViewImpl.m",
+      "line": 429,
+      "column": 11,
+      "message": "'javaScriptEnabled' is deprecated: first deprecated in iOS 14.0 - Use WKWebpagePreferences.allowsContentJavaScript to disable content JavaScript on a per-navigation basis [-Wdeprecated-declarations]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebViewImpl.m",
+      "line": 468,
+      "column": 21,
+      "message": "'processPool' is deprecated: first deprecated in iOS 15.0 - Creating and using multiple instances of WKProcessPool no longer has any effect. [-Wdeprecated-declarations]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWebViewImpl.m",
+      "line": 624,
+      "column": 19,
+      "message": "'suspendAllMediaPlayback:' is deprecated: first deprecated in iOS 15.0 [-Wdeprecated-declarations]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWKProcessPoolManager.h",
+      "line": 13,
+      "column": 4,
+      "message": "'WKProcessPool' is deprecated: first deprecated in iOS 15.0 - Creating and using multiple instances of WKProcessPool no longer has any effect. [-Wdeprecated-declarations]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWKProcessPoolManager.m",
+      "line": 12,
+      "column": 3,
+      "message": "'WKProcessPool' is deprecated: first deprecated in iOS 15.0 - Creating and using multiple instances of WKProcessPool no longer has any effect. [-Wdeprecated-declarations]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWKProcessPoolManager.m",
+      "line": 28,
+      "column": 4,
+      "message": "'WKProcessPool' is deprecated: first deprecated in iOS 15.0 - Creating and using multiple instances of WKProcessPool no longer has any effect. [-Wdeprecated-declarations]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "node_modules/react-native-webview/apple/RNCWKProcessPoolManager.m",
+      "line": 30,
+      "column": 42,
+      "message": "'WKProcessPool' is deprecated: first deprecated in iOS 15.0 - Creating and using multiple instances of WKProcessPool no longer has any effect. [-Wdeprecated-declarations]",
+      "category": "API obsolète"
+    },
+    {
+      "path": "precompiled/ExpoModulesCore/ExpoModulesCore.framework/Headers/EXFileSystemInterface.h",
+      "line": 14,
+      "column": 42,
+      "message": "pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "precompiled/ExpoModulesCore/ExpoModulesCore.framework/Headers/EXFileSystemInterface.h",
+      "line": 14,
+      "column": 42,
+      "message": "pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "precompiled/ExpoModulesCore/ExpoModulesCore.framework/Headers/EXFileSystemInterface.h",
+      "line": 20,
+      "column": 57,
+      "message": "pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "precompiled/ExpoModulesCore/ExpoModulesCore.framework/Headers/EXFileSystemInterface.h",
+      "line": 20,
+      "column": 93,
+      "message": "pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "precompiled/ExpoModulesCore/ExpoModulesCore.framework/Headers/EXFileSystemInterface.h",
+      "line": 20,
+      "column": 57,
+      "message": "pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "precompiled/ExpoModulesCore/ExpoModulesCore.framework/Headers/EXFileSystemInterface.h",
+      "line": 20,
+      "column": 93,
+      "message": "pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "precompiled/ExpoModulesCore/ExpoModulesCore.framework/Headers/EXFileSystemInterface.h",
+      "line": 21,
+      "column": 43,
+      "message": "pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified) [-Wnullability-completeness]",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "precompiled/ExpoModulesCore/ExpoModulesCore.framework/Headers/EXFileSystemInterface.h",
+      "line": 21,
+      "column": 43,
+      "message": "pointer is missing a nullability type specifier (_Nonnull, _Nullable, or _Null_unspecified)",
+      "category": "Nullabilité / conversion optionnelle"
+    },
+    {
+      "path": "precompiled/ExpoModulesCore/ExpoModulesCore.framework/Headers/EXImageLoader.h",
+      "line": 14,
+      "column": 38,
+      "message": "cannot find protocol definition for 'EXImageLoaderInterface'",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "precompiled/ExpoModulesCore/ExpoModulesCore.framework/Headers/EXModuleRegistryHolderReactModule.h",
+      "line": 7,
+      "column": 58,
+      "message": "cannot find protocol definition for 'RCTBridgeModule'",
+      "category": "Interface / protocole natif"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTShadowView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBridgeConstants.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageLoaderProtocol.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTEventDispatcherProtocol.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTObjcExecutor.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTLocalAssetImageLoader.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRedBox2Controller+Internal.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAnimationDriver.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTPackagerClient.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTURLRequestHandler.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageDataDecoder.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTInspectorNetworkReporter.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTInputAccessoryViewContent.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDevToolsRuntimeSettingsModule.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTCxxInspectorWebSocketAdapter.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTPackagerConnection.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTShadowView+Internal.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTScrollContentShadowView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSafeAreaView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTValueAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTInspectorDevServerHelper.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTCxxConvert.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRedBox2ErrorParser+Internal.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBackedTextInputDelegateAdapter.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTViewUtils.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTUtils.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTErrorInfo.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTConvert+Transform.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTCallInvoker.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTConstants.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAnimationPlugins.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageUtils.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTLayoutAnimationGroup.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTEventAnimation.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTLinkingManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBridge.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTManagedPointer.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBridgeModule.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTJavaScriptExecutor.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTModalManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTTextSelection.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImagePlugins.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBaseTextViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTInspector.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTMultipartDataTask.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTFont.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSurfaceSizeMeasureMode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTPushNotificationPlugins.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBorderCurve.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDynamicTypeRamp.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRefreshControlManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTPerformanceLogger.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAppearance.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBaseTextInputShadowView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTInspectorNetworkHelper.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBaseTextShadowView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSpringAnimation.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageLoaderWithAttributionProtocol.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTMultipartStreamReader.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/NSDataBigString.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTUtilsUIOverride.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSurfaceRootView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageLoader.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAnimationUtils.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTClipboard.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRefreshControl.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTTouchEvent.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDevSupportHttpHeaders.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTJscSafeUrl+Internal.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTHTTPRequestHandler.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBaseTextInputViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTUIManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSinglelineTextInputViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSurfaceProtocol.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTTextView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTConvert+CoreLocation.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTObjectAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTNativeAnimatedNodesManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageCache.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTNetworking.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageStoreManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRootViewInternal.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTInputAccessoryViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTInputAccessoryView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSurfaceDelegate.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDefaultCxxLogFunction.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTTextViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTNativeModule.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTPlatform.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTComponent.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRedBoxController+Internal.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTTiming.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTGIFImageDecoder.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDevMenuConfigurationDecorator.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTVirtualTextShadowView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTParserUtils.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRootViewDelegate.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTPerformanceLoggerLabels.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTMultilineTextInputViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTModuleMethod.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTJSIExecutorRuntimeInstaller.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSettingsPlugins.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBackedTextInputDelegate.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTTextAttributes.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTLocalizedString.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDisplayWeakRefreshable.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBundleURLProvider.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTReconnectingWebSocket.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSafeAreaViewLocalData.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRedBoxHMRClient+Internal.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSwitchManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRawTextViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBridgeDelegate.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTTextTransform.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBridge+Inspector.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTModalHostViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTURLRequestDelegate.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRedBox2AnsiParser+Internal.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageURLLoader.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTCxxMethod.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDevSettings.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTUITextView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTEventDispatcher.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTJavaScriptLoader.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTLayoutAnimation.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTModuleData.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTFont+Private.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDebuggingOverlayManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAdditionAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTPropsAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRawTextShadowView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAnimationType.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTConvert.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageShadowView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageLoaderLoggable.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTMessageThread.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTCxxInspectorPackagerConnection.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRootShadowView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTPointerEvents.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBundleManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTCursor.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTNullability.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTVersion.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSurfacePresenterStub.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTProfile.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTKeyboardObserver.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRedBoxSetEnabled.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTPLTag.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTComponentEvent.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTStatusBarManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTInvalidating.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDataRequestHandler.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTLayout.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTTrackingAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDecayAnimation.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBridgeModuleDecorator.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTCxxBridgeDelegate.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTReloadCommand.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTTouchHandler.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/CoreModulesPlugins.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSurface.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBorderStyle.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSafeAreaShadowView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTVirtualTextViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTMockDef.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTPushNotificationManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTFPSGraph.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTScrollEvent.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTActionSheetManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/UIView+React.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTCxxInspectorPackagerConnectionDelegate.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAccessibilityManager+Internal.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTMacros.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTNativeAnimatedModule.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTWrapperViewController.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTModalHostViewController.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDisplayLink.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTTextShadowView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTMultiplicationAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBridgeMethod.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDevLoadingViewSetEnabled.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBaseTextInputView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDivisionAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTCallInvokerModule.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBorderDrawing.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDevLoadingViewProtocol.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSinglelineTextInputView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTScrollView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageBlurUtils.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTLogBox.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTExceptionsManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTModalHostView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTInterpolationAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTInitializing.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSurfaceView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSurfaceHostingProxyRootView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTUIManagerUtils.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAccessibilityManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRootContentView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTLinkingPlugins.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTJSStackFrame.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDevLoadingView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTScrollContentViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSourceCode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDebuggingOverlay.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBlobManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTUIImageViewAnimated.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTFrameUpdate.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBridge+Private.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTShadowView+Layout.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageURLLoaderWithAttribution.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTFrameAnimation.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTNetworkTask.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDiffClampAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTLogBoxView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAnimatedImage.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTModuloAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTWebSocketModule.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTComponentData.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTTurboModuleRegistry.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageEditingManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRootView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRedBox+Internal.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTStyleAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTScrollViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBridgeProxy.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTInspectorPackagerConnection.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTPausedInDebuggerOverlayController.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTI18nManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTColorAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTMultilineTextInputView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTErrorCustomizer.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTJSThread.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTLog.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTUITextField.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTFileReaderModule.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTInputAccessoryShadowView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTResizeMode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRefreshableProtocol.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTVibrationPlugins.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSurfaceRootShadowViewDelegate.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSurfaceRootShadowView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAlertManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRedBox.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTScrollableProtocol.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTI18nUtil.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/DispatchMessageQueueThread.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAutoInsetsProtocol.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTScrollContentView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTCxxUtils.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDefines.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSwitch.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSurfaceStage.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/UIView+Private.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBridgeProxy+Cxx.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSurfaceHostingView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTVibration.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTNetworking+Internal.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDeviceInfo.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAssert.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTFileRequestHandler.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTActivityIndicatorViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTNetworkPlugins.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTActivityIndicatorView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTNativeAnimatedTurboModule.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTFrameTimingsObserver.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSettingsManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBundleAssetImageLoader.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTTransformAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTBackedTextInputViewProtocol.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAlertController.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTNetworkConversions.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTUIManagerObserverCoordinator.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSafeAreaViewManager.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTConvert+Text.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTKeyCommands.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTRedBoxExtraDataViewController.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTFollyConvert.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTAppState.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTDevMenu.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTInspectorUtils.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSubtractionAnimatedNode.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTSurfaceView+Internal.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTImageSource.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTVirtualTextView.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/FBXXHashUtils.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTTextDecorationLineType.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/NSTextStorage+FontScaling.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "precompiled/React-Core-prebuilt/React.framework/Headers/React_Core/React_Core-umbrella.h",
+      "line": 293,
+      "column": 1,
+      "message": "umbrella header for module 'React' does not include header '/React/RCTEventEmitter.h'",
+      "category": "Headers de frameworks précompilés"
+    },
+    {
+      "path": "x86_64-apple-ios-simulator.swiftmodule",
+      "line": 1,
+      "column": 1,
+      "message": "reference to type 'CKShareMetadata' broken by a context change; 'CKShareMetadata' was expected to be in 'UIKit', but now a candidate is found only in 'CloudKit'",
+      "category": "Autre"
+    }
+  ]
+}
