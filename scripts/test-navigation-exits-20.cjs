@@ -25,10 +25,11 @@ async function login() {
     "alex@example.test",
   );
   await click(
-    findButton("Saisir le code déjà reçu")
-      ? "Saisir le code déjà reçu"
+    findButton("Reprendre ma connexion par e-mail")
+      ? "Reprendre ma connexion par e-mail"
       : "Continuer avec mon e-mail",
   );
+  if (connected) await click("Mon e-mail contient un code");
   input(connected ? "Code reçu par e-mail" : "Code de démonstration", "123456");
   await click("Me connecter");
   await wait();

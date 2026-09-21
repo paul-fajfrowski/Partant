@@ -39,10 +39,10 @@ const { d, wait, click, input, ok } = H;
     await wait(); await wait(); await wait();
     ok(sends === 1, 'Rapid double click sends only one request');
     if(mode === 'success') {
-      ok(d.body.textContent.includes('Code reçu par e-mail'), 'Successful send reaches verification');
+      ok(d.body.textContent.includes('Votre lien vous attend.'), 'Successful send reaches link instructions');
     } else {
-      ok(d.querySelector('[role="alert"]')?.textContent.includes('Aucun nouveau code'), 'Persistent French error after quota failure');
-      ok(!d.body.textContent.includes('Code reçu par e-mail'), 'Failed send never claims code sent');
+      ok(d.querySelector('[role="alert"]')?.textContent.includes('Aucun nouvel e-mail'), 'Persistent French error after quota failure');
+      ok(!d.body.textContent.includes('Votre lien vous attend.'), 'Failed send never claims link sent');
       const paused = [...d.querySelectorAll('[role="button"]')].find(e => e.textContent.includes('avant un nouvel essai'));
       ok(paused?.getAttribute('aria-disabled') === 'true', 'Email retries temporarily disabled');
       paused.click(); await wait();

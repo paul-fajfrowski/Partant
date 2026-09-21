@@ -245,6 +245,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const [authFeedback, setAuthFeedback] = useState("");
   const [emailWait, setEmailWait] = useState(0);
   const [codeRecipient, setCodeRecipient] = useState("");
+  const [showEmailCode, setShowEmailCode] = useState(false);
   const emailRetryAt = useRef(0);
   useEffect(() => {
     if (!emailWait) return;
@@ -952,6 +953,25 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     setSelectedBooking(id);
     go("confirmation");
   }
+  async function requestEmailLink() {
+    setEmailFeedback("");
+    setAuthFeedback("");
+    try {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+        throw Error("Indiquez une adresse e-mail valide.");
+      if (live) {
+        if (Date.now() < emailRetryAt.current) return;
+        await market.sendCode(email.trim(), signup, name.trim(), role);
+        setCodeRecipient(email.trim().toLowerCase());
+        pauseEmailRequests();
+        setShowEmailCode(false);
+      }
+      go("code");
+    } catch (error) {
+      if (live && isEmailRateLimit(error)) pauseEmailRequests();
+      setEmailFeedback(errorMessage(error));
+    }
+  }
   async function verify() {
     if (live) {
       newRegistration.current = signup;
@@ -1438,25 +1458,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           />
           <Button
             disabled={busy || (live && emailWait > 0)}
-            onPress={() =>
-              run(async () => {
-                setEmailFeedback("");
-                try {
-                  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
-                    throw Error("Indiquez une adresse e-mail valide.");
-                  if (live) {
-                    if (Date.now() < emailRetryAt.current) return;
-                    await market.sendCode(email.trim(), signup);
-                    setCodeRecipient(email.trim().toLowerCase());
-                    pauseEmailRequests();
-                  }
-                  go("code");
-                } catch (error) {
-                  if (live && isEmailRateLimit(error)) pauseEmailRequests();
-                  setEmailFeedback(errorMessage(error));
-                }
-              })
-            }
+            onPress={() => run(requestEmailLink)}
           >
             {live && emailWait > 0
               ? `Patienter ${emailWait} s avant un nouvel essai`
@@ -1470,7 +1472,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   if (!busy) go("code");
                 }}
               >
-                Saisir le code déjà reçu
+                Reprendre ma connexion par e-mail
               </TextButton>
             )}
           {!!emailFeedback && (
@@ -1532,7 +1534,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         )}
         <Note style={{ marginTop: 24 }}>
           {live ? (
-            "Recevez un lien ou un code personnel dans votre boîte e-mail. Aucun mot de passe à retenir."
+            "Recevez un lien personnel dans votre boîte e-mail. Touchez-le pour vous connecter à Partant, sans mot de passe."
           ) : (
             <P style={{ fontSize: 14 }}>
               Démo : aucun e-mail ne sera envoyé. Le code à saisir à l’étape
@@ -1558,30 +1560,83 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     content = (
       <Section>
         <Eyebrow>UNE DERNIÈRE ÉTAPE</Eyebrow>
-        <H1 style={{ marginTop: 20, marginBottom: 12 }}>C’est bien vous.</H1>
+        <H1 style={{ marginTop: 20, marginBottom: 12 }}>
+          {live && !showEmailCode
+            ? "Votre lien vous attend."
+            : "C’est bien vous."}
+        </H1>
         <P muted>
           {live
             ? `Consultez votre boîte e-mail : ${email}.`
-            : "Dans la version réelle, un code serait envoyé à votre adresse e-mail."}
+            : "Dans la version réelle, un lien serait envoyé à votre adresse e-mail."}
         </P>
-        <View style={{ marginTop: 24 }}>
-          <Field
-            label={live ? "Code reçu par e-mail" : "Code de démonstration"}
-            value={code}
-            onChange={setCode}
-            numeric
-          />
-          <Button disabled={busy} onPress={() => run(verify)}>
-            Me connecter
-          </Button>
-        </View>
-        {!!authFeedback && (
+        {live && !showEmailCode ? (
+          <View style={{ marginTop: 24 }}>
+            <Note>
+              Touchez le lien dans le dernier e-mail reçu pour confirmer votre
+              connexion. Ouvrez-le sur ce même appareil pour revenir dans
+              Partant.
+            </Note>
+            <P small muted style={{ marginVertical: 20 }}>
+              Pensez à vérifier les courriers indésirables. Aucun code n’est
+              demandé pour ce lien.
+            </P>
+            <Button
+              light
+              disabled={busy || emailWait > 0}
+              onPress={() => run(requestEmailLink)}
+            >
+              {emailWait > 0
+                ? `Renvoyer le lien dans ${emailWait} s`
+                : "Renvoyer le lien"}
+            </Button>
+            <TextButton onPress={back}>Modifier l’adresse e-mail</TextButton>
+            <TextButton
+              muted
+              onPress={() => {
+                setShowEmailCode(true);
+                setAuthFeedback("");
+              }}
+            >
+              Mon e-mail contient un code
+            </TextButton>
+          </View>
+        ) : (
+          <View style={{ marginTop: 24 }}>
+            {live && (
+              <P muted style={{ marginBottom: 16 }}>
+                Saisissez uniquement le code indiqué dans votre e-mail. Si vous
+                avez reçu un lien, utilisez-le directement.
+              </P>
+            )}
+            <Field
+              label={live ? "Code reçu par e-mail" : "Code de démonstration"}
+              value={code}
+              onChange={setCode}
+              numeric
+            />
+            <Button disabled={busy} onPress={() => run(verify)}>
+              Me connecter
+            </Button>
+            {live && (
+              <TextButton
+                onPress={() => {
+                  setShowEmailCode(false);
+                  setAuthFeedback("");
+                }}
+              >
+                Mon e-mail contient un lien
+              </TextButton>
+            )}
+          </View>
+        )}
+        {!!(authFeedback || emailFeedback) && (
           <View
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"
             style={{ marginTop: 16 }}
           >
-            <Note>{authFeedback}</Note>
+            <Note>{authFeedback || emailFeedback}</Note>
           </View>
         )}
         {!live && (

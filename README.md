@@ -1,5 +1,9 @@
 # Partant
 
+## Connexion par e-mail — livraison 21
+
+[Parcours corrigé et analyse Xcode](docs/email-auth-21.md). L’application annonce le lien réellement envoyé ; le code reste facultatif. La personnalisation des e-mails attend le branchement SMTP reporté. Les retours de navigation sont validés par le propriétaire sur iPhone.
+
 ## Retours et sorties de parcours — livraison 20
 
 [Corrections et recette de navigation](docs/navigation-20.md). Retour et fermeture vers le bon espace, inscription quittable, retour e-mail sans perte de séance, confirmation sans retour au paiement. Apple natif iPhone confirmé fonctionnel par le propriétaire.

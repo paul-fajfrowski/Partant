@@ -2,7 +2,7 @@ import * as Messaging from "./messaging";
 import { useEffect, useRef, useState, Dispatch, SetStateAction } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../lib/supabase";
-import { completeAuth, redirectTo } from "../lib/auth";
+import { completeAuth, redirectTo, withAuthTimeout } from "../lib/auth";
 import { Platform, Linking, AppState } from "react-native";
 import * as Crypto from "expo-crypto";
 import {
@@ -347,11 +347,23 @@ export function useMarketplace(live: boolean) {
           ),
         ].sort();
   }
-  async function sendCode(email: string, signup: boolean) {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: signup, emailRedirectTo: redirectTo() },
-    });
+  async function sendCode(
+    email: string,
+    signup: boolean,
+    name = "",
+    role: "client" | "coach" = "client",
+  ) {
+    // Keep the selected registration path when the mail link reopens the app.
+    await AsyncStorage.setItem(
+      "partant-auth-intent",
+      JSON.stringify({ name: signup ? name : "", role }),
+    );
+    const { error } = await withAuthTimeout(
+      supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: signup, emailRedirectTo: redirectTo() },
+      }),
+    );
     if (error) throw error;
   }
   async function verifyCode(

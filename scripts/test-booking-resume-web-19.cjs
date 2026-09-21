@@ -38,6 +38,7 @@ const { w, d, wait, click, input, ok } = H;
   );
   input("Adresse e-mail", "alex@example.test");
   await click("Continuer avec mon e-mail");
+  await click("Mon e-mail contient un code");
   input("Code reçu par e-mail", "123456");
   await click("Me connecter");
   for (

@@ -13,20 +13,26 @@ const messages: Record<string, string> = {
     "Choisissez un horaire entre dans une heure et dans 90 jours.",
 };
 export function isEmailRateLimit(error: unknown) {
-  const e = error as { code?: string; message?: string; status?: number } | null;
-  return e?.code === "over_email_send_rate_limit" ||
-    /email rate limit exceeded/i.test(e?.message ?? "");
+  const e = error as {
+    code?: string;
+    message?: string;
+    status?: number;
+  } | null;
+  return (
+    e?.code === "over_email_send_rate_limit" ||
+    /email rate limit exceeded/i.test(e?.message ?? "")
+  );
 }
 export function errorMessage(error: unknown) {
   const code = (error as { code?: string } | null)?.code;
   if (isEmailRateLimit(error))
-    return "L’envoi d’e-mails est temporairement limité. Réessayez plus tard ou utilisez une connexion Google ou Apple disponible. Aucun nouveau code n’a été envoyé.";
+    return "L’envoi d’e-mails est temporairement limité. Réessayez plus tard ou utilisez une connexion Google ou Apple disponible. Aucun nouvel e-mail n’a été envoyé.";
   if (code === "over_request_rate_limit")
     return "Trop de tentatives rapprochées. Patientez avant de réessayer.";
   if (code === "email_address_not_authorized")
     return "L’envoi d’e-mails n’est pas encore ouvert à cette adresse dans la version de test. Utilisez une connexion Google ou Apple disponible.";
   if (code === "otp_expired")
-    return "Ce code est incorrect ou a expiré. Vérifiez votre dernier e-mail ou demandez un nouvel envoi.";
+    return "Ce code ou ce lien est incorrect ou a expiré. Vérifiez votre dernier e-mail ou demandez un nouvel envoi.";
 
   const raw =
     error instanceof Error
