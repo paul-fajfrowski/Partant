@@ -1,3 +1,4 @@
+import { usePushNotifications } from "./usePushNotifications";
 import {
   rootScreens,
   mainScreen,
@@ -8,7 +9,7 @@ import { MessagesScreen, ConversationScreen } from "./MessagesScreen";
 import { useMessageDrafts } from "./useMessageDrafts";
 import * as Messaging from "./messaging";
 import { NotificationsScreen } from "./NotificationsScreen";
-import { notificationInboxNotices } from "./notifications";
+import { notificationInboxNotices, notificationRows } from "./notifications";
 import { searchAddresses, distanceKm } from "../lib/geo";
 import CoachMap from "../components/CoachMap";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -194,6 +195,40 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const desktop = Platform.OS === "web" && width > 740;
   const pageWidth = desktop ? (width > 900 ? 430 : 410) : Math.min(width, 740);
   const [screen, setScreen] = useState("welcome");
+  usePushNotifications(
+    market.profileReady ? store.account?.id : undefined,
+    live,
+    (target) => {
+      go(target.event === "message" ? "messages" : "notifications");
+      void market
+        .refresh()
+        .then((fresh) => {
+          if (!fresh || fresh.account?.id !== store.account?.id) return;
+          if (target.event === "message") {
+            if (fresh.bookings.some((b) => b.id === target.bookingId)) {
+              setSelectedBooking(target.bookingId);
+              go("chat");
+            }
+          } else {
+            const destination = notificationRows(fresh).find(
+              (row) => row.notice.id === target.noticeId,
+            )?.target;
+            if (destination) {
+              if (destination.booking) setSelectedBooking(destination.booking);
+              if (destination.config) setConfig(destination.config);
+              go(destination.screen, destination.focus ?? "");
+            }
+          }
+        })
+        .catch(() =>
+          setNotice(
+            "Actualisez vos notifications lorsque la connexion revient.",
+          ),
+        );
+    },
+    market.refresh,
+  );
+
   const history = useRef<
     {
       screen: string;

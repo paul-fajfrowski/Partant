@@ -1,3 +1,4 @@
+import { readJson, HttpError } from "../_shared/http.ts";
 import { syncGoogle } from "../_shared/calendarSync.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import {
@@ -22,12 +23,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST")
     return reply({ error: "Méthode non autorisée." }, 405);
   try {
-    const raw = await req.text();
-    if (raw.length > 400000)
-      return reply({ error: "Contenu trop volumineux." }, 413);
-    const input = JSON.parse(raw);
-    if (/"(?:__proto__|constructor|prototype)"\s*:/.test(raw))
-      return reply({ error: "Requête invalide." }, 400);
+    const input = await readJson(req);
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -62,6 +58,21 @@ Deno.serve(async (req) => {
         { error: "Trop de requêtes. Réessayez dans une minute." },
         429,
       );
+    if (!writing && Number.isSafeInteger(input.ifVersion)) {
+      const checkpoint = await admin.rpc("product_checkpoint", {
+        p_actor: actor?.id ?? null,
+      });
+      if (checkpoint.error) throw checkpoint.error;
+      if (checkpoint.data.deleted)
+        return reply({ error: "Ce compte a été supprimé." }, 403);
+      if (
+        checkpoint.data.fresh &&
+        checkpoint.data.version === input.ifVersion &&
+        checkpoint.data.staff === input.ifStaff &&
+        input.scope === (actor?.id ?? null)
+      )
+        return reply({ unchanged: true, version: checkpoint.data.version });
+    }
     const digest = Array.from(
       new Uint8Array(
         await crypto.subtle.digest(
@@ -219,6 +230,10 @@ Deno.serve(async (req) => {
         if (confirmed.error) throw confirmed.error;
         state = { ...emptyConnected(), ...confirmed.data.documents };
         const committedVersion = confirmed.data.version;
+        if (committedVersion === version + 1)
+          await admin.rpc("product_maintenance_done", {
+            p_version: committedVersion,
+          });
         if (actor && commands.some((c) => c.name === "deleteAccount")) {
           const deletion = await admin.auth.admin.deleteUser(actor.id);
           if (deletion.error)
@@ -234,6 +249,7 @@ Deno.serve(async (req) => {
           version: committedVersion,
         });
       }
+      await admin.rpc("product_maintenance_done", { p_version: version });
       return reply({ store: project(state, actor), version });
     }
     return reply(
@@ -241,14 +257,16 @@ Deno.serve(async (req) => {
       409,
     );
   } catch (e) {
+    if (e instanceof HttpError) return reply({ error: e.message }, e.status);
+    // Domain Errors are user-facing validation messages; database objects stay on the server.
+    if (e instanceof Error && !["TypeError", "SyntaxError"].includes(e.name))
+      return reply({ error: e.message }, 400);
+    console.error(
+      JSON.stringify({ service: "product-api", code: "request_failed" }),
+    );
     return reply(
-      {
-        error:
-          e instanceof Error
-            ? e.message
-            : "Enregistrement impossible. Réessayez.",
-      },
-      400,
+      { error: "Le serveur est momentanément indisponible. Réessayez." },
+      503,
     );
   }
 });

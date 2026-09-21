@@ -32,7 +32,7 @@ begin
  update private.product_revision set version=version+1;
 end $$;
 delete from private.product_requests where actor::text=any(array[${ids}]);
-delete from private.product_rate_limits where actor=any(array[${ids}]);
+delete from private.product_rate_limits where actor=any(array[${ids}]) or actor=any(array(select 'push:'||x from unnest(array[${ids}]::text[]) x));
 delete from auth.refresh_tokens where user_id::text=any(array[${ids}]);
 delete from auth.sessions where user_id::text=any(array[${ids}]);
 delete from auth.users where id::text=any(array[${ids}]) and email like 'partant-qa-%@example.invalid';

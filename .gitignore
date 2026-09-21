@@ -26,3 +26,6 @@ client_secret*.json
 **/.DerivedData/
 **/.build/
 work/
+
+# Private local business backups (not source artifacts)
+.local-backups/

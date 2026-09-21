@@ -10,7 +10,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.paulfajfrowski.partant",
       "appleTeamId": "4STLA425HP",
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "entitlements": {
+        "aps-environment": "development"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -37,7 +40,8 @@
         }
       ],
       "expo-apple-authentication",
-      "./plugins/withPartantIos.cjs"
+      "./plugins/withPartantIos.cjs",
+      "expo-notifications"
     ],
     "scheme": "partant"
   }

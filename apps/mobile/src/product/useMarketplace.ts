@@ -1,3 +1,4 @@
+import { unregisterPushDevice } from "./pushDevice";
 import * as Messaging from "./messaging";
 import { useEffect, useRef, useState, Dispatch, SetStateAction } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -91,16 +92,32 @@ export function useMarketplace(live: boolean) {
       });
       throw failure;
     }
-    return data as { store: Store; version: number; deleted?: boolean };
+    return data as {
+      store: Store;
+      version: number;
+      deleted?: boolean;
+      unchanged?: boolean;
+    };
   };
+  const refreshing = useRef(false);
   async function refresh() {
-    if (!live || jobs.current) return;
-    const token = epoch.current;
-    const data = await invoke({});
-    if (token !== epoch.current || jobs.current || !active.current) return;
-    version.current = data.version;
-    assign(data.store);
-    setLoadedIdentity(identity.current ?? null);
+    if (!live || jobs.current || refreshing.current) return;
+    refreshing.current = true;
+    try {
+      const token = epoch.current;
+      const data = await invoke({
+        ifVersion: version.current,
+        ifStaff: !!current.current.staff,
+        scope: identity.current ?? null,
+      });
+      if (token !== epoch.current || jobs.current || !active.current) return;
+      version.current = data.version;
+      if (!data.unchanged) assign(data.store);
+      setLoadedIdentity(identity.current ?? null);
+      return current.current;
+    } finally {
+      refreshing.current = false;
+    }
   }
   async function execute(
     commands: Command[],
@@ -324,10 +341,26 @@ export function useMarketplace(live: boolean) {
       assign(connectedInitial());
     }
     void refresh().catch((e) => setError(e.message));
-    const timer = setInterval(
-      () => void refresh().catch((e) => setError(e.message)),
-      5000,
-    );
+    let nextPoll = 0;
+    let failures = 0;
+    const poll = () => {
+      const visible =
+        Platform.OS === "web"
+          ? document.visibilityState !== "hidden"
+          : AppState.currentState === "active";
+      if (!visible || Date.now() < nextPoll) return;
+      void refresh()
+        .then(() => {
+          failures = 0;
+          nextPoll = Date.now() + 10_000;
+        })
+        .catch((e) => {
+          failures++;
+          nextPoll = Date.now() + Math.min(60_000, 5000 * 2 ** failures);
+          setError(e.message);
+        });
+    };
+    const timer = setInterval(poll, 5000);
     const foreground = AppState.addEventListener("change", (state) => {
       if (state === "active") void refresh().catch((e) => setError(e.message));
     });
@@ -438,6 +471,7 @@ export function useMarketplace(live: boolean) {
     await queue.current;
     epoch.current++;
     if (live) {
+      await unregisterPushDevice();
       await AsyncStorage.multiRemove([
         "partant-auth-intent",
         "partant-auth-journey-v1",

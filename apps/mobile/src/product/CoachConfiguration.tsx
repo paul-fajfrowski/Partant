@@ -1,4 +1,5 @@
-import {CalendarConnections} from "./CalendarConnections";
+import { PushSettings } from "./PushSettings";
+import { CalendarConnections } from "./CalendarConnections";
 import {
   AvailabilityIntervals,
   intervalSummary,
@@ -1174,10 +1175,13 @@ function ConfigurationEditor({
           />
         ))}
         <Note style={{ marginVertical: 24 }}>
-          L’historique reste consultable. Aucun push, SMS ou e-mail n’est envoyé
-          dans la simulation.
+          L’historique reste consultable. Les SMS et e-mails métier ne sont pas
+          activés. La démonstration n’envoie aucune notification externe.
         </Note>
         <Button onPress={() => save()}>Enregistrer</Button>
+        {store.account && (
+          <PushSettings owner={store.account.id} live={!!store.connected} />
+        )}
       </>
     );
   if (section === "calendars" || section === "blocks")
@@ -1191,7 +1195,7 @@ function ConfigurationEditor({
         </H1>
         {section === "calendars" && (
           <>
-            <CalendarConnections live={!!store.connected}/>
+            <CalendarConnections live={!!store.connected} />
             <Note style={{ marginVertical: 20 }}>
               Un événement occupé masque les créneaux publics. Le libellé reste
               privé.

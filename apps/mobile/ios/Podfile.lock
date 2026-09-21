@@ -81,6 +81,8 @@ PODS:
   - ExpoModulesWorklets (57.0.18):
     - ExpoModulesCore
     - ExpoModulesJSI
+  - ExpoNotifications (57.0.20):
+    - ExpoModulesCore
   - ExpoSharing (57.0.21):
     - ExpoModulesCore
   - ExpoWebBrowser (57.0.3):
@@ -2115,7 +2117,7 @@ PODS:
   - Yoga (0.0.0)
 
 DEPENDENCIES:
-  - EXApplication (from `../node_modules/expo-auth-session/node_modules/expo-application/ios`)
+  - EXApplication (from `../node_modules/expo-application/ios`)
   - EXConstants (from `../node_modules/expo-constants/ios`)
   - Expo (from `../node_modules/expo`)
   - ExpoAppleAuthentication (from `../node_modules/expo-apple-authentication/ios`)
@@ -2132,6 +2134,7 @@ DEPENDENCIES:
   - ExpoModulesCore (from `../node_modules/expo-modules-core/ExpoModulesCore.podspec`)
   - ExpoModulesJSI (from `../node_modules/expo-modules-jsi/apple`)
   - ExpoModulesWorklets (from `../node_modules/expo-modules-core/ExpoModulesWorklets.podspec`)
+  - ExpoNotifications (from `../node_modules/expo-notifications/ios`)
   - ExpoSharing (from `../node_modules/expo-sharing/ios`)
   - ExpoWebBrowser (from `../node_modules/expo-web-browser/ios`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
@@ -2218,7 +2221,7 @@ DEPENDENCIES:
 
 EXTERNAL SOURCES:
   EXApplication:
-    :path: "../node_modules/expo-auth-session/node_modules/expo-application/ios"
+    :path: "../node_modules/expo-application/ios"
   EXConstants:
     :path: "../node_modules/expo-constants/ios"
   Expo:
@@ -2251,6 +2254,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-modules-jsi/apple"
   ExpoModulesWorklets:
     :podspec: "../node_modules/expo-modules-core/ExpoModulesWorklets.podspec"
+  ExpoNotifications:
+    :path: "../node_modules/expo-notifications/ios"
   ExpoSharing:
     :path: "../node_modules/expo-sharing/ios"
   ExpoWebBrowser:
@@ -2435,6 +2440,7 @@ SPEC CHECKSUMS:
   ExpoModulesCore: 0d49ad269bb0de760a38c86de6efa6fb035fbe8f
   ExpoModulesJSI: 9df8e7c9719f59e8c001ec33611774137fc1484a
   ExpoModulesWorklets: 986cf72c18400743869b4642d243115f831e404d
+  ExpoNotifications: b3724bcea3afbb5bdef6dac64f0a3d314470059b
   ExpoSharing: f958c26d3ef378dbe5601327cffdce6b7cc37473
   ExpoWebBrowser: a4d7c382116fbe33c1ec7f60293f02b7e97042e4
   FBLazyVector: 2138c6c2ab66c31bf5754dc18097fbc498a49c7f

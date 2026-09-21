@@ -1,5 +1,9 @@
 # Partant
 
+## Backend et notifications push iPhone — livraison 23
+
+[Configuration, corrections et recette](docs/backend-push-23.md). Lectures conditionnelles, maintenance planifiée, file privée de push et préférences par compte. APNs Sandbox configuré ; nouveau build et réception sur iPhone encore à vérifier. Aucun nouveau service payant.
+
 ## Audit des dépendances — livraison 22
 
 [Corrections, contrôles et limites de compilation](docs/dependency-audit-22.md). Versions Expo alignées, module natif dédupliqué, audit npm sans vulnérabilité connue et correctif C++ reproductible. Le nouveau build iPhone reste à valider dans Xcode ; les warnings fournisseurs ne sont pas masqués.

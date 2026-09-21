@@ -1,3 +1,4 @@
+import { PushSettings } from "./PushSettings";
 import { BookingNotificationHistory } from "./NotificationsScreen";
 import { placeTypes } from "./locations";
 import { setupSteps } from "./agendaTools";
@@ -315,6 +316,7 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
         >
           Enregistrer
         </Button>
+        <PushSettings owner={me.id} live={!!s.connected} />
         <Setting
           title={
             s.connected
