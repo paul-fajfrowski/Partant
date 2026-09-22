@@ -1,9 +1,11 @@
+import { canOffer, approvedPractices } from "./verification";
 import type { NoticeEvent } from "./noticeEvents";
 import demoGeography from "../reference/demo-geography.json";
 import { recorded } from "./commands";
 import type { ExtendedStore, CoachSettings, Interval } from "./extendedTypes";
 import reference from "../reference/prototype.json";
 export type Coach = {
+  disciplines?: string[];
   id: string;
   photo: number | null;
   photoUri?: string;
@@ -28,6 +30,7 @@ export type Coach = {
   verified: boolean;
 };
 export type Offer = {
+  discipline?: string;
   formats?: string[]; // undefined: inherit coach locations; explicit list: this offer only
   level?: string;
   id: string;
@@ -335,8 +338,7 @@ export function slotsFor(
     return [];
   if (
     !cfg.published ||
-    cfg.dossier.status !== "approved" ||
-    cfg.dossier.expires < today() ||
+    !canOffer(cfg.dossier, c, offer, day) ||
     day < today() ||
     day >= addDays(today(), cfg.horizon)
   )
@@ -725,6 +727,14 @@ export function allCoaches(store: Store): Coach[] {
   ].map((c) => ({
     ...c,
     ...store.coachOverrides?.[c.id],
+    ...(store.settings?.[c.id]?.dossier.verification ||
+    store.settings?.[c.id]?.dossier.publicPractices
+      ? {
+          verified:
+            approvedPractices(store.settings![c.id].dossier, today()).length >
+            0,
+        }
+      : {}),
   }));
 }
 export function configFor(store: Store, id: string): CoachSettings {

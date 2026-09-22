@@ -1,3 +1,5 @@
+import { CoachVerification } from "./CoachVerification";
+import { selectedPractices } from "./verification";
 import { SectorPicker } from "./SectorPicker";
 import { PushSettings } from "./PushSettings";
 import { CalendarConnections } from "./CalendarConnections";
@@ -143,7 +145,11 @@ export function CoachConfiguration(
           )}
         </>
       )}
-      <ConfigurationEditor key={`${key}:${revision}`} {...props} />
+      {props.section === "documents" ? (
+        <CoachVerification key={key} {...props} />
+      ) : (
+        <ConfigurationEditor key={`${key}:${revision}`} {...props} />
+      )}
     </>
   );
 }
@@ -357,6 +363,9 @@ function ConfigurationEditor({
           items={Object.keys(reference.sportGoals).filter((s) => s !== "Tout")}
           onChange={(sport) => setProfile({ ...profile, sport })}
         />
+        <TextButton onPress={() => go("config-native", "documents")}>
+          Gérer mes pratiques et leurs justificatifs
+        </TextButton>
         {text("Votre approche", "bio", true)}
         <Field
           label="Années d’expérience"
@@ -481,6 +490,12 @@ function ConfigurationEditor({
           label="Nom de la séance"
           value={edit.name}
           onChange={(name) => setEdit({ ...edit, name })}
+        />
+        <Select
+          label="Pratique de cette séance"
+          value={edit.discipline ?? c.sport}
+          items={selectedPractices(c)}
+          onChange={(discipline) => setEdit({ ...edit, discipline })}
         />
         <Select
           label="Format"
@@ -971,187 +986,6 @@ function ConfigurationEditor({
           />
         ))}
         <Button onPress={() => save()}>Enregistrer les consignes</Button>
-      </>
-    );
-  if (section === "documents")
-    return (
-      <>
-        {feedback}
-        <H1>La confiance{"\n"}se construit.</H1>
-        <Note style={{ marginVertical: 20 }}>
-          {
-            {
-              approved: store.connected
-                ? "Dossier validé"
-                : "Dossier validé · simulation",
-              expired: "Validité expirée : soumettez un dossier à jour",
-              pending: "En attente de décision",
-              draft: "À compléter",
-              rejected: "Refusé",
-              correction: "Correction demandée",
-            }[cfg.dossier.status]
-          }
-          {cfg.dossier.reason ? " · " + cfg.dossier.reason : ""}
-        </Note>
-        <P muted style={{ marginBottom: 20 }}>
-          {cfg.dossier.status === "pending"
-            ? "L’équipe Partant vérifie vos justificatifs. Sa décision apparaîtra ici et dans vos notifications."
-            : cfg.dossier.status === "approved"
-              ? "Votre vérification est à jour. Retrouvez les étapes restantes dans votre checklist."
-              : "Ajoutez les justificatifs puis soumettez votre dossier à l’équipe Partant."}
-        </P>
-        <P small muted style={{ marginBottom: 12 }}>
-          Vos justificatifs sont privés : seuls vous et l’équipe habilitée à
-          vérifier votre dossier pouvez les consulter. Ils ne sont pas publiés
-          sur votre profil.
-        </P>
-        <TextButton onPress={() => go("privacy-policy", "coach")}>
-          Confidentialité de mes documents
-        </TextButton>
-        {store.staff && (
-          <TextButton onPress={() => go("team")}>
-            Ouvrir l’espace équipe
-          </TextButton>
-        )}
-        {cfg.dossier.status === "pending" && (
-          <TextButton onPress={() => go("support-native")}>
-            Contacter l’équipe
-          </TextButton>
-        )}
-        {cfg.dossier.status !== "pending" && (
-          <>
-            {[
-              "Identité",
-              "Qualification / diplôme",
-              "Carte professionnelle ou justification",
-              "Assurance professionnelle",
-            ].map((label, i) =>
-              store.connected ? (
-                <View key={label} style={{ marginVertical: 12 }}>
-                  <P bold>{label}</P>
-                  <P small muted>
-                    {cfg.dossier.documents[i]
-                      ? "Document ajouté · espace privé"
-                      : "PDF ou image · 10 Mo maximum"}
-                  </P>
-                  <Button
-                    light
-                    onPress={async () => {
-                      try {
-                        const path = await chooseDocument(actual);
-                        if (path)
-                          setCfg({
-                            ...cfg,
-                            dossier: {
-                              ...cfg.dossier,
-                              documents: Array.from({ length: 4 }, (_, j) =>
-                                j === i
-                                  ? path
-                                  : (cfg.dossier.documents[j] ?? ""),
-                              ),
-                            },
-                          });
-                      } catch (e) {
-                        message((e as Error).message);
-                      }
-                    }}
-                  >
-                    {cfg.dossier.documents[i]
-                      ? "Remplacer le document"
-                      : "Ajouter le document"}
-                  </Button>
-                  {!!cfg.dossier.documents[i] && (
-                    <TextButton
-                      onPress={() =>
-                        openDocument(cfg.dossier.documents[i]).catch((e) =>
-                          message(e.message),
-                        )
-                      }
-                    >
-                      Ouvrir le document
-                    </TextButton>
-                  )}
-                </View>
-              ) : (
-                <Field
-                  key={label}
-                  label={label}
-                  value={cfg.dossier.documents[i] ?? ""}
-                  onChange={(v) =>
-                    setCfg({
-                      ...cfg,
-                      dossier: {
-                        ...cfg.dossier,
-                        documents: Array.from({ length: 4 }, (_, j) =>
-                          j === i ? v : (cfg.dossier.documents[j] ?? ""),
-                        ),
-                      },
-                    })
-                  }
-                />
-              ),
-            )}
-            <Field
-              label="Date de fin de validité (AAAA-MM-JJ)"
-              value={cfg.dossier.expires}
-              onChange={(expires) =>
-                setCfg({ ...cfg, dossier: { ...cfg.dossier, expires } })
-              }
-            />
-            <Button
-              onPress={() =>
-                run(() => {
-                  if (
-                    cfg.dossier.documents.some((d) => !d.trim()) ||
-                    !/^\d{4}-\d{2}-\d{2}$/.test(cfg.dossier.expires) ||
-                    cfg.dossier.expires <= today()
-                  )
-                    throw Error(
-                      "Complétez les quatre références et une validité future.",
-                    );
-                  const next: CoachSettings = {
-                    ...cfg,
-                    published: false,
-                    dossier: {
-                      ...cfg.dossier,
-                      status: "pending",
-                      reason: store.connected
-                        ? "Votre dossier attend une décision de l’équipe."
-                        : "Votre dossier fictif attend une décision de l’équipe.",
-                      history: [
-                        ...cfg.dossier.history,
-                        {
-                          date: today(),
-                          status: "pending",
-                          reason: "Dossier soumis",
-                        },
-                      ],
-                    },
-                  };
-                  setCfg(next);
-                  save(next);
-                })
-              }
-            >
-              {store.connected
-                ? "Soumettre mon dossier"
-                : "Soumettre le dossier fictif"}
-            </Button>
-          </>
-        )}
-        <H2 style={{ marginVertical: 20 }}>Historique</H2>
-        {cfg.dossier.history.map((h, i) => (
-          <P small key={i}>
-            {h.date} · {h.status}
-            {"\n"}
-            {h.reason}
-          </P>
-        ))}
-        <P small muted style={{ marginTop: 20 }}>
-          {store.connected
-            ? "Documents privés, accessibles uniquement à vous et à l’équipe de vérification."
-            : "Références fictives uniquement. Aucun document personnel ni contrôle réel."}
-        </P>
       </>
     );
   if (section === "payout")

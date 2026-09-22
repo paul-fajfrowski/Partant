@@ -1,3 +1,17 @@
+import {
+  toVerification,
+  cleanVerification,
+  proofFingerprint,
+  practiceState,
+  missingProofs,
+  summarizeDossier,
+  approvedPractices,
+  canOffer,
+  selectedPractices,
+  reviewHint,
+  filesFor,
+  type VerificationInput,
+} from "./verification";
 import { noticeKind } from "./noticeEvents";
 import type { Notice } from "./model";
 import { recorded } from "./commands";
@@ -229,6 +243,190 @@ function future(b: Booking) {
   if (b.status !== "confirmed" || instant(b.day, b.time) <= now())
     throw Error("Cette séance n’est plus modifiable.");
 }
+
+function _saveVerification(
+  s: Store,
+  id: string,
+  input: VerificationInput,
+  submit: string[] = [],
+) {
+  const c = allCoaches(s).find((c) => c.id === id);
+  if (!c || s.account?.role !== "coach" || coachAccountId(s) !== id)
+    throw Error("Dossier inaccessible.");
+  const cfg = configFor(s, id),
+    old = toVerification(cfg.dossier, c, today());
+  const clean = cleanVerification(input, id, !!s.connected);
+  const v = { ...clean, version: 2 as const, reviews: { ...old.reviews } };
+  for (const practice of Object.keys(v.reviews)) {
+    if (
+      !v.practices.includes(practice) ||
+      v.reviews[practice].fingerprint !== proofFingerprint(v, practice)
+    )
+      delete v.reviews[practice];
+  }
+  if (
+    !Array.isArray(submit) ||
+    new Set(submit).size !== submit.length ||
+    submit.some((p) => !v.practices.includes(p))
+  )
+    throw Error("Pratique à soumettre invalide.");
+  const history = [...cfg.dossier.history];
+  for (const practice of submit) {
+    if (["pending", "approved"].includes(practiceState(v, practice, today())))
+      throw Error(
+        "Cette pratique est déjà validée ou en cours de vérification.",
+      );
+    if (
+      missingProofs(v, practice, today()).length ||
+      filesFor(v, practice).some((f) => f.expires && f.expires < today())
+    )
+      throw Error(`Complétez les justificatifs pour ${practice}.`);
+    if (
+      (v.professionalStatus !== "qualified" ||
+        ["Yoga", "Récupération"].includes(practice)) &&
+      v.context.length < 20
+    )
+      throw Error(
+        "Décrivez votre situation et les séances proposées en quelques mots (20 caractères minimum).",
+      );
+    v.reviews[practice] = {
+      status: "pending",
+      fingerprint: proofFingerprint(v, practice),
+      reason: "L’équipe examine cette pratique.",
+      at: new Date(now()).toISOString(),
+    };
+    history.push({
+      date: new Date(now()).toISOString(),
+      status: "pending",
+      reason: "Pratique soumise",
+      practice,
+      by: s.account.id,
+    });
+  }
+  const dossier = summarizeDossier(
+    {
+      ...cfg.dossier,
+      history,
+      reason: submit.length
+        ? "Pratiques transmises à l’équipe."
+        : "Documents enregistrés.",
+    },
+    v,
+    today(),
+  );
+  // Bind legacy offers before a change of main discipline, including group snapshots.
+  const main = v.practices.includes(c.sport) ? c.sport : v.practices[0];
+  const next = {
+    ...s,
+    coachOverrides: {
+      ...s.coachOverrides,
+      [id]: {
+        ...s.coachOverrides?.[id],
+        disciplines: v.practices,
+        sport: main,
+      },
+    },
+    offers: s.offers.map((o) =>
+      o.coach === id ? { ...o, discipline: o.discipline ?? c.sport } : o,
+    ),
+    groups: s.groups?.map((g) =>
+      g.offer.coach === id
+        ? {
+            ...g,
+            offer: { ...g.offer, discipline: g.offer.discipline ?? c.sport },
+          }
+        : g,
+    ),
+    settings: {
+      ...s.settings,
+      [id]: {
+        ...cfg,
+        dossier,
+        published:
+          cfg.published && approvedPractices(dossier, today()).length > 0,
+      },
+    },
+  };
+  return next;
+}
+function _reviewPractice(
+  s: Store,
+  id: string,
+  practice: string,
+  status: "approved" | "correction" | "rejected",
+  reason: string,
+  expected: string,
+) {
+  if ((!s.staff && !s.testMode) || (s.connected && coachAccountId(s) === id))
+    throw Error("Un autre membre habilité doit vérifier cette pratique.");
+  if (
+    !["approved", "correction", "rejected"].includes(status) ||
+    !reason.trim()
+  )
+    throw Error("Indiquez la décision et son motif.");
+  const c = allCoaches(s).find((c) => c.id === id);
+  if (!c) throw Error("Dossier introuvable.");
+  const cfg = configFor(s, id),
+    v = toVerification(cfg.dossier, c, today());
+  if (
+    !v.practices.includes(practice) ||
+    practiceState(v, practice, today()) !== "pending"
+  )
+    throw Error("Cette pratique n’attend pas de décision.");
+  const fingerprint = proofFingerprint(v, practice);
+  if (expected !== fingerprint)
+    throw Error(
+      "Les justificatifs ont changé. Rouvrez le dossier avant de décider.",
+    );
+  if (status === "approved" && missingProofs(v, practice, today()).length)
+    throw Error("Les justificatifs requis ne sont plus valides.");
+  const at = new Date(now()).toISOString();
+  v.reviews[practice] = {
+    status,
+    reason: reason.trim().slice(0, 1000),
+    fingerprint,
+    at,
+    by: s.account?.id,
+  };
+  const dossier = summarizeDossier(
+    {
+      ...cfg.dossier,
+      reason: reason.trim(),
+      history: [
+        ...cfg.dossier.history,
+        {
+          date: at,
+          status,
+          reason: reason.trim(),
+          practice,
+          by: s.account?.id,
+        },
+      ],
+    },
+    v,
+    today(),
+  );
+  return notify(
+    {
+      ...s,
+      settings: {
+        ...s.settings,
+        [id]: {
+          ...cfg,
+          dossier,
+          published:
+            cfg.published && approvedPractices(dossier, today()).length > 0,
+        },
+      },
+    },
+    coachRecipient(s, id),
+    `${practice} : ${status === "approved" ? "pratique validée" : status === "correction" ? "complément demandé" : "pratique non autorisée"}. ${reason.trim()}`,
+    "",
+    uid(),
+    { event: "dossier" },
+  );
+}
+
 function _saveSettings(s: Store, id: string, cfg: CoachSettings): Store {
   // Legacy timing preferences no longer influence public availability.
   cfg = { ...cfg, buffer: 0, departureStep: null };
@@ -278,12 +476,18 @@ export function publicationIssues(s: Store, id: string) {
     cfg = configFor(s, id);
   return [
     !c?.name || !c?.bio || !c?.cert ? "Complétez votre profil." : "",
-    !s.offers.some((o) => o.coach === id && o.active)
+    !s.offers.some(
+      (o) =>
+        o.coach === id &&
+        o.active &&
+        !!c &&
+        canOffer(cfg.dossier, c, o, today()),
+    )
       ? "Créez au moins une offre active."
       : "",
     !locationsReady(s, c) ? "Précisez vos lieux." : "",
     !cfg.week.some((day) => day.length) ? "Ouvrez votre planning." : "",
-    cfg.dossier.status !== "approved" || cfg.dossier.expires < today()
+    !c || !canOffer(cfg.dossier, c, undefined, today())
       ? "Votre dossier doit être validé et à jour."
       : "",
     !cfg.payoutReady ? "Activez vos versements de test." : "",
@@ -302,6 +506,39 @@ function _saveCoach(s: Store, id: string, changes: Partial<Coach>) {
   if (!old || s.account?.role !== "coach" || coachAccountId(s) !== id)
     throw Error("Profil inaccessible.");
   const c = { ...old, ...changes };
+  if (
+    old.sport !== c.sport &&
+    (configFor(s, id).dossier.verification ||
+      ["approved", "pending"].includes(configFor(s, id).dossier.status))
+  ) {
+    const cfg = configFor(s, id),
+      v = toVerification(cfg.dossier, old, today());
+    if (!selectedPractices({ ...c, disciplines: undefined }).length)
+      throw Error("Choisissez une discipline proposée.");
+    v.practices = [...new Set([...v.practices, c.sport])];
+    s = {
+      ...s,
+      offers: s.offers.map((o) =>
+        o.coach === id ? { ...o, discipline: o.discipline ?? old.sport } : o,
+      ),
+      groups: s.groups?.map((g) =>
+        g.offer.coach === id
+          ? {
+              ...g,
+              offer: {
+                ...g.offer,
+                discipline: g.offer.discipline ?? old.sport,
+              },
+            }
+          : g,
+      ),
+      settings: {
+        ...s.settings,
+        [id]: { ...cfg, dossier: summarizeDossier(cfg.dossier, v, today()) },
+      },
+    };
+    changes = { ...changes, disciplines: v.practices };
+  }
   if (!c.name.trim() || !c.bio.trim() || !c.cert.trim())
     throw Error("Complétez le nom, la présentation et les qualifications.");
   if (!Number.isFinite(c.years) || c.years < 0 || c.years > 60)
@@ -321,6 +558,9 @@ function _saveCoach(s: Store, id: string, changes: Partial<Coach>) {
       dossier: {
         ...cfg.dossier,
         status: "draft",
+        ...(cfg.dossier.verification
+          ? { verification: { ...cfg.dossier.verification, reviews: {} } }
+          : {}),
         reason:
           "Le nom ou les qualifications ont changé. Soumettez un dossier actualisé.",
       },
@@ -330,6 +570,13 @@ function _saveCoach(s: Store, id: string, changes: Partial<Coach>) {
 }
 function _saveOffer(s: Store, o: Offer) {
   const coach = allCoaches(s).find((c) => c.id === o.coach);
+  if (coach?.disciplines) {
+    o = { ...o, discipline: o.discipline ?? coach.sport };
+    if (o.active && !coach.disciplines.includes(o.discipline!))
+      throw Error(
+        "Ajoutez cette pratique dans Documents & vérifications avant de l’associer à une offre.",
+      );
+  }
   if (
     o.formats !== undefined &&
     (!o.formats.length || o.formats.some((f) => !coach?.formats.includes(f)))
@@ -949,6 +1196,8 @@ function _reviewDossier(
   if ((!s.testMode && !s.staff) || !reason.trim())
     throw Error("L’équipe doit indiquer le motif de sa décision.");
   const cfg = configFor(s, id);
+  if (cfg.dossier.verification)
+    throw Error("Vérifiez et décidez pour chaque pratique séparément.");
   if (cfg.dossier.status !== "pending")
     throw Error("Ce dossier n’attend pas de décision.");
   return notify(
@@ -1050,7 +1299,28 @@ export function maintain(s: Store): Store {
   if (changed) next = { ...next, bookings };
   for (const c of allCoaches(next)) {
     const cfg = next.settings?.[c.id];
-    if (cfg?.dossier.status === "approved" && cfg.dossier.expires < today())
+    if (cfg?.dossier.verification) {
+      const dossier = summarizeDossier(
+        cfg.dossier,
+        cfg.dossier.verification,
+        today(),
+      );
+      next = {
+        ...next,
+        settings: {
+          ...next.settings,
+          [c.id]: {
+            ...cfg,
+            dossier,
+            published:
+              cfg.published && approvedPractices(dossier, today()).length > 0,
+          },
+        },
+      };
+    } else if (
+      cfg?.dossier.status === "approved" &&
+      cfg.dossier.expires < today()
+    )
       next = {
         ...next,
         settings: {
@@ -1338,6 +1608,8 @@ function _deleteAccount(s: Store) {
                   dossier: {
                     ...cfg.dossier,
                     documents: [],
+                    verification: undefined,
+                    publicPractices: undefined,
                     history: [],
                     reason: "Compte supprimé",
                   },
@@ -1425,3 +1697,6 @@ export const deleteAccount = recorded("deleteAccount", _deleteAccount);
 export const reviewDossier = recorded("reviewDossier", _reviewDossier);
 
 export const resolveTicket = recorded("resolveTicket", _resolveTicket);
+
+export const saveVerification = recorded("saveVerification", _saveVerification);
+export const reviewPractice = recorded("reviewPractice", _reviewPractice);

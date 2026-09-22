@@ -210,7 +210,33 @@ Deno.serve(async (req) => {
           input.register.role,
         );
       if (actor)
-        for (const cmd of commands) state = applyCommand(state, actor, cmd);
+        for (const cmd of commands) {
+          state = applyCommand(state, actor, cmd);
+          if (
+            cmd.name === "saveVerification" ||
+            (cmd.name === "reviewPractice" && cmd.args[2] === "approved")
+          ) {
+            // Domain checks owner/path first. A reference is accepted only when
+            // its private Storage object actually exists; no signed URL is returned.
+            for (const file of state.settings?.[cmd.args[0]]?.dossier
+              ?.verification?.files ?? []) {
+              if (
+                cmd.name === "reviewPractice" &&
+                !["identity", "insurance"].includes(file.kind) &&
+                !file.practices.includes(cmd.args[1])
+              )
+                continue;
+              const check = await admin.storage
+                .from("coach-documents")
+                .createSignedUrl(file.path, 60);
+              if (check.error)
+                throw new HttpError(
+                  400,
+                  "Un justificatif est introuvable. Importez à nouveau le fichier.",
+                );
+            }
+          }
+        }
       state = maintain(state);
       if (writing || before !== JSON.stringify(documents(state))) {
         const saved = await admin.rpc("product_commit", {

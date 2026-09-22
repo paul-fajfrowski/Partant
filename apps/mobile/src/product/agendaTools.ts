@@ -1,3 +1,4 @@
+import { canOffer } from "./verification";
 import { recorded } from "./commands";
 import {
   Store,
@@ -177,7 +178,7 @@ export function availabilityReasons(
   const cfg = configFor(s, c.id),
     reasons: string[] = [];
   if (!cfg.published) reasons.push("Votre profil n’est pas publié.");
-  if (cfg.dossier.status !== "approved" || cfg.dossier.expires < today())
+  if (!canOffer(cfg.dossier, c, o, today()))
     reasons.push("Votre dossier doit être validé et à jour.");
   if (!o.active) reasons.push("Cette prestation est en pause.");
   if (day < today() || day >= addDays(today(), cfg.horizon))
@@ -297,7 +298,7 @@ export function setupSteps(s: Store, id: string) {
     {
       id: "documents",
       title: "Vérifiez votre profil",
-      done: cfg.dossier.status === "approved" && cfg.dossier.expires >= today(),
+      done: !!c && canOffer(cfg.dossier, c, undefined, today()),
     },
     {
       id: "payout",

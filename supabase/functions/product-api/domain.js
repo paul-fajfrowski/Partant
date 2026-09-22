@@ -42,6 +42,7 @@ exports.asActor = asActor;
 exports.applyCommand = applyCommand;
 exports.project = project;
 exports.documents = documents;
+const verification_1 = load("verification.ts");
 const Messaging = __importStar(load("messaging.ts"));
 const noticeEvents_1 = load("noticeEvents.ts");
 /** Authoritative domain used by the Edge Function. No browser state is trusted. */
@@ -228,6 +229,11 @@ function applyCommand(source, actor, cmd) {
                 ...old,
                 ...pick(a[1], Object.keys(old).concat("locations")),
             };
+            if (JSON.stringify(cfg.dossier) !== JSON.stringify(old.dossier) &&
+                (old.dossier.verification ||
+                    cfg.dossier.verification ||
+                    cfg.dossier.publicPractices))
+                throw Error("Utilisez Documents & vérifications pour mettre à jour les justificatifs.");
             // Verification decisions and history belong to the team, never to a coach.
             if (JSON.stringify(cfg.dossier) !== JSON.stringify(old.dossier)) {
                 if (!["draft", "pending"].includes(cfg.dossier.status))
@@ -341,6 +347,7 @@ function applyCommand(source, actor, cmd) {
                 "capacity",
                 "formats",
                 "level",
+                "discipline",
             ]);
             if (!["Individuel", "Duo", "Groupe"].includes(o.kind) ||
                 o.price > 1000 ||
@@ -575,6 +582,15 @@ function applyCommand(source, actor, cmd) {
         case "deleteAccount":
             n = W.deleteAccount(s);
             break;
+        case "saveVerification":
+            ownCoach(s, a[0]);
+            n = W.saveVerification(s, a[0], a[1], a[2] ?? []);
+            break;
+        case "reviewPractice":
+            if (!actor.staff || a[0] === actor.id)
+                throw Error("Un autre membre habilité doit vérifier cette pratique.");
+            n = W.reviewPractice({ ...s, staff: true }, a[0], string(a[1], 100), a[2], string(a[3], 1000), string(a[4], 25000));
+            break;
         case "reviewDossier":
             if (!actor.staff)
                 throw Error("Accès équipe requis.");
@@ -670,6 +686,7 @@ function project(source, actor) {
                     marketing: false,
                 },
                 dossier: {
+                    ...(0, verification_1.publicVerification)(cfg.dossier, M.today()),
                     status: cfg.dossier.status,
                     expires: cfg.dossier.expires,
                     documents: [],
@@ -705,11 +722,32 @@ function project(source, actor) {
         ...(0, exports.emptyConnected)(),
         account: s.account,
         staff: !!actor?.staff,
-        extraCoaches: coaches,
+        extraCoaches: coaches.map((c) => {
+            if (own(c.id) ||
+                actor?.staff ||
+                !M.configFor(s, c.id).dossier.verification)
+                return c;
+            const disciplines = (0, verification_1.approvedPractices)(M.configFor(s, c.id).dossier, M.today());
+            return {
+                ...c,
+                disciplines,
+                sport: disciplines.includes(c.sport)
+                    ? c.sport
+                    : (disciplines[0] ?? c.sport),
+            };
+        }),
         settings,
         offers: s.offers.filter((o) => ids.has(o.coach) &&
-            (o.active || own(o.coach) || bookings.some((b) => b.offerId === o.id))),
-        groups: s.groups?.filter((g) => ids.has(g.offer.coach)),
+            (own(o.coach) ||
+                actor?.staff ||
+                bookings.some((b) => b.offerId === o.id) ||
+                (o.active &&
+                    (0, verification_1.canOffer)(M.configFor(s, o.coach).dossier, M.allCoaches(s).find((c) => c.id === o.coach), o, M.today())))),
+        groups: s.groups?.filter((g) => ids.has(g.offer.coach) &&
+            (own(g.offer.coach) ||
+                actor?.staff ||
+                bookings.some((b) => b.slotId === g.id) ||
+                (0, verification_1.canOffer)(M.configFor(s, g.offer.coach).dossier, M.allCoaches(s).find((c) => c.id === g.offer.coach), g.offer, g.day))),
         bookings,
         calendarBusy: Object.fromEntries(Object.entries(s.calendarBusy ?? {}).filter(([coach]) => ids.has(coach))),
         calendarStatus: Object.fromEntries(Object.entries(s.calendarStatus ?? {})
@@ -761,927 +799,270 @@ function documents(s) {
 }
 
 },
-"messaging.ts":(module,exports,load)=>{
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.messageKey = exports.conversationKey = void 0;
-exports.conversationFor = conversationFor;
-exports.conversations = conversations;
-exports.sendMessage = sendMessage;
-exports.receipts = receipts;
-exports.readConversation = readConversation;
-const model_1 = load("model.ts");
-const workflows_1 = load("workflows.ts");
-const noticeEvents_1 = load("noticeEvents.ts");
-const conversationKey = (b) => JSON.stringify([b.coach, b.clientId]);
-exports.conversationKey = conversationKey;
-const messageKey = (m, index) => m.id ?? `legacy:${index}`;
-exports.messageKey = messageKey;
-function conversationFor(s, id) {
-    return conversations(s).find((c) => c.bookings.some((b) => b.id === id));
-}
-function conversations(s) {
-    if (!s.account)
-        return [];
-    const buckets = new Map();
-    for (const b of s.bookings.filter((b) => (0, workflows_1.canRead)(s, b))) {
-        const key = (0, exports.conversationKey)(b);
-        buckets.set(key, [...(buckets.get(key) ?? []), b]);
-    }
-    return [...buckets]
-        .map(([id, bookings]) => {
-        const coach = (0, model_1.allCoaches)(s).find((c) => c.id === bookings[0].coach), isCoach = s.account.role === "coach";
-        const sorted = [...bookings].sort((a, b) => (a.day + a.time).localeCompare(b.day + b.time));
-        const upcoming = sorted.find((b) => b.status === "confirmed" && Date.parse(b.day + "T23:59:59Z") >= (0, model_1.now)());
-        const messages = bookings
-            .flatMap((b) => (s.messages[b.id] ?? []).map((m, i) => ({
-            ...m,
-            key: b.id + ":" + (0, exports.messageKey)(m, i),
-            booking: b,
-        })))
-            .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
-        const latest = messages.at(-1);
-        return {
-            id,
-            name: isCoach
-                ? (s.identities?.find((a) => a.id === bookings[0].clientId)?.name ??
-                    bookings.at(-1).clientName)
-                : (coach?.name ?? "Votre coach"),
-            coachId: bookings[0].coach,
-            clientId: bookings[0].clientId,
-            photo: isCoach ? undefined : coach?.photoUri,
-            photoIndex: isCoach ? null : (coach?.photo ?? null),
-            bookings: sorted,
-            messages,
-            latest,
-            unread: messages.filter((m) => m.who !== s.account.id && !m.readBy?.includes(s.account.id)).length,
-            booking: upcoming ?? sorted.at(-1),
-        };
-    })
-        .sort((a, b) => (b.latest?.createdAt ?? 0) - (a.latest?.createdAt ?? 0) ||
-        Number(!!b.latest) - Number(!!a.latest) ||
-        (b.booking.day + b.booking.time).localeCompare(a.booking.day + a.booking.time));
-}
-/** One client-generated ID survives uncertain responses and manual retries. */
-function sendMessage(s, booking, text, id = (0, workflows_1.uid)()) {
-    const b = (0, workflows_1.owned)(s, booking), who = s.account.id, body = text.trim();
-    if (!body || body.length > 4000)
-        throw Error("Écrivez un message de 1 à 4 000 caractères.");
-    if (typeof id !== "string" || id.length > 100 || !id.length)
-        throw Error("Référence de message invalide.");
-    for (const [key, ms] of Object.entries(s.messages)) {
-        const existing = ms.find((m) => m.id === id);
-        if (existing) {
-            if (key === booking && existing.who === who && existing.text === body)
-                return s;
-            throw Error("Cette référence correspond à un autre message.");
-        }
-    }
-    const recipient = b.clientId === who ? (0, model_1.coachRecipient)(s, b.coach) : b.clientId;
-    if (s.deletedAccounts?.includes(recipient))
-        throw Error("Ce compte n’est plus disponible.");
-    return (0, workflows_1.notify)({
-        ...s,
-        messages: {
-            ...s.messages,
-            [booking]: [
-                ...(s.messages[booking] ?? []),
-                {
-                    id,
-                    who,
-                    text: body,
-                    createdAt: (0, model_1.now)(),
-                    readBy: [who],
-                    context: (0, model_1.noticeContext)(s, b),
-                },
-            ],
-        },
-    }, recipient, "Vous avez reçu un message.", booking, `message:${id}`, { event: "message", messageId: id });
-}
-function receipts(c) {
-    return c.bookings.map((b) => ({
-        booking: b.id,
-        keys: c.messages
-            .filter((m) => m.booking.id === b.id)
-            .map((m) => m.id ?? m.key.slice(b.id.length + 1)),
-    }));
-}
-/** Read only messages actually loaded by this account, including legacy index keys. */
-function readConversation(s, booking, seen) {
-    const anchor = (0, workflows_1.owned)(s, booking), who = s.account.id, key = (0, exports.conversationKey)(anchor);
-    if (!Array.isArray(seen) || seen.length > 1000)
-        throw Error("Lecture invalide.");
-    const next = { ...s, messages: { ...s.messages } };
-    const selected = new Map();
-    for (const item of seen) {
-        if (!item || !Array.isArray(item.keys) || item.keys.length > 10000)
-            throw Error("Lecture invalide.");
-        const b = (0, workflows_1.owned)(s, item.booking);
-        if ((0, exports.conversationKey)(b) !== key)
-            throw Error("Conversation inaccessible.");
-        const keys = new Set(item.keys);
-        selected.set(b.id, keys);
-        next.messages[b.id] = (s.messages[b.id] ?? []).map((m, i) => keys.has((0, exports.messageKey)(m, i)) && !m.readBy?.includes(who)
-            ? { ...m, readBy: [...(m.readBy ?? []), who] }
-            : m);
-    }
-    next.notices = s.notices.map((n) => {
-        const keys = selected.get(n.booking);
-        if (n.recipient !== who || !keys || (0, noticeEvents_1.noticeKind)(n) !== "message")
-            return n;
-        const read = n.messageId
-            ? keys.has(n.messageId)
-            : (next.messages[n.booking] ?? []).every((m) => m.who === who || m.readBy?.includes(who));
-        return read ? { ...n, read: true } : n;
-    });
-    return next;
-}
-
-},
-"model.ts":(module,exports,load)=>{
+"verification.ts":(module,exports,load)=>{
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.openGroup = exports.reserve = exports.coachAccountId = exports.coachRecipient = exports.overlap = exports.endTime = exports.mins = exports.addDays = exports.today = exports.now = exports.setDemoClock = exports.fold = exports.goalsFor = exports.initialStore = exports.initialPreferences = exports.seedOffers = exports.seedCoaches = void 0;
-exports.noticeContext = noticeContext;
-exports.changeSport = changeSport;
-exports.dayLabel = dayLabel;
-exports.instant = instant;
-exports.slotsFor = slotsFor;
-exports.remaining = remaining;
-exports.cancel = cancel;
-exports.switchAccount = switchAccount;
-exports.allCoaches = allCoaches;
-exports.configFor = configFor;
-exports.intervalsFor = intervalsFor;
-exports.intervalFits = intervalFits;
-exports.formatsAt = formatsAt;
-exports.generatedTimes = generatedTimes;
-exports.validateIntervals = validateIntervals;
-exports.quotePrice = quotePrice;
-exports.newPreviewStore = newPreviewStore;
-exports.offerFormats = offerFormats;
-exports.coachLocations = coachLocations;
-exports.locationLabel = locationLabel;
-exports.matchesLocation = matchesLocation;
-exports.locationDescription = locationDescription;
-exports.offerAddress = offerAddress;
-exports.locationsReady = locationsReady;
-const demo_geography_json_1 = __importDefault(load("../reference/demo-geography.json"));
-const commands_1 = load("commands.ts");
+exports.filesFor = exports.reviewLabels = exports.proofKinds = exports.professionalStatuses = exports.practiceOptions = void 0;
+exports.selectedPractices = selectedPractices;
+exports.proofFingerprint = proofFingerprint;
+exports.requirements = requirements;
+exports.reviewHint = reviewHint;
+exports.validDate = validDate;
+exports.missingProofs = missingProofs;
+exports.practiceState = practiceState;
+exports.approvedPractices = approvedPractices;
+exports.canOffer = canOffer;
+exports.toVerification = toVerification;
+exports.summarizeDossier = summarizeDossier;
+exports.cleanVerification = cleanVerification;
+exports.pendingPractices = pendingPractices;
+exports.publicVerification = publicVerification;
 const prototype_json_1 = __importDefault(load("../reference/prototype.json"));
-function noticeContext(s, b) {
-    return {
-        day: b.day,
-        time: b.time,
-        serviceName: b.serviceName,
-        seats: b.seats,
-        kind: b.kind,
-        address: b.address,
-        locationName: b.locationName,
-        status: b.status,
-        clientName: b.clientName,
-        coachName: allCoaches(s).find((c) => c.id === b.coach)?.name ?? "Votre coach",
-    };
-}
-exports.seedCoaches = prototype_json_1.default.coaches.map((c) => ({
-    ...c,
-    id: String(c.id),
-    photo: c.id,
-    verified: true,
-}));
-exports.seedOffers = prototype_json_1.default.services.flatMap((s) => s.offers.map((o) => ({
-    ...o,
-    id: `${s.coach}:${o.id}`,
-    coach: String(s.coach),
-    capacity: o.kind === "Duo" ? 2 : 1,
-})));
-exports.initialPreferences = {
-    sport: "Tout",
-    goal: "Me remettre en forme",
-    level: "Je reprends",
-    city: "Paris 11e",
-    budget: 80,
-    distance: 10,
-    format: "Tous",
-    moment: "Libre",
+exports.practiceOptions = Object.keys(prototype_json_1.default.sportGoals).filter((x) => x !== "Tout");
+exports.professionalStatuses = [
+    ["qualified", "Professionnel qualifié"],
+    ["trainee", "En cours de formation"],
+    ["foreign", "Qualification obtenue à l’étranger"],
+    ["specific", "Situation particulière à examiner"],
+];
+exports.proofKinds = {
+    identity: "Identité",
+    insurance: "Assurance professionnelle",
+    qualification: "Diplôme ou certification",
+    card: "Carte professionnelle",
+    trainee: "Attestation de stagiaire",
+    recognition: "Reconnaissance de qualification",
+    renewal: "Attestation de recyclage",
+    supporting: "Justificatif complémentaire",
 };
-exports.initialStore = {
-    account: null,
-    preferences: exports.initialPreferences,
-    favorites: [],
-    bookings: [],
-    notices: [],
-    closed: [],
-    published: true,
-    offers: exports.seedOffers,
-    messages: {},
+exports.reviewLabels = {
+    draft: "À compléter",
+    pending: "En vérification",
+    approved: "Validée",
+    correction: "À corriger",
+    rejected: "Non autorisée",
+    expired: "À renouveler",
 };
-const goalsFor = (sport) => prototype_json_1.default.goals[sport] ?? prototype_json_1.default.goals.Tout;
-exports.goalsFor = goalsFor;
-function changeSport(p, sport) {
-    const goals = (0, exports.goalsFor)(sport);
-    return { ...p, sport, goal: goals.includes(p.goal) ? p.goal : goals[0] };
+function selectedPractices(c) {
+    return c.disciplines ?? (exports.practiceOptions.includes(c.sport) ? [c.sport] : []);
 }
-const fold = (s) => s
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[’'\-]/g, " ");
-exports.fold = fold;
-let clockOffset = 0;
-const setDemoClock = (hours) => {
-    clockOffset = hours * 3600000;
-};
-exports.setDemoClock = setDemoClock;
-const now = () => Date.now() + clockOffset;
-exports.now = now;
-const today = () => new Intl.DateTimeFormat("fr-CA", {
-    timeZone: "Europe/Paris",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-}).format(new Date((0, exports.now)()));
-exports.today = today;
-const addDays = (iso, n) => new Date(Date.parse(iso + "T12:00:00Z") + n * 86400000)
-    .toISOString()
-    .slice(0, 10);
-exports.addDays = addDays;
-function dayLabel(day, short = false) {
-    return new Intl.DateTimeFormat("fr-FR", {
-        weekday: short ? "short" : "long",
-        day: "numeric",
-        month: short ? "short" : "long",
-        timeZone: "Europe/Paris",
-    }).format(new Date(day + "T12:00:00Z"));
+const common = (f) => ["identity", "insurance"].includes(f.kind);
+const filesFor = (v, practice) => v.files.filter((f) => common(f) || f.practices.includes(practice));
+exports.filesFor = filesFor;
+// Fingerprints contain only dependencies of THIS practice. Extending a document's
+// scope to another practice never grants that practice approval or invalidates this one.
+function proofFingerprint(v, practice) {
+    return JSON.stringify([
+        v.professionalStatus,
+        practice,
+        v.context,
+        (0, exports.filesFor)(v, practice)
+            .map((f) => [f.id, f.kind, f.path, f.expires, f.reference])
+            .sort((a, b) => a[0].localeCompare(b[0])),
+    ]);
 }
-function instant(day, time) {
-    const target = Date.parse(`${day}T${time}:00Z`);
-    let utc = target;
-    for (let i = 0; i < 3; i++) {
-        const parts = new Intl.DateTimeFormat("sv-SE", {
-            timeZone: "Europe/Paris",
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-            hourCycle: "h23",
-        }).format(new Date(utc));
-        utc += target - Date.parse(parts.replace(" ", "T") + "Z");
-    }
-    return utc;
-}
-const mins = (time) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
-exports.mins = mins;
-const endTime = (t, d) => `${Math.floor(((0, exports.mins)(t) + d) / 60)}`.padStart(2, "0") +
-    ":" +
-    `${((0, exports.mins)(t) + d) % 60}`.padStart(2, "0");
-exports.endTime = endTime;
-const overlap = (a, ad, b, bd) => (0, exports.mins)(a) < (0, exports.mins)(b) + bd && (0, exports.mins)(b) < (0, exports.mins)(a) + ad;
-exports.overlap = overlap;
-function slotsFor(c, day, store, offer) {
-    const cfg = configFor(store, c.id);
-    const calendar = store.calendarStatus?.[c.id];
-    if (calendar?.connected &&
-        (calendar.error ||
-            (0, exports.now)() - calendar.updatedAt > 15 * 60000 ||
-            (calendar.through && day >= calendar.through.slice(0, 10))))
-        return [];
-    if (offer && offer.kind !== "Groupe" && !offerFormats(c, offer).length)
-        return [];
-    if (!cfg.published ||
-        cfg.dossier.status !== "approved" ||
-        cfg.dossier.expires < (0, exports.today)() ||
-        day < (0, exports.today)() ||
-        day >= (0, exports.addDays)((0, exports.today)(), cfg.horizon))
-        return [];
-    const offset = Math.round((Date.parse(day) - Date.parse(prototype_json_1.default.anchor)) / 86400000);
-    const groups = (store.groups ?? []).filter((g) => g.offer.coach === c.id && g.day === day && !g.cancelled);
-    const base = offer?.kind === "Groupe"
-        ? groups.filter((g) => g.offer.id === offer.id).map((g) => g.time)
-        : cfg.weeklyConfigured || cfg.exceptions[day]
-            ? generatedTimes(cfg, day, offer?.duration ?? 60, offer?.id)
-            : (prototype_json_1.default.availability[Number(c.id)]?.[((offset % 7) + 7) % 7] ??
-                generatedTimes(cfg, day, offer?.duration ?? 60, offer?.id));
-    return base.filter((time) => instant(day, time) > (0, exports.now)() + cfg.notice * 3600000 &&
-        (!offer ||
-            offer.kind === "Groupe" ||
-            formatsAt(store, c, offer, day, time).length > 0) &&
-        !store.closed.some((k) => {
-            const [id, d, t] = k.split("|");
-            return (id === c.id &&
-                d === day &&
-                (0, exports.overlap)(time, offer?.duration ?? 60, t, 30));
-        }) &&
-        !(store.externalSessions ?? []).some((b) => !b.cancelled &&
-            b.coach === c.id &&
-            b.day === day &&
-            (0, exports.overlap)(time, (offer?.duration ?? 60) + cfg.buffer, b.time, b.duration + cfg.buffer)) &&
-        !cfg.blocks.some((b) => b.day === day &&
-            (0, exports.overlap)(time, offer?.duration ?? 60, b.start, (0, exports.mins)(b.end) - (0, exports.mins)(b.start))) &&
-        (!offer || (offer.active && offer.coach === c.id)) &&
-        (!offer ||
-            offer.kind !== "Groupe" ||
-            remaining(offer, day, time, store) > 0) &&
-        !groups.some((g) => (0, exports.overlap)(time, (offer?.duration ?? 60) + cfg.buffer, g.time, g.offer.duration + cfg.buffer) && !(offer?.id === g.offer.id && time === g.time)) &&
-        !(store.calendarBusy?.[c.id] ?? []).some((b) => b.day === day &&
-            (0, exports.overlap)(time, offer?.duration ?? 60, b.time, b.duration)) &&
-        !(store.busyTimes ?? []).some((b) => b.coach === c.id &&
-            b.day === day &&
-            (0, exports.overlap)(time, offer?.duration ?? 60, b.time, b.duration) &&
-            !(offer?.kind === "Groupe" &&
-                b.offerId === offer.id &&
-                time === b.time)) &&
-        !store.bookings.some((b) => b.coach === c.id &&
-            b.day === day &&
-            b.status === "confirmed" &&
-            (0, exports.overlap)(time, (offer?.duration ?? 60) + cfg.buffer, b.time, b.duration + cfg.buffer) &&
-            !(offer?.kind === "Groupe" &&
-                b.offerId === offer.id &&
-                time === b.time)));
-}
-function remaining(offer, day, time, store) {
-    return (((store.groups ?? []).find((g) => g.offer.id === offer.id && g.day === day && g.time === time)?.offer.capacity ?? offer.capacity) -
-        store.bookings
-            .filter((b) => b.offerId === offer.id &&
-            b.day === day &&
-            b.time === time &&
-            b.status === "confirmed")
-            .reduce((n, b) => n + b.seats, 0) -
-        (store.busyTimes ?? [])
-            .filter((b) => b.offerId === offer.id && b.day === day && b.time === time)
-            .reduce((n, b) => n + (b.seats ?? 0), 0));
-}
-function _reserve(store, draft) {
-    if (!store.account || store.account.role !== "client")
-        throw Error("Connectez-vous pour retrouver votre séance.");
-    if (store.bookings.some((b) => b.id === draft.id))
-        return store;
-    const c = allCoaches(store).find((c) => c.id === draft.coach);
-    const current = store.offers.find((o) => o.id === draft.offerId && o.coach === draft.coach && o.active);
-    const group = (store.groups ?? []).find((g) => g.offer.id === draft.offerId &&
-        g.day === draft.day &&
-        g.time === draft.time);
-    const o = current?.kind === "Groupe" ? group?.offer : current;
-    if (!c || !o || !slotsFor(c, draft.day, store, o).includes(draft.time))
-        throw Error("Ce créneau n’est plus disponible.");
-    if (draft.seats < 1 ||
-        !Number.isInteger(draft.seats) ||
-        draft.seats > remaining(o, draft.day, draft.time, store))
-        throw Error("Il ne reste pas assez de places.");
-    if (store.bookings.some((b) => b.clientId === store.account.id &&
-        b.status === "confirmed" &&
-        b.day === draft.day &&
-        (0, exports.overlap)(b.time, b.duration, draft.time, o.duration)))
-        throw Error("Une autre séance est déjà prévue à cette heure.");
-    if (o.kind !== "Groupe" &&
-        !formatsAt(store, c, o, draft.day, draft.time).includes(draft.format))
-        throw Error("Ce lieu n’est pas proposé pour cette séance. Modifiez votre sélection.");
-    if (draft.participantNames && draft.participantNames.length !== draft.seats)
-        throw Error("Vérifiez la liste des participants.");
-    const b = {
-        ...draft,
-        clientId: store.account.id,
-        clientName: store.account.name,
-        price: quotePrice(store, draft, o),
-        paid: quotePrice(store, draft, o),
-        refunded: 0,
-        cancelHours: group?.cancelHours ?? configFor(store, c.id).cancelHours,
-        preparation: {
-            ...(group?.preparation ?? configFor(store, c.id).preparation),
-        },
-        duration: o.duration,
-        kind: o.kind,
-        format: group?.format ?? draft.format,
-        serviceName: o.name,
-        address: group?.address ??
-            (draft.format === "Domicile"
-                ? draft.address
-                : offerAddress(store, c, draft.format)),
-        locationName: group?.locationName ?? locationLabel(store, c, draft.format),
-        locationInstructions: group?.locationInstructions ??
-            coachLocations(store, c)[draft.format]?.instructions ??
-            "",
-        status: "confirmed",
-    };
-    return {
-        ...store,
-        bookings: [...store.bookings, b],
-        notices: [
-            ...store.notices,
-            {
-                category: "booking",
-                createdAt: (0, exports.now)(),
-                event: "booking",
-                context: noticeContext(store, b),
-                id: `${b.id}:coach`,
-                recipient: (0, exports.coachRecipient)(store, c.id),
-                body: "Une nouvelle séance a été réservée.",
-                read: false,
-                booking: b.id,
-            },
-            {
-                category: "booking",
-                createdAt: (0, exports.now)(),
-                event: "booking",
-                context: noticeContext(store, b),
-                id: `${b.id}:client`,
-                recipient: b.clientId,
-                body: "Votre séance est confirmée.",
-                read: false,
-                booking: b.id,
-            },
-        ],
-    };
-}
-function cancel(store, id) {
-    const b = store.bookings.find((b) => b.id === id);
-    if (!b || b.clientId !== store.account?.id)
-        throw Error("Cette réservation ne vous appartient pas.");
-    if (b.status === "cancelled")
-        return store;
-    if (instant(b.day, b.time) < (0, exports.now)() + 86400000)
-        throw Error("La limite d’annulation gratuite est dépassée. Contactez le coach.");
-    return {
-        ...store,
-        bookings: store.bookings.map((x) => x.id === id ? { ...x, status: "cancelled" } : x),
-        notices: [
-            ...store.notices,
-            {
-                id: `${id}:cancel:coach`,
-                createdAt: (0, exports.now)(),
-                event: "cancelled",
-                context: noticeContext(store, { ...b, status: "cancelled" }),
-                recipient: (0, exports.coachRecipient)(store, b.coach),
-                body: "Une réservation a été annulée.",
-                read: false,
-                booking: id,
-            },
-            {
-                id: `${id}:cancel:client`,
-                createdAt: (0, exports.now)(),
-                event: "cancelled",
-                context: noticeContext(store, { ...b, status: "cancelled" }),
-                recipient: b.clientId,
-                body: "Votre réservation a été annulée.",
-                read: false,
-                booking: id,
-            },
-        ],
-    };
-}
-function _openGroup(store, group) {
-    const o = store.offers.find((o) => o.id === group.offer.id && o.active && o.kind === "Groupe");
-    if (!o ||
-        (0, exports.coachAccountId)(store) !== o.coach ||
-        store.account?.role !== "coach")
-        throw Error("Connectez-vous au compte de ce coach.");
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(group.day) ||
-        !/^([01]\d|2[0-3]):[0-5]\d$/.test(group.time) ||
-        !Number.isFinite(instant(group.day, group.time)) ||
-        instant(group.day, group.time) < (0, exports.now)() + 7200000 ||
-        !group.address.trim())
-        throw Error("Vérifiez la date, l’heure et le lieu du cours.");
-    const cfg = configFor(store, o.coach);
-    const coach = allCoaches(store).find((c) => c.id === o.coach);
-    const groupFormat = group.format ?? offerFormats(coach, o)[0];
-    if (!groupFormat || !offerFormats(coach, o).includes(groupFormat))
-        throw Error("Ce lieu n’est pas autorisé pour cette prestation.");
-    if ((store.externalSessions ?? []).some((b) => !b.cancelled &&
-        b.coach === o.coach &&
-        b.day === group.day &&
-        (0, exports.overlap)(group.time, o.duration + cfg.buffer, b.time, b.duration + cfg.buffer)) ||
-        group.day >= (0, exports.addDays)((0, exports.today)(), cfg.horizon) ||
-        !intervalFits(cfg, group.day, group.time, o.duration, o.id, groupFormat) ||
-        cfg.blocks.some((b) => b.day === group.day &&
-            (0, exports.overlap)(group.time, o.duration, b.start, (0, exports.mins)(b.end) - (0, exports.mins)(b.start))))
-        throw Error("Le cours doit respecter vos horaires et indisponibilités.");
-    if ((store.groups ?? []).some((g) => !g.cancelled &&
-        g.offer.coach === o.coach &&
-        g.day === group.day &&
-        (0, exports.overlap)(g.time, g.offer.duration + cfg.buffer, group.time, o.duration + cfg.buffer)) ||
-        store.bookings.some((b) => b.coach === o.coach &&
-            b.day === group.day &&
-            b.status === "confirmed" &&
-            (0, exports.overlap)(b.time, b.duration + cfg.buffer, group.time, o.duration + cfg.buffer)) ||
-        store.closed.some((k) => {
-            const [c, d, t] = k.split("|");
-            return (c === o.coach &&
-                d === group.day &&
-                (0, exports.overlap)(t, 60, group.time, o.duration));
-        }))
-        throw Error("Votre agenda est déjà occupé à ce moment.");
-    return {
-        ...store,
-        groups: [
-            ...(store.groups ?? []),
-            {
-                ...group,
-                offer: { ...o },
-                format: groupFormat,
-                locationName: locationLabel(store, coach, groupFormat),
-                locationInstructions: coachLocations(store, coach)[groupFormat]?.instructions ?? "",
-                cancelHours: cfg.cancelHours,
-                preparation: { ...cfg.preparation },
-                level: group.level ?? o.level ?? "Tous niveaux",
-            },
-        ],
-    };
-}
-function switchAccount(store, account) {
-    const previous = store.account?.id ?? "guest";
-    const accounts = {
-        ...store.accounts,
-        [previous]: { preferences: store.preferences, favorites: store.favorites },
-    };
-    const next = accounts[account?.id ?? "guest"] ?? {
-        preferences: { ...exports.initialPreferences },
-        favorites: [],
-    };
-    return {
-        ...store,
-        account,
-        accounts,
-        preferences: { ...next.preferences },
-        favorites: [...next.favorites],
-    };
-}
-function allCoaches(store) {
+function requirements(v, practice) {
+    const common = ["identity", "insurance"];
+    if (v.professionalStatus === "trainee")
+        return [...common, "trainee"];
+    const base = [...common, "qualification"];
+    if (v.professionalStatus === "specific" ||
+        ["Yoga", "Récupération"].includes(practice))
+        return base;
     return [
-        ...(store.connected ? [] : exports.seedCoaches),
-        ...(store.extraCoaches ?? []),
-    ].map((c) => ({
-        ...c,
-        ...store.coachOverrides?.[c.id],
-    }));
+        ...base,
+        "card",
+        ...(v.professionalStatus === "foreign" ? ["recognition"] : []),
+    ];
 }
-function configFor(store, id) {
-    const existing = store.settings?.[id];
-    if (existing)
-        return { ...existing, buffer: 0, departureStep: null };
-    const c = allCoaches(store).find((c) => c.id === id) ?? exports.seedCoaches[0];
+function reviewHint(v, practice) {
+    if (v.professionalStatus === "trainee")
+        return "Précisez votre formation, votre tuteur et les conditions d’encadrement.";
+    if (v.professionalStatus === "foreign")
+        return "L’équipe vérifiera la reconnaissance et le champ d’exercice de votre qualification.";
+    if (v.professionalStatus === "specific" ||
+        ["Yoga", "Récupération"].includes(practice))
+        return "Décrivez précisément vos séances. L’équipe examinera le cadre applicable avant toute autorisation.";
+    if (practice === "Natation")
+        return "L’équipe vérifiera les prérogatives d’enseignement et le recyclage applicable à votre qualification.";
+    return "L’équipe vérifiera que vos qualifications couvrent cette pratique et les publics accompagnés.";
+}
+function validDate(value) {
+    return (/^\d{4}-\d{2}-\d{2}$/.test(value) &&
+        !Number.isNaN(Date.parse(value)) &&
+        new Date(value).toISOString().slice(0, 10) === value);
+}
+function missingProofs(v, practice, date) {
+    const docs = (0, exports.filesFor)(v, practice);
+    return requirements(v, practice).filter((kind) => !docs.some((f) => f.kind === kind && f.path.trim() && (!f.expires || f.expires >= date)));
+}
+function practiceState(v, practice, date) {
+    const r = v.reviews[practice];
+    if (!r || r.fingerprint !== proofFingerprint(v, practice))
+        return "draft";
+    if ((0, exports.filesFor)(v, practice).some((f) => f.expires && f.expires < date))
+        return "expired";
+    return r.status;
+}
+function approvedPractices(d, date) {
+    if (d.publicPractices)
+        return d.publicPractices
+            .filter((p) => !p.expires || p.expires >= date)
+            .map((p) => p.practice);
+    const v = d.verification;
+    return v
+        ? v.practices.filter((p) => practiceState(v, p, date) === "approved")
+        : [];
+}
+function canOffer(d, c, offer, date) {
+    if (!d.verification && !d.publicPractices)
+        return d.status === "approved" && d.expires >= date;
+    const approved = approvedPractices(d, date);
+    return offer
+        ? approved.includes(offer.discipline ?? c.sport)
+        : approved.length > 0;
+}
+function toVerification(d, c, date) {
+    if (d.verification)
+        return JSON.parse(JSON.stringify(d.verification));
+    const practices = selectedPractices(c);
+    const kinds = ["identity", "qualification", "card", "insurance"];
+    const v = {
+        version: 2,
+        professionalStatus: "qualified",
+        practices,
+        context: "",
+        files: d.documents.flatMap((path, i) => path && kinds[i]
+            ? [
+                {
+                    id: `legacy-${i}`,
+                    kind: kinds[i],
+                    title: exports.proofKinds[kinds[i]],
+                    path,
+                    expires: ["card", "insurance"].includes(kinds[i])
+                        ? d.expires
+                        : "",
+                    practices: [...practices],
+                    reference: "",
+                },
+            ]
+            : []),
+        reviews: {},
+    };
+    // Only preserve the previously declared principal practice; never extend a
+    // legacy global decision to a newly selected discipline.
+    if (practices.includes(c.sport) &&
+        ["approved", "pending", "correction", "rejected"].includes(d.status))
+        v.reviews[c.sport] = {
+            status: d.status,
+            fingerprint: proofFingerprint(v, c.sport),
+            reason: d.reason,
+            at: "",
+        };
+    return v;
+}
+function summarizeDossier(d, v, date) {
+    const states = v.practices.map((p) => practiceState(v, p, date));
+    const status = states.includes("pending")
+        ? "pending"
+        : states.includes("correction")
+            ? "correction"
+            : states.includes("expired")
+                ? "expired"
+                : states.includes("draft")
+                    ? "draft"
+                    : states.includes("approved")
+                        ? "approved"
+                        : states.includes("rejected")
+                            ? "rejected"
+                            : "draft";
+    const expires = v.files
+        .map((f) => f.expires)
+        .filter(Boolean)
+        .sort()[0] ?? "9999-12-31";
     return {
-        published: store.connected ? false : id === "0" ? store.published : true,
-        weeklyConfigured: !!store.connected,
-        week: Array.from({ length: 7 }, (_, d) => store.connected || d === 6 ? [] : [["09:00", "21:00"]]),
-        exceptions: {},
-        blocks: [],
-        buffer: 0,
-        departureStep: null,
-        notice: 2,
-        horizon: 90,
-        cancelHours: 24,
-        studio: c.place,
-        studioAddress: c.address,
-        radius: 3,
-        travelFee: 0,
-        preparation: {
-            provided: "Le matériel nécessaire à la séance est fourni.",
-            bring: "Une tenue confortable, une bouteille d’eau et une serviette.",
-            meeting: "Retrouvez-moi quelques minutes avant le début au point de rendez-vous.",
-            weather: "En cas de météo défavorable, nous échangeons avant la séance.",
-        },
-        notifications: {
-            booking: true,
-            changes: true,
-            reminder: true,
-            marketing: false,
-        },
-        business: {
-            name: c.name,
-            status: "Entreprise individuelle",
-            email: c.name.split(" ")[0].toLowerCase() + "@example.test",
-            address: c.address,
-        },
-        payoutReady: !store.connected,
-        dossier: {
-            status: store.connected ? "draft" : "approved",
-            documents: store.connected
-                ? ["", "", "", ""]
-                : [
-                    "identite-test.pdf",
-                    "diplome-test.pdf",
-                    "carte-test.pdf",
-                    "assurance-test.pdf",
-                ],
-            expires: (0, exports.addDays)((0, exports.today)(), 365),
-            reason: store.connected
-                ? "Complétez votre dossier."
-                : "Profil de démonstration initial.",
-            history: [],
-        },
-        clientNotes: {},
+        ...d,
+        status,
+        expires,
+        documents: v.files.map((f) => f.path),
+        verification: v,
     };
 }
-function intervalsFor(cfg, day) {
-    return (cfg.exceptions[day] ??
-        cfg.week[(new Date(day + "T12:00:00Z").getUTCDay() + 6) % 7]);
-}
-function intervalFits(cfg, day, time, duration, offerId, locationId) {
-    return intervalsFor(cfg, day).some(([a, b, ids, places]) => (locationId === undefined ||
-        places == null ||
-        places.includes(locationId)) &&
-        (offerId === undefined || ids == null || ids.includes(offerId)) &&
-        (0, exports.mins)(time) >= (0, exports.mins)(a) &&
-        (0, exports.mins)(time) + duration <= (0, exports.mins)(b));
-}
-/** An offer's venues restricted to the coach's range containing this departure. */
-function formatsAt(store, c, o, day, time) {
-    const formats = offerFormats(c, o);
-    if (!o || !time)
-        return formats;
-    const cfg = configFor(store, c.id);
-    if (!cfg.weeklyConfigured && !cfg.exceptions[day])
-        return formats;
-    return formats.filter((f) => intervalFits(cfg, day, time, o.duration, o.id, f));
-}
-function generatedTimes(cfg, day, duration, offerId) {
-    const times = [];
-    const step = duration;
-    if (!Number.isFinite(step) ||
-        step < 1 ||
-        !Number.isFinite(duration) ||
-        duration < 1)
-        return times;
-    for (const [a, b, ids] of intervalsFor(cfg, day)) {
-        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(a) ||
-            !/^([01]\d|2[0-3]):[0-5]\d$/.test(b))
-            continue;
-        if (offerId !== undefined && ids != null && !ids.includes(offerId))
-            continue;
-        for (let t = (0, exports.mins)(a); t + duration <= (0, exports.mins)(b); t += step)
-            times.push((0, exports.endTime)("00:00", t));
-    }
-    return [...new Set(times)].sort();
-}
-function validateIntervals(list) {
-    const sorted = [...list].sort((a, b) => (0, exports.mins)(a[0]) - (0, exports.mins)(b[0]));
-    for (let i = 0; i < sorted.length; i++) {
-        const [a, b, ids, places] = sorted[i];
-        if (places != null &&
-            (!Array.isArray(places) ||
-                !places.length ||
-                places.some((id) => typeof id !== "string") ||
-                new Set(places).size !== places.length))
-            throw Error("Choisissez au moins un lieu pour chaque plage.");
-        if (ids != null &&
-            (!Array.isArray(ids) ||
-                !ids.length ||
-                ids.some((id) => typeof id !== "string") ||
-                new Set(ids).size !== ids.length))
-            throw Error("Choisissez au moins une séance pour chaque plage.");
-        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(a) ||
-            !/^([01]\d|2[0-3]):[0-5]\d$/.test(b) ||
-            (0, exports.mins)(a) >= (0, exports.mins)(b) ||
-            (i > 0 && (0, exports.mins)(a) < (0, exports.mins)(sorted[i - 1][1])))
-            throw Error("Vérifiez les horaires : les plages ne doivent pas se chevaucher.");
-    }
-    return sorted;
-}
-function quotePrice(store, b, o) {
-    return (Math.round((o.price * (o.kind === "Groupe" ? b.seats : 1) +
-        (o.kind !== "Groupe" && b.format === "Domicile"
-            ? (configFor(store, b.coach).locations?.Domicile?.travelFee ??
-                configFor(store, b.coach).travelFee)
-            : 0)) *
-        100) / 100);
-}
-const coachRecipient = (s, id) => s.connected ? id : "coach-" + id;
-exports.coachRecipient = coachRecipient;
-const coachAccountId = (store) => store.account?.coachId ?? store.account?.id.replace(/^coach-/, "") ?? "0";
-exports.coachAccountId = coachAccountId;
-function newPreviewStore() {
-    const c = exports.seedCoaches[1], o = exports.seedOffers.find((o) => o.coach === "1" && o.kind === "Individuel");
+function cleanVerification(input, owner, connected) {
+    if (!input ||
+        !exports.professionalStatuses.some(([key]) => key === input.professionalStatus) ||
+        !Array.isArray(input.practices) ||
+        !input.practices.length ||
+        input.practices.length > 20 ||
+        new Set(input.practices).size !== input.practices.length ||
+        input.practices.some((p) => !exports.practiceOptions.includes(p)) ||
+        !Array.isArray(input.files) ||
+        input.files.length > 30)
+        throw Error("Choisissez votre statut et au moins une pratique.");
+    if (new Set(input.files.map((f) => f.id)).size !== input.files.length)
+        throw Error("Un document apparaît plusieurs fois.");
+    const paths = input.files.map((f) => f.path).filter(Boolean);
+    if (new Set(paths).size !== paths.length)
+        throw Error("Associez le document existant à plusieurs pratiques plutôt que de l’ajouter deux fois.");
+    const files = input.files.map((f) => {
+        if (!/^[\w-]{1,80}$/.test(f.id) ||
+            !Object.hasOwn(exports.proofKinds, f.kind) ||
+            typeof f.path !== "string" ||
+            f.path.length > 500 ||
+            !f.path.trim() ||
+            (connected &&
+                (!f.path.startsWith(owner + "/") ||
+                    f.path.includes("..") ||
+                    !/^[\w/-]+\.(pdf|jpg|jpeg|png|webp)$/.test(f.path))) ||
+            (f.expires && !validDate(f.expires)) ||
+            !Array.isArray(f.practices) ||
+            f.practices.some((p) => !input.practices.includes(p)))
+            throw Error("Vérifiez les fichiers, leurs pratiques et leurs dates de validité.");
+        if (["insurance", "card", "trainee", "renewal"].includes(f.kind) &&
+            !f.expires)
+            throw Error(`Indiquez la fin de validité : ${exports.proofKinds[f.kind]}.`);
+        return {
+            id: f.id,
+            kind: f.kind,
+            title: String(f.title || exports.proofKinds[f.kind])
+                .trim()
+                .slice(0, 120),
+            path: f.path.trim(),
+            expires: f.expires || "",
+            practices: [...new Set(f.practices)],
+            reference: String(f.reference || "")
+                .trim()
+                .slice(0, 120),
+        };
+    });
     return {
-        ...exports.initialStore,
-        bookings: [
-            {
-                id: "past-sarah",
-                coach: "1",
-                clientId: "alex@example.test",
-                clientName: "Alex",
-                day: (0, exports.addDays)((0, exports.today)(), -5),
-                time: "18:00",
-                duration: 60,
-                offerId: o.id,
-                serviceName: o.name,
-                kind: "Individuel",
-                format: "Studio",
-                seats: 1,
-                price: 45,
-                paid: 45,
-                refunded: 0,
-                goal: "Retrouver de la mobilité",
-                address: c.address,
-                status: "completed",
-                cancelHours: 24,
-            },
-        ],
+        professionalStatus: input.professionalStatus,
+        practices: [...input.practices],
+        context: String(input.context || "")
+            .trim()
+            .slice(0, 1500),
+        files,
     };
 }
-function offerFormats(c, o) {
-    return o?.formats === undefined
-        ? c.formats
-        : o.formats.filter((f) => c.formats.includes(f));
+function pendingPractices(d, c, date) {
+    const v = toVerification(d, c, date);
+    return v.practices.filter((p) => practiceState(v, p, date) === "pending");
 }
-function coachLocations(store, c) {
-    const cfg = configFor(store, c.id);
-    if (cfg.locations)
-        return cfg.locations;
-    return Object.fromEntries(c.formats.map((type) => [
-        type,
-        {
-            type,
-            name: type === "Domicile"
-                ? "Chez le client"
-                : type === "Visio"
-                    ? "En visioconférence"
-                    : type === "Studio"
-                        ? cfg.studio
-                        : c.place,
-            address: type === "Studio"
-                ? cfg.studioAddress
-                : type === "Domicile" || type === "Visio"
-                    ? ""
-                    : c.address,
-            ...(!store.connected &&
-                !["Domicile", "Visio"].includes(type) &&
-                demo_geography_json_1.default[type === "Studio" ? cfg.studioAddress : c.address]
-                ? {
-                    coordinates: demo_geography_json_1.default[type === "Studio" ? cfg.studioAddress : c.address],
-                }
-                : {}),
-            instructions: "",
-            ...(type === "Domicile"
-                ? { sector: c.area, radius: cfg.radius, travelFee: cfg.travelFee }
-                : {}),
-        },
-    ]));
-}
-function locationLabel(store, c, key) {
-    const p = coachLocations(store, c)[key];
-    return p
-        ? p.name || p.type
-        : key.startsWith("place:")
-            ? "Lieu de la séance"
-            : key;
-}
-function matchesLocation(store, c, o, type) {
-    return (type === "Tous" ||
-        offerFormats(c, o).some((id) => id === type || coachLocations(store, c)[id]?.type === type));
-}
-function locationDescription(store, c, key) {
-    const p = coachLocations(store, c)[key];
-    if (!p)
-        return "";
-    const detail = p.type === "Domicile"
-        ? `${p.sector || c.area} · rayon ${p.radius ?? 3} km · ${(p.travelFee ?? 0) ? p.travelFee + " € de déplacement" : "déplacement inclus"}`
-        : p.type === "Visio"
-            ? "Lien transmis dans la conversation"
-            : p.address;
-    return [detail, p.instructions].filter(Boolean).join(" · ");
-}
-function offerAddress(store, c, format) {
-    const p = coachLocations(store, c)[format];
-    return format === "Visio"
-        ? "Lien de visioconférence transmis dans la conversation"
-        : format === "Domicile"
-            ? ""
-            : (p?.address ?? c.address);
-}
-function locationsReady(store, c) {
-    if (!c?.formats.length)
-        return false;
-    const locations = coachLocations(store, c);
-    return c.formats.every((key) => {
-        const p = locations[key];
-        return (!!p?.name.trim() &&
-            (p.type === "Visio" ||
-                (p.type === "Domicile" ? !!p.sector?.trim() : !!p.address.trim())));
-    });
-}
-exports.reserve = (0, commands_1.recorded)("reserve", _reserve);
-exports.openGroup = (0, commands_1.recorded)("openGroup", _openGroup);
-
-},
-"../reference/demo-geography.json":(module,exports,load)=>{
-module.exports={
-  "2 rue du Général-Blaise, 75011 Paris": {
-    "latitude": 48.861085,
-    "longitude": 2.379073,
-    "label": "2 rue du Général-Blaise, 75011 Paris"
-  },
-  "18 rue du Commerce, 75015 Paris": {
-    "latitude": 48.848081,
-    "longitude": 2.29665,
-    "label": "18 rue du Commerce, 75015 Paris"
-  },
-  "44 rue de Lyon, 75012 Paris": {
-    "latitude": 48.849788,
-    "longitude": 2.370991,
-    "label": "44 rue de Lyon, 75012 Paris"
-  },
-  "35 quai de Valmy, 75010 Paris": {
-    "latitude": 48.869106,
-    "longitude": 2.366573,
-    "label": "35 quai de Valmy, 75010 Paris"
-  },
-  "24 rue Notre-Dame-de-Lorette, 75009 Paris": {
-    "latitude": 48.878298,
-    "longitude": 2.337779,
-    "label": "24 rue Notre-Dame-de-Lorette, 75009 Paris"
-  },
-  "27 rue de Ménilmontant, 75020 Paris": {
-    "latitude": 48.867578,
-    "longitude": 2.384898,
-    "label": "27 rue de Ménilmontant, 75020 Paris"
-  }
-}
-;
-},
-"commands.ts":(module,exports,load)=>{
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.commandLog = void 0;
-exports.recorded = recorded;
-exports.commandsFrom = commandsFrom;
-exports.commandLog = Symbol("partantCommands");
-let depth = 0;
-/** Carries user intent to the transport; never sends the computed client state. */
-function recorded(name, fn) {
-    return ((s, ...args) => {
-        const outer = depth++ === 0;
-        try {
-            const next = fn(s, ...args);
-            return outer && s.connected
-                ? Object.assign({}, next, { [exports.commandLog]: [{ name, args }] })
-                : next;
-        }
-        finally {
-            depth--;
-        }
-    });
-}
-function commandsFrom(before, after) {
-    const commands = [...(after[exports.commandLog] ?? [])];
-    if (commands.some((c) => c.name === "deleteAccount"))
-        return commands;
-    const changed = (a, b) => JSON.stringify(a) !== JSON.stringify(b);
-    const add = (name, ...args) => commands.push({ name, args });
-    const me = before.account?.id;
-    if (changed(before.preferences, after.preferences))
-        add("preferences", after.preferences);
-    if (changed(before.favorites, after.favorites))
-        add("favorites", after.favorites);
-    if (changed(before.coachDrafts, after.coachDrafts))
-        add("drafts", after.coachDrafts ?? {});
-    if (me &&
-        (changed(before.account, after.account) ||
-            changed(before.accountInfo?.[me], after.accountInfo?.[me])) &&
-        after.account)
-        add("account", {
-            name: after.account.name,
-            email: after.account.email,
-            ...after.accountInfo?.[me],
-        });
-    if (changed(before.closed, after.closed))
-        add("closed", after.closed.filter((x) => !before.closed.includes(x)), before.closed.filter((x) => !after.closed.includes(x)));
-    for (const n of after.notices)
-        if (n.read && !before.notices.find((x) => x.id === n.id)?.read)
-            add("readNotice", n.id);
-    for (const [id, ms] of Object.entries(after.messages)) {
-        const old = before.messages[id] ?? [];
-        for (const m of ms.slice(old.length))
-            add("message", id, m.text, m.id);
-        if (ms.some((m, i) => i < old.length &&
-            m.readBy?.includes(me ?? "") &&
-            !old[i]?.readBy?.includes(me ?? "")))
-            add("readMessages", id);
-    }
-    if (changed(before.alerts, after.alerts)) {
-        for (const a of after.alerts ?? [])
-            if (changed(a, before.alerts?.find((x) => x.id === a.id)))
-                add("alert", a);
-        for (const a of before.alerts ?? [])
-            if (!after.alerts?.some((x) => x.id === a.id))
-                add("removeAlert", a.id);
-    }
-    for (const b of after.bookings) {
-        const old = before.bookings.find((x) => x.id === b.id);
-        if (old && old.prepared !== b.prepared)
-            add("prepared", b.id, !!b.prepared);
-    }
-    // Place saves also change the public venue index; server derives it from settings.
-    if (!commands.length &&
-        changed(before, after) &&
-        after.account === null &&
-        before.account)
-        add("signOut");
-    return commands;
+function publicVerification(d, date) {
+    if (!d.verification)
+        return {};
+    return {
+        publicPractices: approvedPractices(d, date).map((practice) => ({
+            practice,
+            expires: (0, exports.filesFor)(d.verification, practice)
+                .map((f) => f.expires)
+                .filter(Boolean)
+                .sort()[0] || "",
+        })),
+    };
 }
 
 },
@@ -2517,10 +1898,941 @@ module.exports={
 }
 ;
 },
+"messaging.ts":(module,exports,load)=>{
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.messageKey = exports.conversationKey = void 0;
+exports.conversationFor = conversationFor;
+exports.conversations = conversations;
+exports.sendMessage = sendMessage;
+exports.receipts = receipts;
+exports.readConversation = readConversation;
+const model_1 = load("model.ts");
+const workflows_1 = load("workflows.ts");
+const noticeEvents_1 = load("noticeEvents.ts");
+const conversationKey = (b) => JSON.stringify([b.coach, b.clientId]);
+exports.conversationKey = conversationKey;
+const messageKey = (m, index) => m.id ?? `legacy:${index}`;
+exports.messageKey = messageKey;
+function conversationFor(s, id) {
+    return conversations(s).find((c) => c.bookings.some((b) => b.id === id));
+}
+function conversations(s) {
+    if (!s.account)
+        return [];
+    const buckets = new Map();
+    for (const b of s.bookings.filter((b) => (0, workflows_1.canRead)(s, b))) {
+        const key = (0, exports.conversationKey)(b);
+        buckets.set(key, [...(buckets.get(key) ?? []), b]);
+    }
+    return [...buckets]
+        .map(([id, bookings]) => {
+        const coach = (0, model_1.allCoaches)(s).find((c) => c.id === bookings[0].coach), isCoach = s.account.role === "coach";
+        const sorted = [...bookings].sort((a, b) => (a.day + a.time).localeCompare(b.day + b.time));
+        const upcoming = sorted.find((b) => b.status === "confirmed" && Date.parse(b.day + "T23:59:59Z") >= (0, model_1.now)());
+        const messages = bookings
+            .flatMap((b) => (s.messages[b.id] ?? []).map((m, i) => ({
+            ...m,
+            key: b.id + ":" + (0, exports.messageKey)(m, i),
+            booking: b,
+        })))
+            .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+        const latest = messages.at(-1);
+        return {
+            id,
+            name: isCoach
+                ? (s.identities?.find((a) => a.id === bookings[0].clientId)?.name ??
+                    bookings.at(-1).clientName)
+                : (coach?.name ?? "Votre coach"),
+            coachId: bookings[0].coach,
+            clientId: bookings[0].clientId,
+            photo: isCoach ? undefined : coach?.photoUri,
+            photoIndex: isCoach ? null : (coach?.photo ?? null),
+            bookings: sorted,
+            messages,
+            latest,
+            unread: messages.filter((m) => m.who !== s.account.id && !m.readBy?.includes(s.account.id)).length,
+            booking: upcoming ?? sorted.at(-1),
+        };
+    })
+        .sort((a, b) => (b.latest?.createdAt ?? 0) - (a.latest?.createdAt ?? 0) ||
+        Number(!!b.latest) - Number(!!a.latest) ||
+        (b.booking.day + b.booking.time).localeCompare(a.booking.day + a.booking.time));
+}
+/** One client-generated ID survives uncertain responses and manual retries. */
+function sendMessage(s, booking, text, id = (0, workflows_1.uid)()) {
+    const b = (0, workflows_1.owned)(s, booking), who = s.account.id, body = text.trim();
+    if (!body || body.length > 4000)
+        throw Error("Écrivez un message de 1 à 4 000 caractères.");
+    if (typeof id !== "string" || id.length > 100 || !id.length)
+        throw Error("Référence de message invalide.");
+    for (const [key, ms] of Object.entries(s.messages)) {
+        const existing = ms.find((m) => m.id === id);
+        if (existing) {
+            if (key === booking && existing.who === who && existing.text === body)
+                return s;
+            throw Error("Cette référence correspond à un autre message.");
+        }
+    }
+    const recipient = b.clientId === who ? (0, model_1.coachRecipient)(s, b.coach) : b.clientId;
+    if (s.deletedAccounts?.includes(recipient))
+        throw Error("Ce compte n’est plus disponible.");
+    return (0, workflows_1.notify)({
+        ...s,
+        messages: {
+            ...s.messages,
+            [booking]: [
+                ...(s.messages[booking] ?? []),
+                {
+                    id,
+                    who,
+                    text: body,
+                    createdAt: (0, model_1.now)(),
+                    readBy: [who],
+                    context: (0, model_1.noticeContext)(s, b),
+                },
+            ],
+        },
+    }, recipient, "Vous avez reçu un message.", booking, `message:${id}`, { event: "message", messageId: id });
+}
+function receipts(c) {
+    return c.bookings.map((b) => ({
+        booking: b.id,
+        keys: c.messages
+            .filter((m) => m.booking.id === b.id)
+            .map((m) => m.id ?? m.key.slice(b.id.length + 1)),
+    }));
+}
+/** Read only messages actually loaded by this account, including legacy index keys. */
+function readConversation(s, booking, seen) {
+    const anchor = (0, workflows_1.owned)(s, booking), who = s.account.id, key = (0, exports.conversationKey)(anchor);
+    if (!Array.isArray(seen) || seen.length > 1000)
+        throw Error("Lecture invalide.");
+    const next = { ...s, messages: { ...s.messages } };
+    const selected = new Map();
+    for (const item of seen) {
+        if (!item || !Array.isArray(item.keys) || item.keys.length > 10000)
+            throw Error("Lecture invalide.");
+        const b = (0, workflows_1.owned)(s, item.booking);
+        if ((0, exports.conversationKey)(b) !== key)
+            throw Error("Conversation inaccessible.");
+        const keys = new Set(item.keys);
+        selected.set(b.id, keys);
+        next.messages[b.id] = (s.messages[b.id] ?? []).map((m, i) => keys.has((0, exports.messageKey)(m, i)) && !m.readBy?.includes(who)
+            ? { ...m, readBy: [...(m.readBy ?? []), who] }
+            : m);
+    }
+    next.notices = s.notices.map((n) => {
+        const keys = selected.get(n.booking);
+        if (n.recipient !== who || !keys || (0, noticeEvents_1.noticeKind)(n) !== "message")
+            return n;
+        const read = n.messageId
+            ? keys.has(n.messageId)
+            : (next.messages[n.booking] ?? []).every((m) => m.who === who || m.readBy?.includes(who));
+        return read ? { ...n, read: true } : n;
+    });
+    return next;
+}
+
+},
+"model.ts":(module,exports,load)=>{
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.openGroup = exports.reserve = exports.coachAccountId = exports.coachRecipient = exports.overlap = exports.endTime = exports.mins = exports.addDays = exports.today = exports.now = exports.setDemoClock = exports.fold = exports.goalsFor = exports.initialStore = exports.initialPreferences = exports.seedOffers = exports.seedCoaches = void 0;
+exports.noticeContext = noticeContext;
+exports.changeSport = changeSport;
+exports.dayLabel = dayLabel;
+exports.instant = instant;
+exports.slotsFor = slotsFor;
+exports.remaining = remaining;
+exports.cancel = cancel;
+exports.switchAccount = switchAccount;
+exports.allCoaches = allCoaches;
+exports.configFor = configFor;
+exports.intervalsFor = intervalsFor;
+exports.intervalFits = intervalFits;
+exports.formatsAt = formatsAt;
+exports.generatedTimes = generatedTimes;
+exports.validateIntervals = validateIntervals;
+exports.quotePrice = quotePrice;
+exports.newPreviewStore = newPreviewStore;
+exports.offerFormats = offerFormats;
+exports.coachLocations = coachLocations;
+exports.locationLabel = locationLabel;
+exports.matchesLocation = matchesLocation;
+exports.locationDescription = locationDescription;
+exports.offerAddress = offerAddress;
+exports.locationsReady = locationsReady;
+const verification_1 = load("verification.ts");
+const demo_geography_json_1 = __importDefault(load("../reference/demo-geography.json"));
+const commands_1 = load("commands.ts");
+const prototype_json_1 = __importDefault(load("../reference/prototype.json"));
+function noticeContext(s, b) {
+    return {
+        day: b.day,
+        time: b.time,
+        serviceName: b.serviceName,
+        seats: b.seats,
+        kind: b.kind,
+        address: b.address,
+        locationName: b.locationName,
+        status: b.status,
+        clientName: b.clientName,
+        coachName: allCoaches(s).find((c) => c.id === b.coach)?.name ?? "Votre coach",
+    };
+}
+exports.seedCoaches = prototype_json_1.default.coaches.map((c) => ({
+    ...c,
+    id: String(c.id),
+    photo: c.id,
+    verified: true,
+}));
+exports.seedOffers = prototype_json_1.default.services.flatMap((s) => s.offers.map((o) => ({
+    ...o,
+    id: `${s.coach}:${o.id}`,
+    coach: String(s.coach),
+    capacity: o.kind === "Duo" ? 2 : 1,
+})));
+exports.initialPreferences = {
+    sport: "Tout",
+    goal: "Me remettre en forme",
+    level: "Je reprends",
+    city: "Paris 11e",
+    budget: 80,
+    distance: 10,
+    format: "Tous",
+    moment: "Libre",
+};
+exports.initialStore = {
+    account: null,
+    preferences: exports.initialPreferences,
+    favorites: [],
+    bookings: [],
+    notices: [],
+    closed: [],
+    published: true,
+    offers: exports.seedOffers,
+    messages: {},
+};
+const goalsFor = (sport) => prototype_json_1.default.goals[sport] ?? prototype_json_1.default.goals.Tout;
+exports.goalsFor = goalsFor;
+function changeSport(p, sport) {
+    const goals = (0, exports.goalsFor)(sport);
+    return { ...p, sport, goal: goals.includes(p.goal) ? p.goal : goals[0] };
+}
+const fold = (s) => s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[’'\-]/g, " ");
+exports.fold = fold;
+let clockOffset = 0;
+const setDemoClock = (hours) => {
+    clockOffset = hours * 3600000;
+};
+exports.setDemoClock = setDemoClock;
+const now = () => Date.now() + clockOffset;
+exports.now = now;
+const today = () => new Intl.DateTimeFormat("fr-CA", {
+    timeZone: "Europe/Paris",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+}).format(new Date((0, exports.now)()));
+exports.today = today;
+const addDays = (iso, n) => new Date(Date.parse(iso + "T12:00:00Z") + n * 86400000)
+    .toISOString()
+    .slice(0, 10);
+exports.addDays = addDays;
+function dayLabel(day, short = false) {
+    return new Intl.DateTimeFormat("fr-FR", {
+        weekday: short ? "short" : "long",
+        day: "numeric",
+        month: short ? "short" : "long",
+        timeZone: "Europe/Paris",
+    }).format(new Date(day + "T12:00:00Z"));
+}
+function instant(day, time) {
+    const target = Date.parse(`${day}T${time}:00Z`);
+    let utc = target;
+    for (let i = 0; i < 3; i++) {
+        const parts = new Intl.DateTimeFormat("sv-SE", {
+            timeZone: "Europe/Paris",
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hourCycle: "h23",
+        }).format(new Date(utc));
+        utc += target - Date.parse(parts.replace(" ", "T") + "Z");
+    }
+    return utc;
+}
+const mins = (time) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
+exports.mins = mins;
+const endTime = (t, d) => `${Math.floor(((0, exports.mins)(t) + d) / 60)}`.padStart(2, "0") +
+    ":" +
+    `${((0, exports.mins)(t) + d) % 60}`.padStart(2, "0");
+exports.endTime = endTime;
+const overlap = (a, ad, b, bd) => (0, exports.mins)(a) < (0, exports.mins)(b) + bd && (0, exports.mins)(b) < (0, exports.mins)(a) + ad;
+exports.overlap = overlap;
+function slotsFor(c, day, store, offer) {
+    const cfg = configFor(store, c.id);
+    const calendar = store.calendarStatus?.[c.id];
+    if (calendar?.connected &&
+        (calendar.error ||
+            (0, exports.now)() - calendar.updatedAt > 15 * 60000 ||
+            (calendar.through && day >= calendar.through.slice(0, 10))))
+        return [];
+    if (offer && offer.kind !== "Groupe" && !offerFormats(c, offer).length)
+        return [];
+    if (!cfg.published ||
+        !(0, verification_1.canOffer)(cfg.dossier, c, offer, day) ||
+        day < (0, exports.today)() ||
+        day >= (0, exports.addDays)((0, exports.today)(), cfg.horizon))
+        return [];
+    const offset = Math.round((Date.parse(day) - Date.parse(prototype_json_1.default.anchor)) / 86400000);
+    const groups = (store.groups ?? []).filter((g) => g.offer.coach === c.id && g.day === day && !g.cancelled);
+    const base = offer?.kind === "Groupe"
+        ? groups.filter((g) => g.offer.id === offer.id).map((g) => g.time)
+        : cfg.weeklyConfigured || cfg.exceptions[day]
+            ? generatedTimes(cfg, day, offer?.duration ?? 60, offer?.id)
+            : (prototype_json_1.default.availability[Number(c.id)]?.[((offset % 7) + 7) % 7] ??
+                generatedTimes(cfg, day, offer?.duration ?? 60, offer?.id));
+    return base.filter((time) => instant(day, time) > (0, exports.now)() + cfg.notice * 3600000 &&
+        (!offer ||
+            offer.kind === "Groupe" ||
+            formatsAt(store, c, offer, day, time).length > 0) &&
+        !store.closed.some((k) => {
+            const [id, d, t] = k.split("|");
+            return (id === c.id &&
+                d === day &&
+                (0, exports.overlap)(time, offer?.duration ?? 60, t, 30));
+        }) &&
+        !(store.externalSessions ?? []).some((b) => !b.cancelled &&
+            b.coach === c.id &&
+            b.day === day &&
+            (0, exports.overlap)(time, (offer?.duration ?? 60) + cfg.buffer, b.time, b.duration + cfg.buffer)) &&
+        !cfg.blocks.some((b) => b.day === day &&
+            (0, exports.overlap)(time, offer?.duration ?? 60, b.start, (0, exports.mins)(b.end) - (0, exports.mins)(b.start))) &&
+        (!offer || (offer.active && offer.coach === c.id)) &&
+        (!offer ||
+            offer.kind !== "Groupe" ||
+            remaining(offer, day, time, store) > 0) &&
+        !groups.some((g) => (0, exports.overlap)(time, (offer?.duration ?? 60) + cfg.buffer, g.time, g.offer.duration + cfg.buffer) && !(offer?.id === g.offer.id && time === g.time)) &&
+        !(store.calendarBusy?.[c.id] ?? []).some((b) => b.day === day &&
+            (0, exports.overlap)(time, offer?.duration ?? 60, b.time, b.duration)) &&
+        !(store.busyTimes ?? []).some((b) => b.coach === c.id &&
+            b.day === day &&
+            (0, exports.overlap)(time, offer?.duration ?? 60, b.time, b.duration) &&
+            !(offer?.kind === "Groupe" &&
+                b.offerId === offer.id &&
+                time === b.time)) &&
+        !store.bookings.some((b) => b.coach === c.id &&
+            b.day === day &&
+            b.status === "confirmed" &&
+            (0, exports.overlap)(time, (offer?.duration ?? 60) + cfg.buffer, b.time, b.duration + cfg.buffer) &&
+            !(offer?.kind === "Groupe" &&
+                b.offerId === offer.id &&
+                time === b.time)));
+}
+function remaining(offer, day, time, store) {
+    return (((store.groups ?? []).find((g) => g.offer.id === offer.id && g.day === day && g.time === time)?.offer.capacity ?? offer.capacity) -
+        store.bookings
+            .filter((b) => b.offerId === offer.id &&
+            b.day === day &&
+            b.time === time &&
+            b.status === "confirmed")
+            .reduce((n, b) => n + b.seats, 0) -
+        (store.busyTimes ?? [])
+            .filter((b) => b.offerId === offer.id && b.day === day && b.time === time)
+            .reduce((n, b) => n + (b.seats ?? 0), 0));
+}
+function _reserve(store, draft) {
+    if (!store.account || store.account.role !== "client")
+        throw Error("Connectez-vous pour retrouver votre séance.");
+    if (store.bookings.some((b) => b.id === draft.id))
+        return store;
+    const c = allCoaches(store).find((c) => c.id === draft.coach);
+    const current = store.offers.find((o) => o.id === draft.offerId && o.coach === draft.coach && o.active);
+    const group = (store.groups ?? []).find((g) => g.offer.id === draft.offerId &&
+        g.day === draft.day &&
+        g.time === draft.time);
+    const o = current?.kind === "Groupe" ? group?.offer : current;
+    if (!c || !o || !slotsFor(c, draft.day, store, o).includes(draft.time))
+        throw Error("Ce créneau n’est plus disponible.");
+    if (draft.seats < 1 ||
+        !Number.isInteger(draft.seats) ||
+        draft.seats > remaining(o, draft.day, draft.time, store))
+        throw Error("Il ne reste pas assez de places.");
+    if (store.bookings.some((b) => b.clientId === store.account.id &&
+        b.status === "confirmed" &&
+        b.day === draft.day &&
+        (0, exports.overlap)(b.time, b.duration, draft.time, o.duration)))
+        throw Error("Une autre séance est déjà prévue à cette heure.");
+    if (o.kind !== "Groupe" &&
+        !formatsAt(store, c, o, draft.day, draft.time).includes(draft.format))
+        throw Error("Ce lieu n’est pas proposé pour cette séance. Modifiez votre sélection.");
+    if (draft.participantNames && draft.participantNames.length !== draft.seats)
+        throw Error("Vérifiez la liste des participants.");
+    const b = {
+        ...draft,
+        clientId: store.account.id,
+        clientName: store.account.name,
+        price: quotePrice(store, draft, o),
+        paid: quotePrice(store, draft, o),
+        refunded: 0,
+        cancelHours: group?.cancelHours ?? configFor(store, c.id).cancelHours,
+        preparation: {
+            ...(group?.preparation ?? configFor(store, c.id).preparation),
+        },
+        duration: o.duration,
+        kind: o.kind,
+        format: group?.format ?? draft.format,
+        serviceName: o.name,
+        address: group?.address ??
+            (draft.format === "Domicile"
+                ? draft.address
+                : offerAddress(store, c, draft.format)),
+        locationName: group?.locationName ?? locationLabel(store, c, draft.format),
+        locationInstructions: group?.locationInstructions ??
+            coachLocations(store, c)[draft.format]?.instructions ??
+            "",
+        status: "confirmed",
+    };
+    return {
+        ...store,
+        bookings: [...store.bookings, b],
+        notices: [
+            ...store.notices,
+            {
+                category: "booking",
+                createdAt: (0, exports.now)(),
+                event: "booking",
+                context: noticeContext(store, b),
+                id: `${b.id}:coach`,
+                recipient: (0, exports.coachRecipient)(store, c.id),
+                body: "Une nouvelle séance a été réservée.",
+                read: false,
+                booking: b.id,
+            },
+            {
+                category: "booking",
+                createdAt: (0, exports.now)(),
+                event: "booking",
+                context: noticeContext(store, b),
+                id: `${b.id}:client`,
+                recipient: b.clientId,
+                body: "Votre séance est confirmée.",
+                read: false,
+                booking: b.id,
+            },
+        ],
+    };
+}
+function cancel(store, id) {
+    const b = store.bookings.find((b) => b.id === id);
+    if (!b || b.clientId !== store.account?.id)
+        throw Error("Cette réservation ne vous appartient pas.");
+    if (b.status === "cancelled")
+        return store;
+    if (instant(b.day, b.time) < (0, exports.now)() + 86400000)
+        throw Error("La limite d’annulation gratuite est dépassée. Contactez le coach.");
+    return {
+        ...store,
+        bookings: store.bookings.map((x) => x.id === id ? { ...x, status: "cancelled" } : x),
+        notices: [
+            ...store.notices,
+            {
+                id: `${id}:cancel:coach`,
+                createdAt: (0, exports.now)(),
+                event: "cancelled",
+                context: noticeContext(store, { ...b, status: "cancelled" }),
+                recipient: (0, exports.coachRecipient)(store, b.coach),
+                body: "Une réservation a été annulée.",
+                read: false,
+                booking: id,
+            },
+            {
+                id: `${id}:cancel:client`,
+                createdAt: (0, exports.now)(),
+                event: "cancelled",
+                context: noticeContext(store, { ...b, status: "cancelled" }),
+                recipient: b.clientId,
+                body: "Votre réservation a été annulée.",
+                read: false,
+                booking: id,
+            },
+        ],
+    };
+}
+function _openGroup(store, group) {
+    const o = store.offers.find((o) => o.id === group.offer.id && o.active && o.kind === "Groupe");
+    if (!o ||
+        (0, exports.coachAccountId)(store) !== o.coach ||
+        store.account?.role !== "coach")
+        throw Error("Connectez-vous au compte de ce coach.");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(group.day) ||
+        !/^([01]\d|2[0-3]):[0-5]\d$/.test(group.time) ||
+        !Number.isFinite(instant(group.day, group.time)) ||
+        instant(group.day, group.time) < (0, exports.now)() + 7200000 ||
+        !group.address.trim())
+        throw Error("Vérifiez la date, l’heure et le lieu du cours.");
+    const cfg = configFor(store, o.coach);
+    const coach = allCoaches(store).find((c) => c.id === o.coach);
+    const groupFormat = group.format ?? offerFormats(coach, o)[0];
+    if (!groupFormat || !offerFormats(coach, o).includes(groupFormat))
+        throw Error("Ce lieu n’est pas autorisé pour cette prestation.");
+    if ((store.externalSessions ?? []).some((b) => !b.cancelled &&
+        b.coach === o.coach &&
+        b.day === group.day &&
+        (0, exports.overlap)(group.time, o.duration + cfg.buffer, b.time, b.duration + cfg.buffer)) ||
+        group.day >= (0, exports.addDays)((0, exports.today)(), cfg.horizon) ||
+        !intervalFits(cfg, group.day, group.time, o.duration, o.id, groupFormat) ||
+        cfg.blocks.some((b) => b.day === group.day &&
+            (0, exports.overlap)(group.time, o.duration, b.start, (0, exports.mins)(b.end) - (0, exports.mins)(b.start))))
+        throw Error("Le cours doit respecter vos horaires et indisponibilités.");
+    if ((store.groups ?? []).some((g) => !g.cancelled &&
+        g.offer.coach === o.coach &&
+        g.day === group.day &&
+        (0, exports.overlap)(g.time, g.offer.duration + cfg.buffer, group.time, o.duration + cfg.buffer)) ||
+        store.bookings.some((b) => b.coach === o.coach &&
+            b.day === group.day &&
+            b.status === "confirmed" &&
+            (0, exports.overlap)(b.time, b.duration + cfg.buffer, group.time, o.duration + cfg.buffer)) ||
+        store.closed.some((k) => {
+            const [c, d, t] = k.split("|");
+            return (c === o.coach &&
+                d === group.day &&
+                (0, exports.overlap)(t, 60, group.time, o.duration));
+        }))
+        throw Error("Votre agenda est déjà occupé à ce moment.");
+    return {
+        ...store,
+        groups: [
+            ...(store.groups ?? []),
+            {
+                ...group,
+                offer: { ...o },
+                format: groupFormat,
+                locationName: locationLabel(store, coach, groupFormat),
+                locationInstructions: coachLocations(store, coach)[groupFormat]?.instructions ?? "",
+                cancelHours: cfg.cancelHours,
+                preparation: { ...cfg.preparation },
+                level: group.level ?? o.level ?? "Tous niveaux",
+            },
+        ],
+    };
+}
+function switchAccount(store, account) {
+    const previous = store.account?.id ?? "guest";
+    const accounts = {
+        ...store.accounts,
+        [previous]: { preferences: store.preferences, favorites: store.favorites },
+    };
+    const next = accounts[account?.id ?? "guest"] ?? {
+        preferences: { ...exports.initialPreferences },
+        favorites: [],
+    };
+    return {
+        ...store,
+        account,
+        accounts,
+        preferences: { ...next.preferences },
+        favorites: [...next.favorites],
+    };
+}
+function allCoaches(store) {
+    return [
+        ...(store.connected ? [] : exports.seedCoaches),
+        ...(store.extraCoaches ?? []),
+    ].map((c) => ({
+        ...c,
+        ...store.coachOverrides?.[c.id],
+        ...(store.settings?.[c.id]?.dossier.verification ||
+            store.settings?.[c.id]?.dossier.publicPractices
+            ? {
+                verified: (0, verification_1.approvedPractices)(store.settings[c.id].dossier, (0, exports.today)()).length >
+                    0,
+            }
+            : {}),
+    }));
+}
+function configFor(store, id) {
+    const existing = store.settings?.[id];
+    if (existing)
+        return { ...existing, buffer: 0, departureStep: null };
+    const c = allCoaches(store).find((c) => c.id === id) ?? exports.seedCoaches[0];
+    return {
+        published: store.connected ? false : id === "0" ? store.published : true,
+        weeklyConfigured: !!store.connected,
+        week: Array.from({ length: 7 }, (_, d) => store.connected || d === 6 ? [] : [["09:00", "21:00"]]),
+        exceptions: {},
+        blocks: [],
+        buffer: 0,
+        departureStep: null,
+        notice: 2,
+        horizon: 90,
+        cancelHours: 24,
+        studio: c.place,
+        studioAddress: c.address,
+        radius: 3,
+        travelFee: 0,
+        preparation: {
+            provided: "Le matériel nécessaire à la séance est fourni.",
+            bring: "Une tenue confortable, une bouteille d’eau et une serviette.",
+            meeting: "Retrouvez-moi quelques minutes avant le début au point de rendez-vous.",
+            weather: "En cas de météo défavorable, nous échangeons avant la séance.",
+        },
+        notifications: {
+            booking: true,
+            changes: true,
+            reminder: true,
+            marketing: false,
+        },
+        business: {
+            name: c.name,
+            status: "Entreprise individuelle",
+            email: c.name.split(" ")[0].toLowerCase() + "@example.test",
+            address: c.address,
+        },
+        payoutReady: !store.connected,
+        dossier: {
+            status: store.connected ? "draft" : "approved",
+            documents: store.connected
+                ? ["", "", "", ""]
+                : [
+                    "identite-test.pdf",
+                    "diplome-test.pdf",
+                    "carte-test.pdf",
+                    "assurance-test.pdf",
+                ],
+            expires: (0, exports.addDays)((0, exports.today)(), 365),
+            reason: store.connected
+                ? "Complétez votre dossier."
+                : "Profil de démonstration initial.",
+            history: [],
+        },
+        clientNotes: {},
+    };
+}
+function intervalsFor(cfg, day) {
+    return (cfg.exceptions[day] ??
+        cfg.week[(new Date(day + "T12:00:00Z").getUTCDay() + 6) % 7]);
+}
+function intervalFits(cfg, day, time, duration, offerId, locationId) {
+    return intervalsFor(cfg, day).some(([a, b, ids, places]) => (locationId === undefined ||
+        places == null ||
+        places.includes(locationId)) &&
+        (offerId === undefined || ids == null || ids.includes(offerId)) &&
+        (0, exports.mins)(time) >= (0, exports.mins)(a) &&
+        (0, exports.mins)(time) + duration <= (0, exports.mins)(b));
+}
+/** An offer's venues restricted to the coach's range containing this departure. */
+function formatsAt(store, c, o, day, time) {
+    const formats = offerFormats(c, o);
+    if (!o || !time)
+        return formats;
+    const cfg = configFor(store, c.id);
+    if (!cfg.weeklyConfigured && !cfg.exceptions[day])
+        return formats;
+    return formats.filter((f) => intervalFits(cfg, day, time, o.duration, o.id, f));
+}
+function generatedTimes(cfg, day, duration, offerId) {
+    const times = [];
+    const step = duration;
+    if (!Number.isFinite(step) ||
+        step < 1 ||
+        !Number.isFinite(duration) ||
+        duration < 1)
+        return times;
+    for (const [a, b, ids] of intervalsFor(cfg, day)) {
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(a) ||
+            !/^([01]\d|2[0-3]):[0-5]\d$/.test(b))
+            continue;
+        if (offerId !== undefined && ids != null && !ids.includes(offerId))
+            continue;
+        for (let t = (0, exports.mins)(a); t + duration <= (0, exports.mins)(b); t += step)
+            times.push((0, exports.endTime)("00:00", t));
+    }
+    return [...new Set(times)].sort();
+}
+function validateIntervals(list) {
+    const sorted = [...list].sort((a, b) => (0, exports.mins)(a[0]) - (0, exports.mins)(b[0]));
+    for (let i = 0; i < sorted.length; i++) {
+        const [a, b, ids, places] = sorted[i];
+        if (places != null &&
+            (!Array.isArray(places) ||
+                !places.length ||
+                places.some((id) => typeof id !== "string") ||
+                new Set(places).size !== places.length))
+            throw Error("Choisissez au moins un lieu pour chaque plage.");
+        if (ids != null &&
+            (!Array.isArray(ids) ||
+                !ids.length ||
+                ids.some((id) => typeof id !== "string") ||
+                new Set(ids).size !== ids.length))
+            throw Error("Choisissez au moins une séance pour chaque plage.");
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(a) ||
+            !/^([01]\d|2[0-3]):[0-5]\d$/.test(b) ||
+            (0, exports.mins)(a) >= (0, exports.mins)(b) ||
+            (i > 0 && (0, exports.mins)(a) < (0, exports.mins)(sorted[i - 1][1])))
+            throw Error("Vérifiez les horaires : les plages ne doivent pas se chevaucher.");
+    }
+    return sorted;
+}
+function quotePrice(store, b, o) {
+    return (Math.round((o.price * (o.kind === "Groupe" ? b.seats : 1) +
+        (o.kind !== "Groupe" && b.format === "Domicile"
+            ? (configFor(store, b.coach).locations?.Domicile?.travelFee ??
+                configFor(store, b.coach).travelFee)
+            : 0)) *
+        100) / 100);
+}
+const coachRecipient = (s, id) => s.connected ? id : "coach-" + id;
+exports.coachRecipient = coachRecipient;
+const coachAccountId = (store) => store.account?.coachId ?? store.account?.id.replace(/^coach-/, "") ?? "0";
+exports.coachAccountId = coachAccountId;
+function newPreviewStore() {
+    const c = exports.seedCoaches[1], o = exports.seedOffers.find((o) => o.coach === "1" && o.kind === "Individuel");
+    return {
+        ...exports.initialStore,
+        bookings: [
+            {
+                id: "past-sarah",
+                coach: "1",
+                clientId: "alex@example.test",
+                clientName: "Alex",
+                day: (0, exports.addDays)((0, exports.today)(), -5),
+                time: "18:00",
+                duration: 60,
+                offerId: o.id,
+                serviceName: o.name,
+                kind: "Individuel",
+                format: "Studio",
+                seats: 1,
+                price: 45,
+                paid: 45,
+                refunded: 0,
+                goal: "Retrouver de la mobilité",
+                address: c.address,
+                status: "completed",
+                cancelHours: 24,
+            },
+        ],
+    };
+}
+function offerFormats(c, o) {
+    return o?.formats === undefined
+        ? c.formats
+        : o.formats.filter((f) => c.formats.includes(f));
+}
+function coachLocations(store, c) {
+    const cfg = configFor(store, c.id);
+    if (cfg.locations)
+        return cfg.locations;
+    return Object.fromEntries(c.formats.map((type) => [
+        type,
+        {
+            type,
+            name: type === "Domicile"
+                ? "Chez le client"
+                : type === "Visio"
+                    ? "En visioconférence"
+                    : type === "Studio"
+                        ? cfg.studio
+                        : c.place,
+            address: type === "Studio"
+                ? cfg.studioAddress
+                : type === "Domicile" || type === "Visio"
+                    ? ""
+                    : c.address,
+            ...(!store.connected &&
+                !["Domicile", "Visio"].includes(type) &&
+                demo_geography_json_1.default[type === "Studio" ? cfg.studioAddress : c.address]
+                ? {
+                    coordinates: demo_geography_json_1.default[type === "Studio" ? cfg.studioAddress : c.address],
+                }
+                : {}),
+            instructions: "",
+            ...(type === "Domicile"
+                ? { sector: c.area, radius: cfg.radius, travelFee: cfg.travelFee }
+                : {}),
+        },
+    ]));
+}
+function locationLabel(store, c, key) {
+    const p = coachLocations(store, c)[key];
+    return p
+        ? p.name || p.type
+        : key.startsWith("place:")
+            ? "Lieu de la séance"
+            : key;
+}
+function matchesLocation(store, c, o, type) {
+    return (type === "Tous" ||
+        offerFormats(c, o).some((id) => id === type || coachLocations(store, c)[id]?.type === type));
+}
+function locationDescription(store, c, key) {
+    const p = coachLocations(store, c)[key];
+    if (!p)
+        return "";
+    const detail = p.type === "Domicile"
+        ? `${p.sector || c.area} · rayon ${p.radius ?? 3} km · ${(p.travelFee ?? 0) ? p.travelFee + " € de déplacement" : "déplacement inclus"}`
+        : p.type === "Visio"
+            ? "Lien transmis dans la conversation"
+            : p.address;
+    return [detail, p.instructions].filter(Boolean).join(" · ");
+}
+function offerAddress(store, c, format) {
+    const p = coachLocations(store, c)[format];
+    return format === "Visio"
+        ? "Lien de visioconférence transmis dans la conversation"
+        : format === "Domicile"
+            ? ""
+            : (p?.address ?? c.address);
+}
+function locationsReady(store, c) {
+    if (!c?.formats.length)
+        return false;
+    const locations = coachLocations(store, c);
+    return c.formats.every((key) => {
+        const p = locations[key];
+        return (!!p?.name.trim() &&
+            (p.type === "Visio" ||
+                (p.type === "Domicile" ? !!p.sector?.trim() : !!p.address.trim())));
+    });
+}
+exports.reserve = (0, commands_1.recorded)("reserve", _reserve);
+exports.openGroup = (0, commands_1.recorded)("openGroup", _openGroup);
+
+},
+"../reference/demo-geography.json":(module,exports,load)=>{
+module.exports={
+  "2 rue du Général-Blaise, 75011 Paris": {
+    "latitude": 48.861085,
+    "longitude": 2.379073,
+    "label": "2 rue du Général-Blaise, 75011 Paris"
+  },
+  "18 rue du Commerce, 75015 Paris": {
+    "latitude": 48.848081,
+    "longitude": 2.29665,
+    "label": "18 rue du Commerce, 75015 Paris"
+  },
+  "44 rue de Lyon, 75012 Paris": {
+    "latitude": 48.849788,
+    "longitude": 2.370991,
+    "label": "44 rue de Lyon, 75012 Paris"
+  },
+  "35 quai de Valmy, 75010 Paris": {
+    "latitude": 48.869106,
+    "longitude": 2.366573,
+    "label": "35 quai de Valmy, 75010 Paris"
+  },
+  "24 rue Notre-Dame-de-Lorette, 75009 Paris": {
+    "latitude": 48.878298,
+    "longitude": 2.337779,
+    "label": "24 rue Notre-Dame-de-Lorette, 75009 Paris"
+  },
+  "27 rue de Ménilmontant, 75020 Paris": {
+    "latitude": 48.867578,
+    "longitude": 2.384898,
+    "label": "27 rue de Ménilmontant, 75020 Paris"
+  }
+}
+;
+},
+"commands.ts":(module,exports,load)=>{
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.commandLog = void 0;
+exports.recorded = recorded;
+exports.commandsFrom = commandsFrom;
+exports.commandLog = Symbol("partantCommands");
+let depth = 0;
+/** Carries user intent to the transport; never sends the computed client state. */
+function recorded(name, fn) {
+    return ((s, ...args) => {
+        const outer = depth++ === 0;
+        try {
+            const next = fn(s, ...args);
+            return outer && s.connected
+                ? Object.assign({}, next, { [exports.commandLog]: [{ name, args }] })
+                : next;
+        }
+        finally {
+            depth--;
+        }
+    });
+}
+function commandsFrom(before, after) {
+    const commands = [...(after[exports.commandLog] ?? [])];
+    if (commands.some((c) => c.name === "deleteAccount"))
+        return commands;
+    const changed = (a, b) => JSON.stringify(a) !== JSON.stringify(b);
+    const add = (name, ...args) => commands.push({ name, args });
+    const me = before.account?.id;
+    if (changed(before.preferences, after.preferences))
+        add("preferences", after.preferences);
+    if (changed(before.favorites, after.favorites))
+        add("favorites", after.favorites);
+    if (changed(before.coachDrafts, after.coachDrafts))
+        add("drafts", after.coachDrafts ?? {});
+    if (me &&
+        (changed(before.account, after.account) ||
+            changed(before.accountInfo?.[me], after.accountInfo?.[me])) &&
+        after.account)
+        add("account", {
+            name: after.account.name,
+            email: after.account.email,
+            ...after.accountInfo?.[me],
+        });
+    if (changed(before.closed, after.closed))
+        add("closed", after.closed.filter((x) => !before.closed.includes(x)), before.closed.filter((x) => !after.closed.includes(x)));
+    for (const n of after.notices)
+        if (n.read && !before.notices.find((x) => x.id === n.id)?.read)
+            add("readNotice", n.id);
+    for (const [id, ms] of Object.entries(after.messages)) {
+        const old = before.messages[id] ?? [];
+        for (const m of ms.slice(old.length))
+            add("message", id, m.text, m.id);
+        if (ms.some((m, i) => i < old.length &&
+            m.readBy?.includes(me ?? "") &&
+            !old[i]?.readBy?.includes(me ?? "")))
+            add("readMessages", id);
+    }
+    if (changed(before.alerts, after.alerts)) {
+        for (const a of after.alerts ?? [])
+            if (changed(a, before.alerts?.find((x) => x.id === a.id)))
+                add("alert", a);
+        for (const a of before.alerts ?? [])
+            if (!after.alerts?.some((x) => x.id === a.id))
+                add("removeAlert", a.id);
+    }
+    for (const b of after.bookings) {
+        const old = before.bookings.find((x) => x.id === b.id);
+        if (old && old.prepared !== b.prepared)
+            add("prepared", b.id, !!b.prepared);
+    }
+    // Place saves also change the public venue index; server derives it from settings.
+    if (!commands.length &&
+        changed(before, after) &&
+        after.account === null &&
+        before.account)
+        add("signOut");
+    return commands;
+}
+
+},
 "workflows.ts":(module,exports,load)=>{
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resolveTicket = exports.reviewDossier = exports.deleteAccount = exports.report = exports.replyReview = exports.saveReview = exports.answerProposal = exports.addProposal = exports.closeGroup = exports.reschedule = exports.transfer = exports.partialCancel = exports.cancelSession = exports.saveOffer = exports.saveCoach = exports.publish = exports.saveSettings = exports.infoFor = exports.fingerprint = exports.net = exports.money = exports.uid = void 0;
+exports.reviewPractice = exports.saveVerification = exports.resolveTicket = exports.reviewDossier = exports.deleteAccount = exports.report = exports.replyReview = exports.saveReview = exports.answerProposal = exports.addProposal = exports.closeGroup = exports.reschedule = exports.transfer = exports.partialCancel = exports.cancelSession = exports.saveOffer = exports.saveCoach = exports.publish = exports.saveSettings = exports.infoFor = exports.fingerprint = exports.net = exports.money = exports.uid = void 0;
 exports.identities = identities;
 exports.loginDemo = loginDemo;
 exports.notify = notify;
@@ -2536,6 +2848,7 @@ exports.alertMatches = alertMatches;
 exports.maintain = maintain;
 exports.accountExport = accountExport;
 exports.sessionICS = sessionICS;
+const verification_1 = load("verification.ts");
 const noticeEvents_1 = load("noticeEvents.ts");
 const commands_1 = load("commands.ts");
 const locations_1 = load("locations.ts");
@@ -2696,6 +3009,136 @@ function future(b) {
     if (b.status !== "confirmed" || (0, model_1.instant)(b.day, b.time) <= (0, model_1.now)())
         throw Error("Cette séance n’est plus modifiable.");
 }
+function _saveVerification(s, id, input, submit = []) {
+    const c = (0, model_1.allCoaches)(s).find((c) => c.id === id);
+    if (!c || s.account?.role !== "coach" || (0, model_1.coachAccountId)(s) !== id)
+        throw Error("Dossier inaccessible.");
+    const cfg = (0, model_1.configFor)(s, id), old = (0, verification_1.toVerification)(cfg.dossier, c, (0, model_1.today)());
+    const clean = (0, verification_1.cleanVerification)(input, id, !!s.connected);
+    const v = { ...clean, version: 2, reviews: { ...old.reviews } };
+    for (const practice of Object.keys(v.reviews)) {
+        if (!v.practices.includes(practice) ||
+            v.reviews[practice].fingerprint !== (0, verification_1.proofFingerprint)(v, practice))
+            delete v.reviews[practice];
+    }
+    if (!Array.isArray(submit) ||
+        new Set(submit).size !== submit.length ||
+        submit.some((p) => !v.practices.includes(p)))
+        throw Error("Pratique à soumettre invalide.");
+    const history = [...cfg.dossier.history];
+    for (const practice of submit) {
+        if (["pending", "approved"].includes((0, verification_1.practiceState)(v, practice, (0, model_1.today)())))
+            throw Error("Cette pratique est déjà validée ou en cours de vérification.");
+        if ((0, verification_1.missingProofs)(v, practice, (0, model_1.today)()).length ||
+            (0, verification_1.filesFor)(v, practice).some((f) => f.expires && f.expires < (0, model_1.today)()))
+            throw Error(`Complétez les justificatifs pour ${practice}.`);
+        if ((v.professionalStatus !== "qualified" ||
+            ["Yoga", "Récupération"].includes(practice)) &&
+            v.context.length < 20)
+            throw Error("Décrivez votre situation et les séances proposées en quelques mots (20 caractères minimum).");
+        v.reviews[practice] = {
+            status: "pending",
+            fingerprint: (0, verification_1.proofFingerprint)(v, practice),
+            reason: "L’équipe examine cette pratique.",
+            at: new Date((0, model_1.now)()).toISOString(),
+        };
+        history.push({
+            date: new Date((0, model_1.now)()).toISOString(),
+            status: "pending",
+            reason: "Pratique soumise",
+            practice,
+            by: s.account.id,
+        });
+    }
+    const dossier = (0, verification_1.summarizeDossier)({
+        ...cfg.dossier,
+        history,
+        reason: submit.length
+            ? "Pratiques transmises à l’équipe."
+            : "Documents enregistrés.",
+    }, v, (0, model_1.today)());
+    // Bind legacy offers before a change of main discipline, including group snapshots.
+    const main = v.practices.includes(c.sport) ? c.sport : v.practices[0];
+    const next = {
+        ...s,
+        coachOverrides: {
+            ...s.coachOverrides,
+            [id]: {
+                ...s.coachOverrides?.[id],
+                disciplines: v.practices,
+                sport: main,
+            },
+        },
+        offers: s.offers.map((o) => o.coach === id ? { ...o, discipline: o.discipline ?? c.sport } : o),
+        groups: s.groups?.map((g) => g.offer.coach === id
+            ? {
+                ...g,
+                offer: { ...g.offer, discipline: g.offer.discipline ?? c.sport },
+            }
+            : g),
+        settings: {
+            ...s.settings,
+            [id]: {
+                ...cfg,
+                dossier,
+                published: cfg.published && (0, verification_1.approvedPractices)(dossier, (0, model_1.today)()).length > 0,
+            },
+        },
+    };
+    return next;
+}
+function _reviewPractice(s, id, practice, status, reason, expected) {
+    if ((!s.staff && !s.testMode) || (s.connected && (0, model_1.coachAccountId)(s) === id))
+        throw Error("Un autre membre habilité doit vérifier cette pratique.");
+    if (!["approved", "correction", "rejected"].includes(status) ||
+        !reason.trim())
+        throw Error("Indiquez la décision et son motif.");
+    const c = (0, model_1.allCoaches)(s).find((c) => c.id === id);
+    if (!c)
+        throw Error("Dossier introuvable.");
+    const cfg = (0, model_1.configFor)(s, id), v = (0, verification_1.toVerification)(cfg.dossier, c, (0, model_1.today)());
+    if (!v.practices.includes(practice) ||
+        (0, verification_1.practiceState)(v, practice, (0, model_1.today)()) !== "pending")
+        throw Error("Cette pratique n’attend pas de décision.");
+    const fingerprint = (0, verification_1.proofFingerprint)(v, practice);
+    if (expected !== fingerprint)
+        throw Error("Les justificatifs ont changé. Rouvrez le dossier avant de décider.");
+    if (status === "approved" && (0, verification_1.missingProofs)(v, practice, (0, model_1.today)()).length)
+        throw Error("Les justificatifs requis ne sont plus valides.");
+    const at = new Date((0, model_1.now)()).toISOString();
+    v.reviews[practice] = {
+        status,
+        reason: reason.trim().slice(0, 1000),
+        fingerprint,
+        at,
+        by: s.account?.id,
+    };
+    const dossier = (0, verification_1.summarizeDossier)({
+        ...cfg.dossier,
+        reason: reason.trim(),
+        history: [
+            ...cfg.dossier.history,
+            {
+                date: at,
+                status,
+                reason: reason.trim(),
+                practice,
+                by: s.account?.id,
+            },
+        ],
+    }, v, (0, model_1.today)());
+    return notify({
+        ...s,
+        settings: {
+            ...s.settings,
+            [id]: {
+                ...cfg,
+                dossier,
+                published: cfg.published && (0, verification_1.approvedPractices)(dossier, (0, model_1.today)()).length > 0,
+            },
+        },
+    }, (0, model_1.coachRecipient)(s, id), `${practice} : ${status === "approved" ? "pratique validée" : status === "correction" ? "complément demandé" : "pratique non autorisée"}. ${reason.trim()}`, "", (0, exports.uid)(), { event: "dossier" });
+}
 function _saveSettings(s, id, cfg) {
     // Legacy timing preferences no longer influence public availability.
     cfg = { ...cfg, buffer: 0, departureStep: null };
@@ -2735,12 +3178,15 @@ function publicationIssues(s, id) {
     const c = (0, model_1.allCoaches)(s).find((c) => c.id === id), cfg = (0, model_1.configFor)(s, id);
     return [
         !c?.name || !c?.bio || !c?.cert ? "Complétez votre profil." : "",
-        !s.offers.some((o) => o.coach === id && o.active)
+        !s.offers.some((o) => o.coach === id &&
+            o.active &&
+            !!c &&
+            (0, verification_1.canOffer)(cfg.dossier, c, o, (0, model_1.today)()))
             ? "Créez au moins une offre active."
             : "",
         !(0, model_1.locationsReady)(s, c) ? "Précisez vos lieux." : "",
         !cfg.week.some((day) => day.length) ? "Ouvrez votre planning." : "",
-        cfg.dossier.status !== "approved" || cfg.dossier.expires < (0, model_1.today)()
+        !c || !(0, verification_1.canOffer)(cfg.dossier, c, undefined, (0, model_1.today)())
             ? "Votre dossier doit être validé et à jour."
             : "",
         !cfg.payoutReady ? "Activez vos versements de test." : "",
@@ -2760,6 +3206,32 @@ function _saveCoach(s, id, changes) {
     if (!old || s.account?.role !== "coach" || (0, model_1.coachAccountId)(s) !== id)
         throw Error("Profil inaccessible.");
     const c = { ...old, ...changes };
+    if (old.sport !== c.sport &&
+        ((0, model_1.configFor)(s, id).dossier.verification ||
+            ["approved", "pending"].includes((0, model_1.configFor)(s, id).dossier.status))) {
+        const cfg = (0, model_1.configFor)(s, id), v = (0, verification_1.toVerification)(cfg.dossier, old, (0, model_1.today)());
+        if (!(0, verification_1.selectedPractices)({ ...c, disciplines: undefined }).length)
+            throw Error("Choisissez une discipline proposée.");
+        v.practices = [...new Set([...v.practices, c.sport])];
+        s = {
+            ...s,
+            offers: s.offers.map((o) => o.coach === id ? { ...o, discipline: o.discipline ?? old.sport } : o),
+            groups: s.groups?.map((g) => g.offer.coach === id
+                ? {
+                    ...g,
+                    offer: {
+                        ...g.offer,
+                        discipline: g.offer.discipline ?? old.sport,
+                    },
+                }
+                : g),
+            settings: {
+                ...s.settings,
+                [id]: { ...cfg, dossier: (0, verification_1.summarizeDossier)(cfg.dossier, v, (0, model_1.today)()) },
+            },
+        };
+        changes = { ...changes, disciplines: v.practices };
+    }
     if (!c.name.trim() || !c.bio.trim() || !c.cert.trim())
         throw Error("Complétez le nom, la présentation et les qualifications.");
     if (!Number.isFinite(c.years) || c.years < 0 || c.years > 60)
@@ -2779,6 +3251,9 @@ function _saveCoach(s, id, changes) {
             dossier: {
                 ...cfg.dossier,
                 status: "draft",
+                ...(cfg.dossier.verification
+                    ? { verification: { ...cfg.dossier.verification, reviews: {} } }
+                    : {}),
                 reason: "Le nom ou les qualifications ont changé. Soumettez un dossier actualisé.",
             },
         });
@@ -2787,6 +3262,11 @@ function _saveCoach(s, id, changes) {
 }
 function _saveOffer(s, o) {
     const coach = (0, model_1.allCoaches)(s).find((c) => c.id === o.coach);
+    if (coach?.disciplines) {
+        o = { ...o, discipline: o.discipline ?? coach.sport };
+        if (o.active && !coach.disciplines.includes(o.discipline))
+            throw Error("Ajoutez cette pratique dans Documents & vérifications avant de l’associer à une offre.");
+    }
     if (o.formats !== undefined &&
         (!o.formats.length || o.formats.some((f) => !coach?.formats.includes(f))))
         throw Error("Choisissez au moins un lieu autorisé dans Lieux & déplacements.");
@@ -3227,6 +3707,8 @@ function _reviewDossier(s, id, status, reason) {
     if ((!s.testMode && !s.staff) || !reason.trim())
         throw Error("L’équipe doit indiquer le motif de sa décision.");
     const cfg = (0, model_1.configFor)(s, id);
+    if (cfg.dossier.verification)
+        throw Error("Vérifiez et décidez pour chaque pratique séparément.");
     if (cfg.dossier.status !== "pending")
         throw Error("Ce dossier n’attend pas de décision.");
     return notify({
@@ -3303,7 +3785,22 @@ function maintain(s) {
         next = { ...next, bookings };
     for (const c of (0, model_1.allCoaches)(next)) {
         const cfg = next.settings?.[c.id];
-        if (cfg?.dossier.status === "approved" && cfg.dossier.expires < (0, model_1.today)())
+        if (cfg?.dossier.verification) {
+            const dossier = (0, verification_1.summarizeDossier)(cfg.dossier, cfg.dossier.verification, (0, model_1.today)());
+            next = {
+                ...next,
+                settings: {
+                    ...next.settings,
+                    [c.id]: {
+                        ...cfg,
+                        dossier,
+                        published: cfg.published && (0, verification_1.approvedPractices)(dossier, (0, model_1.today)()).length > 0,
+                    },
+                },
+            };
+        }
+        else if (cfg?.dossier.status === "approved" &&
+            cfg.dossier.expires < (0, model_1.today)())
             next = {
                 ...next,
                 settings: {
@@ -3502,6 +3999,8 @@ function _deleteAccount(s) {
                             dossier: {
                                 ...cfg.dossier,
                                 documents: [],
+                                verification: undefined,
+                                publicPractices: undefined,
                                 history: [],
                                 reason: "Compte supprimé",
                             },
@@ -3566,6 +4065,8 @@ exports.report = (0, commands_1.recorded)("report", _report);
 exports.deleteAccount = (0, commands_1.recorded)("deleteAccount", _deleteAccount);
 exports.reviewDossier = (0, commands_1.recorded)("reviewDossier", _reviewDossier);
 exports.resolveTicket = (0, commands_1.recorded)("resolveTicket", _resolveTicket);
+exports.saveVerification = (0, commands_1.recorded)("saveVerification", _saveVerification);
+exports.reviewPractice = (0, commands_1.recorded)("reviewPractice", _reviewPractice);
 
 },
 "noticeEvents.ts":(module,exports,load)=>{
@@ -3690,6 +4191,7 @@ exports.cancelExternalSession = exports.addExternalSession = exports.repeatGroup
 exports.copyDay = copyDay;
 exports.availabilityReasons = availabilityReasons;
 exports.setupSteps = setupSteps;
+const verification_1 = load("verification.ts");
 const commands_1 = load("commands.ts");
 const model_1 = load("model.ts");
 const workflows_1 = load("workflows.ts");
@@ -3791,7 +4293,7 @@ function availabilityReasons(s, c, o, day, time) {
     const cfg = (0, model_1.configFor)(s, c.id), reasons = [];
     if (!cfg.published)
         reasons.push("Votre profil n’est pas publié.");
-    if (cfg.dossier.status !== "approved" || cfg.dossier.expires < (0, model_1.today)())
+    if (!(0, verification_1.canOffer)(cfg.dossier, c, o, (0, model_1.today)()))
         reasons.push("Votre dossier doit être validé et à jour.");
     if (!o.active)
         reasons.push("Cette prestation est en pause.");
@@ -3873,7 +4375,7 @@ function setupSteps(s, id) {
         {
             id: "documents",
             title: "Vérifiez votre profil",
-            done: cfg.dossier.status === "approved" && cfg.dossier.expires >= (0, model_1.today)(),
+            done: !!c && (0, verification_1.canOffer)(cfg.dossier, c, undefined, (0, model_1.today)()),
         },
         {
             id: "payout",

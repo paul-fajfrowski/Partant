@@ -1,3 +1,8 @@
+import {
+  publicVerification,
+  canOffer,
+  approvedPractices,
+} from "./verification";
 import * as Messaging from "./messaging";
 import { noticeKind } from "./noticeEvents";
 /** Authoritative domain used by the Edge Function. No browser state is trusted. */
@@ -212,6 +217,15 @@ export function applyCommand(
         ...old,
         ...pick(a[1], Object.keys(old).concat("locations")),
       } as CoachSettings;
+      if (
+        JSON.stringify(cfg.dossier) !== JSON.stringify(old.dossier) &&
+        (old.dossier.verification ||
+          cfg.dossier.verification ||
+          cfg.dossier.publicPractices)
+      )
+        throw Error(
+          "Utilisez Documents & vérifications pour mettre à jour les justificatifs.",
+        );
       // Verification decisions and history belong to the team, never to a coach.
       if (JSON.stringify(cfg.dossier) !== JSON.stringify(old.dossier)) {
         if (!["draft", "pending"].includes(cfg.dossier.status))
@@ -369,6 +383,7 @@ export function applyCommand(
         "capacity",
         "formats",
         "level",
+        "discipline",
       ]) as M.Offer;
       if (
         !["Individuel", "Duo", "Groupe"].includes(o.kind) ||
@@ -629,9 +644,26 @@ export function applyCommand(
     case "deleteAccount":
       n = W.deleteAccount(s);
       break;
+    case "saveVerification":
+      ownCoach(s, a[0]);
+      n = W.saveVerification(s, a[0], a[1], a[2] ?? []);
+      break;
+    case "reviewPractice":
+      if (!actor.staff || a[0] === actor.id)
+        throw Error("Un autre membre habilité doit vérifier cette pratique.");
+      n = W.reviewPractice(
+        { ...s, staff: true },
+        a[0],
+        string(a[1], 100),
+        a[2],
+        string(a[3], 1000),
+        string(a[4], 25000),
+      );
+      break;
     case "reviewDossier":
       if (!actor.staff) throw Error("Accès équipe requis.");
-      if (a[0] === actor.id) throw Error("Un autre membre de l’équipe doit vérifier votre dossier.");
+      if (a[0] === actor.id)
+        throw Error("Un autre membre de l’équipe doit vérifier votre dossier.");
       n = W.reviewDossier(
         { ...s, testMode: true },
         a[0],
@@ -742,6 +774,7 @@ export function project(source: M.Store, actor?: Actor): M.Store {
             marketing: false,
           },
           dossier: {
+            ...publicVerification(cfg.dossier, M.today()),
             status: cfg.dossier.status,
             expires: cfg.dossier.expires,
             documents: [],
@@ -781,14 +814,53 @@ export function project(source: M.Store, actor?: Actor): M.Store {
     ...emptyConnected(),
     account: s.account,
     staff: !!actor?.staff,
-    extraCoaches: coaches,
+    extraCoaches: coaches.map((c) => {
+      if (
+        own(c.id) ||
+        actor?.staff ||
+        !M.configFor(s, c.id).dossier.verification
+      )
+        return c;
+      const disciplines = approvedPractices(
+        M.configFor(s, c.id).dossier,
+        M.today(),
+      );
+      return {
+        ...c,
+        disciplines,
+        sport: disciplines.includes(c.sport)
+          ? c.sport
+          : (disciplines[0] ?? c.sport),
+      };
+    }),
     settings,
     offers: s.offers.filter(
       (o) =>
         ids.has(o.coach) &&
-        (o.active || own(o.coach) || bookings.some((b) => b.offerId === o.id)),
+        (own(o.coach) ||
+          actor?.staff ||
+          bookings.some((b) => b.offerId === o.id) ||
+          (o.active &&
+            canOffer(
+              M.configFor(s, o.coach).dossier,
+              M.allCoaches(s).find((c) => c.id === o.coach)!,
+              o,
+              M.today(),
+            ))),
     ),
-    groups: s.groups?.filter((g) => ids.has(g.offer.coach)),
+    groups: s.groups?.filter(
+      (g) =>
+        ids.has(g.offer.coach) &&
+        (own(g.offer.coach) ||
+          actor?.staff ||
+          bookings.some((b) => b.slotId === g.id) ||
+          canOffer(
+            M.configFor(s, g.offer.coach).dossier,
+            M.allCoaches(s).find((c) => c.id === g.offer.coach)!,
+            g.offer,
+            g.day,
+          )),
+    ),
     bookings,
     calendarBusy: Object.fromEntries(
       Object.entries(s.calendarBusy ?? {}).filter(([coach]) => ids.has(coach)),

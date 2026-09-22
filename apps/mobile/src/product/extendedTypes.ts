@@ -7,6 +7,8 @@ export type Interval = [
   locationIds?: string[] | null,
 ];
 export type Dossier = {
+  verification?: import("./verification").Verification;
+  publicPractices?: { practice: string; expires: string }[];
   status:
     | "approved"
     | "pending"
@@ -17,7 +19,13 @@ export type Dossier = {
   documents: string[];
   expires: string;
   reason: string;
-  history: { date: string; status: string; reason: string }[];
+  history: {
+    date: string;
+    status: string;
+    reason: string;
+    practice?: string;
+    by?: string;
+  }[];
 };
 export type CoachLocation = {
   coordinates?: { latitude: number; longitude: number; label: string };

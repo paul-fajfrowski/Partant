@@ -1,3 +1,5 @@
+import { PracticeReviewPanel } from "./PracticeReviewPanel";
+import { pendingPractices } from "./verification";
 import { SectorPicker } from "./SectorPicker";
 import { PushSettings } from "./PushSettings";
 import { BookingNotificationHistory } from "./NotificationsScreen";
@@ -772,10 +774,15 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
         </Note>
         <H2 style={{ marginVertical: 20 }}>Dossiers à vérifier</H2>
         {!allCoaches(s).some(
-          (c) => configFor(s, c.id).dossier.status === "pending",
+          (c) =>
+            pendingPractices(configFor(s, c.id).dossier, c, today()).length > 0,
         ) && <P muted>Aucun dossier en attente.</P>}
         {allCoaches(s)
-          .filter((c) => configFor(s, c.id).dossier.status === "pending")
+          .filter(
+            (c) =>
+              pendingPractices(configFor(s, c.id).dossier, c, today()).length >
+              0,
+          )
           .map((c) => (
             <View key={c.id}>
               <Setting
@@ -785,57 +792,13 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
               />
               {selection === c.id && (
                 <>
-                  {s.connected && c.id === me?.id && (
-                    <Note>
-                      Votre propre dossier doit être vérifié par un autre membre
-                      de l’équipe.
-                    </Note>
-                  )}
-                  <Note>
-                    {s.connected
-                      ? configFor(s, c.id).dossier.documents.map((path, i) => (
-                          <TextButton
-                            key={path}
-                            onPress={() =>
-                              openDocument(path).catch((e) =>
-                                message(e.message),
-                              )
-                            }
-                          >
-                            Ouvrir le justificatif {i + 1}
-                          </TextButton>
-                        ))
-                      : configFor(s, c.id).dossier.documents.join(" · ")}
-                  </Note>
-                  {select(
-                    "Décision",
-                    "docStatus",
-                    [
-                      ["approved", "Valider"],
-                      ["correction", "Demander une correction"],
-                      ["rejected", "Refuser"],
-                    ],
-                    "approved",
-                  )}
-                  {field("Motif de la décision", "docReason", "", true)}
-                  <Button
-                    disabled={!!s.connected && c.id === me?.id}
-                    onPress={() =>
-                      update((x) =>
-                        W.reviewDossier(
-                          x,
-                          c.id,
-                          val("docStatus", "approved") as
-                            | "approved"
-                            | "correction"
-                            | "rejected",
-                          val("docReason"),
-                        ),
-                      )
-                    }
-                  >
-                    Enregistrer la décision
-                  </Button>
+                  <PracticeReviewPanel
+                    key={c.id}
+                    store={s}
+                    coach={c}
+                    setStore={setStore}
+                    message={message}
+                  />
                 </>
               )}
             </View>

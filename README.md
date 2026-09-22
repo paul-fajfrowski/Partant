@@ -157,3 +157,7 @@ Pour les tests DOM optionnels : `npm ci --prefix work/qa-runtime`, puis `node wo
 ### Confidentialité — livraison 25
 
 Information à l’inscription et espace Confidentialité client/coach : voir [le périmètre, les contrôles et les points à finaliser avant ouverture publique](docs/confidentialite-25.md). Aucun consentement global ou marketing ajouté.
+
+### Documents & vérifications — livraison 26
+
+Dossier commun, pièces adaptées aux pratiques/statuts, réutilisation des documents et validation distincte de chaque pratique. Le dossier reste au début du parcours coach. Voir [le fonctionnement, la recette et les limites](docs/documents-verifications-26.md). Simulation : http://127.0.0.1:8081/simulation.html?mode=connected&version=documents-26 . Refaire le build Xcode pour charger les nouveaux écrans ; pas de changement de dépendances natives.

@@ -1,3 +1,4 @@
+import { approvedPractices, canOffer } from "./verification";
 import { SectorSearch } from "./SectorPicker";
 import { usePushNotifications } from "./usePushNotifications";
 import {
@@ -440,7 +441,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       setModal("");
       setRole(account.role);
       if (account.role === "coach") {
-        setScreen("coach");
+        if (newRegistration.current) {
+          setConfig("documents");
+          setScreen("config");
+        } else setScreen("coach");
+        newRegistration.current = false;
         return;
       }
       if (journey) {
@@ -791,7 +796,8 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   // Preferences rank suggestions; only explicit Explorer controls filter them.
   function preferenceScore(c: Coach) {
     return (
-      (pref.sport !== "Tout" && [c.sport, ...c.tags].includes(pref.sport)
+      (pref.sport !== "Tout" &&
+      [c.sport, ...(c.disciplines ?? []), ...c.tags].includes(pref.sport)
         ? 4
         : 0) +
       ((primary(c)?.price ?? c.price) <= pref.budget ? 2 : 0) +
@@ -806,7 +812,8 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     .filter(
       (c) =>
         (live || pref.city.startsWith("Paris") || format === "Visio") &&
-        (sport === "Tout" || [c.sport, ...c.tags].includes(sport)) &&
+        (sport === "Tout" ||
+          [c.sport, ...(c.disciplines ?? []), ...c.tags].includes(sport)) &&
         fold([c.name, c.sport, c.area, ...c.tags].join(" ")).includes(
           fold(query),
         ) &&
@@ -2156,7 +2163,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                     const match = coaches.find(
                       (c) =>
                         (sport === "Tout" ||
-                          [c.sport, ...c.tags].includes(sport)) &&
+                          [
+                            c.sport,
+                            ...(c.disciplines ?? []),
+                            ...c.tags,
+                          ].includes(sport)) &&
                         fold(
                           [c.name, c.sport, c.area, ...c.tags].join(" "),
                         ).includes(fold(query)) &&
@@ -2399,6 +2410,17 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   </P>
                 </View>
               </Row>
+              {approvedPractices(configFor(store, coach.id).dossier, today())
+                .length > 0 && (
+                <P small muted style={{ marginTop: 16 }}>
+                  Pratiques vérifiées :{" "}
+                  {approvedPractices(
+                    configFor(store, coach.id).dossier,
+                    today(),
+                  ).join(" · ")}
+                  .
+                </P>
+              )}
               <P small muted style={{ marginTop: 16 }}>
                 Langues : {coach.langs}
               </P>
