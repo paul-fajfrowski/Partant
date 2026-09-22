@@ -167,6 +167,13 @@ export function PushSettings({
               ? "Les notifications sont activées sur cet iPhone."
               : "Recevez vos informations même lorsque Partant est fermée."}
       </P>
+      {live && Platform.OS === "ios" && !status.registered && (
+        <P small muted style={{ marginTop: 8 }}>
+          Facultatif. L’activation associe cet iPhone à votre compte pour
+          recevoir vos alertes. Vous pourrez la retirer ici ; aucune publicité
+          n’est activée.
+        </P>
+      )}
       {live && loaded && !status.configured && (
         <P small muted>
           L’activation des notifications est en cours de préparation.

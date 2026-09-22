@@ -329,20 +329,9 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
           />
         )}
         <Setting
-          title={
-            s.connected
-              ? "Exporter mes données"
-              : "Exporter mes données locales"
-          }
-          onPress={() =>
-            run(() =>
-              exportFile(
-                "partant-mes-donnees.json",
-                JSON.stringify(W.accountExport(s), null, 2),
-                "application/json",
-              ),
-            )
-          }
+          title="Confidentialité"
+          description="Mes données, mes demandes et la suppression du compte"
+          onPress={() => go("privacy-native")}
         />
         <Setting
           title="Me déconnecter"
@@ -351,36 +340,6 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
             go("welcome");
           }}
         />
-        <Setting
-          title={
-            s.connected
-              ? "Supprimer mon compte"
-              : "Supprimer mon compte de démonstration"
-          }
-          onPress={() => setConfirm(true)}
-        />
-        {confirm && (
-          <Note>
-            <P>
-              Votre profil et vos messages seront anonymisés. Les références des
-              séances restent chez vos interlocuteurs.
-            </P>
-            <Button
-              style={{ marginTop: 16 }}
-              onPress={() =>
-                run(() => {
-                  setStore(W.deleteAccount(s));
-                  go("welcome");
-                })
-              }
-            >
-              Confirmer la suppression
-            </Button>
-          </Note>
-        )}
-        <P small muted style={{ marginTop: 20 }}>
-          Un changement d’e-mail devra être vérifié dans le service réel.
-        </P>
       </>
     );
   }

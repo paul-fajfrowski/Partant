@@ -58,6 +58,10 @@ export function SectorSearch({
           Secteur actuel · {value}
         </P>
       )}
+      <P small muted style={{ marginBottom: 12 }}>
+        La recherche d’adresse utilise l’IGN. Aucun accès au GPS ; seul le
+        secteur choisi est enregistré ici.
+      </P>
       <Field
         label="Ville, quartier, code postal ou adresse"
         placeholder="Paris 11e, Montreuil, 78000…"

@@ -80,6 +80,13 @@ export function CalendarConnections({ live }: { live: boolean }) {
               {new Date(status.lastSync).toLocaleString("fr-FR")}
             </P>
           ) : null}
+          {status?.configured && !status.connected && (
+            <P small muted>
+              La connexion est facultative et distincte de votre compte Google.
+              Elle permet de lire vos occupations et d’ajouter vos séances aux
+              agendas choisis. Vous pourrez la retirer ici.
+            </P>
+          )}
           {status?.configured && (
             <Button
               light
@@ -189,8 +196,14 @@ export function CalendarConnections({ live }: { live: boolean }) {
         </>
       )}
       <H2>Apple Calendar</H2>
-      <P muted>Dans le détail d’une séance, touchez « Ajouter au calendrier », puis confirmez l’ajout dans votre calendrier Apple.</P>
-      <P small muted>L’ajout est à votre initiative ; les changements ultérieurs ne sont pas synchronisés avec iCloud.</P>
+      <P muted>
+        Dans le détail d’une séance, touchez « Ajouter au calendrier », puis
+        confirmez l’ajout dans votre calendrier Apple.
+      </P>
+      <P small muted>
+        L’ajout est à votre initiative ; les changements ultérieurs ne sont pas
+        synchronisés avec iCloud.
+      </P>
       <H2>Outlook</H2>
       <P muted>Branchement prévu dans une prochaine étape.</P>
     </View>

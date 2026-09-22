@@ -129,6 +129,10 @@ export function CoachPlacesEditor({
             </P>
           ) : (
             <>
+              <P small muted style={{ marginBottom: 12 }}>
+                Ce lieu et son adresse seront visibles dans votre offre publiée.
+                Renseignez uniquement un lieu que vous souhaitez rendre public.
+              </P>
               <AddressPicker
                 label="Adresse du lieu"
                 value={p.address}

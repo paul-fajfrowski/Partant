@@ -153,3 +153,7 @@ node work/test-finalization.cjs
 Le dépôt Project-H-iOS a uniquement servi de référence visuelle en lecture seule ; il n’est pas modifié par ce projet.
 
 Pour les tests DOM optionnels : `npm ci --prefix work/qa-runtime`, puis `node work/test-finalization-dom.cjs`. La revue visuelle mobile du prototype HTML a été validée par l’utilisateur le 16 septembre 2026 ; l’audit d’accessibilité reste à réaliser.
+
+### Confidentialité — livraison 25
+
+Information à l’inscription et espace Confidentialité client/coach : voir [le périmètre, les contrôles et les points à finaliser avant ouverture publique](docs/confidentialite-25.md). Aucun consentement global ou marketing ajouté.

@@ -1000,6 +1000,14 @@ function ConfigurationEditor({
               ? "Votre vérification est à jour. Retrouvez les étapes restantes dans votre checklist."
               : "Ajoutez les justificatifs puis soumettez votre dossier à l’équipe Partant."}
         </P>
+        <P small muted style={{ marginBottom: 12 }}>
+          Vos justificatifs sont privés : seuls vous et l’équipe habilitée à
+          vérifier votre dossier pouvez les consulter. Ils ne sont pas publiés
+          sur votre profil.
+        </P>
+        <TextButton onPress={() => go("privacy-policy", "coach")}>
+          Confidentialité de mes documents
+        </TextButton>
         {store.staff && (
           <TextButton onPress={() => go("team")}>
             Ouvrir l’espace équipe

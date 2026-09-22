@@ -39,6 +39,10 @@ export function AddressPicker({
   }, [query]);
   return (
     <View>
+      <P small muted style={{ marginBottom: 8 }}>
+        Les suggestions d’adresse sont fournies par l’IGN à partir de votre
+        saisie.
+      </P>
       <Field
         label={label}
         value={value}

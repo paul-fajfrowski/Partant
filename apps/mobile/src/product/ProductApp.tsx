@@ -27,6 +27,7 @@ import { AgendaTools } from "./AgendaToolsScreen";
 import { setupSteps } from "./agendaTools";
 import Slider from "@react-native-community/slider";
 import * as W from "./workflows";
+import { PrivacyLinks, PrivacyScreen } from "./PrivacyScreen";
 import { CompleteFlows, BookingExtras } from "./CompleteFlows";
 import { CoachConfiguration } from "./CoachConfiguration";
 import { exportFile } from "./deviceFiles";
@@ -559,6 +560,8 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         "new-alert",
         "support-native",
         "report-native",
+        "privacy-request",
+        "delete-account-native",
         "conversation",
       ].includes(next)
     ) {
@@ -1416,6 +1419,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         <P muted>
           Votre connexion est confirmée. Complétez votre espace pour commencer.
         </P>
+        <PrivacyLinks go={go} role={role} live={live} creation />
         <Field label="Votre prénom et nom" value={name} onChange={setName} />
         <Choice
           title="Je veux bouger"
@@ -1472,6 +1476,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             ? "Retrouvez votre activité et vos prochains clients."
             : "Retrouvez vos coachs, vos séances et vos échanges."}
         </P>
+        <PrivacyLinks go={go} role={role} live={live} creation={signup} />
         <View style={{ marginTop: 24 }}>
           {signup && (
             <Field
@@ -1578,11 +1583,6 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         <TextButton style={{ marginTop: 24 }} onPress={() => go("explore")}>
           Explorer sans compte
         </TextButton>
-        <P small muted style={{ marginTop: 24 }}>
-          {live
-            ? "Vos coordonnées servent à gérer votre compte et vos séances. Aucun paiement à la connexion."
-            : "Vos essais restent sur cet appareil. Aucun compte n’est créé auprès d’un service externe."}
-        </P>
       </Section>
     );
   if (screen === "code")
@@ -3177,7 +3177,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         <Setting
           title="Compte & notifications"
           icon="user"
-          description="Coordonnées, rappels et données personnelles"
+          description="Coordonnées et préférences de notification"
           onPress={() => go("account-native")}
         />
         <Eyebrow style={{ marginTop: 28, marginBottom: 6 }}>
@@ -3188,6 +3188,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           icon="message"
           description="Une question, un imprévu ou une annulation"
           onPress={() => go("support-native")}
+        />
+        <Setting
+          title="Confidentialité"
+          icon="shield"
+          description="Mes données et mes choix"
+          onPress={() => go("privacy-native")}
         />
         <Setting
           title="Confiance & sécurité"
@@ -3634,8 +3640,13 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               {
                 <>
                   <Setting
-                    title="Mon compte & mes données"
+                    title="Mon compte"
                     onPress={() => go("account-native")}
+                  />
+                  <Setting
+                    title="Confidentialité"
+                    description="Mes données et mes choix"
+                    onPress={() => go("privacy-native")}
                   />
                   <Setting
                     title="À propos de la simulation"
@@ -5060,6 +5071,31 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         : screen === "repeat-group-native"
           ? "Dupliquer un cours"
           : "Mon planning";
+  }
+  if (
+    [
+      "privacy-native",
+      "privacy-policy",
+      "terms-native",
+      "privacy-request",
+      "delete-account-native",
+    ].includes(screen)
+  ) {
+    content = (
+      <Section>
+        <PrivacyScreen
+          key={`${screen}:${focus}:${store.account?.id ?? "guest"}`}
+          {...flowProps}
+          screen={screen}
+          submitRequest={market.submitPrivacyRequest}
+          deleteAccount={market.deleteOwnAccount}
+        />
+      </Section>
+    );
+    barTitle[screen] =
+      screen === "terms-native"
+        ? "Conditions d’utilisation"
+        : "Confidentialité";
   }
   if (screen === "config" && config !== "groups")
     content = (

@@ -1,5 +1,7 @@
 import { unregisterPushDevice, clearLocalPushDevice } from "./pushDevice";
 import * as Messaging from "./messaging";
+import { report, deleteAccount } from "./workflows";
+import { privacyNotice, privacyRequestKinds } from "./privacyContent";
 import { useEffect, useRef, useState, Dispatch, SetStateAction } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../lib/supabase";
@@ -476,6 +478,77 @@ export function useMarketplace(live: boolean) {
       ]),
     );
   }
+  async function deleteOwnAccount() {
+    const account = current.current.account?.id;
+    if (!account) throw Error("Connectez-vous pour supprimer votre compte.");
+    // Validate before any optimistic state change; failure must leave the session usable.
+    const local = deleteAccount(
+      JSON.parse(JSON.stringify(current.current)) as Store,
+    );
+    if (!live) {
+      await AsyncStorage.removeItem(
+        `partant-messages-v1:${previewKey}:${account}`,
+      );
+      assign(local);
+      return;
+    }
+    const token = epoch.current,
+      generation = queueGeneration.current;
+    jobs.current++;
+    setPending(jobs.current);
+    const job = queue.current
+      .then(async () => {
+        if (token !== epoch.current || current.current.account?.id !== account)
+          throw Error("Le compte actif a changé.");
+        const saved = await execute([{ name: "deleteAccount", args: [] }]);
+        assign(saved);
+        await clearLocalPushDevice().catch(() => {});
+        await AsyncStorage.multiRemove([
+          "partant-auth-intent",
+          "partant-auth-journey-v1",
+        ]).catch(() => {});
+      })
+      .finally(() => {
+        if (generation === queueGeneration.current) {
+          jobs.current = Math.max(0, jobs.current - 1);
+          if (active.current) setPending(jobs.current);
+        }
+      });
+    queue.current = job.catch(() => {});
+    await job;
+  }
+  async function submitPrivacyRequest(kind: string, detail: string) {
+    if (!privacyRequestKinds.includes(kind) || detail.length > 2000)
+      throw Error("Vérifiez votre demande.");
+    const account = current.current.account?.id;
+    if (!account) throw Error("Connectez-vous pour envoyer votre demande.");
+    const values = {
+      kind: `Données personnelles · ${kind}`,
+      body: `${kind}\n${detail.trim() || "Sans précision complémentaire."}\nNotice consultable : ${privacyNotice.version}`,
+    };
+    if (!live) {
+      assign(report(current.current, values));
+      return;
+    }
+    const token = epoch.current,
+      generation = queueGeneration.current;
+    jobs.current++;
+    setPending(jobs.current);
+    const job = queue.current
+      .then(async () => {
+        if (token !== epoch.current || current.current.account?.id !== account)
+          throw Error("Le compte actif a changé.");
+        assign(await execute([{ name: "report", args: [values] }]));
+      })
+      .finally(() => {
+        if (generation === queueGeneration.current) {
+          jobs.current = Math.max(0, jobs.current - 1);
+          if (active.current) setPending(jobs.current);
+        }
+      });
+    queue.current = job.catch(() => {});
+    await job;
+  }
   async function book(draft: Booking) {
     await queue.current;
     const saved = await execute([{ name: "reserve", args: [draft] }]);
@@ -566,6 +639,8 @@ export function useMarketplace(live: boolean) {
     profileReady:
       !live || (ready && loadedIdentity === (session?.user.id ?? null)),
     submitCoachApplication,
+    submitPrivacyRequest,
+    deleteOwnAccount,
     sendMessage,
     readConversation,
     localScope: live ? "connected" : previewKey,
