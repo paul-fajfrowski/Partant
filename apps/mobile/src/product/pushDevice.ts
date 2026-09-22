@@ -10,6 +10,7 @@ export type PushCategories = {
   reminder: boolean;
   messages: boolean;
   activity: boolean;
+  availability?: boolean;
 };
 export const defaultPushCategories: PushCategories = {
   booking: true,
@@ -17,6 +18,7 @@ export const defaultPushCategories: PushCategories = {
   reminder: true,
   messages: true,
   activity: true,
+  availability: true,
 };
 export type PushStatus = {
   categories: PushCategories;
@@ -77,9 +79,19 @@ export async function enablePushDevice(
   const token = await Promise.race([
     N.getDevicePushTokenAsync(),
     new Promise<never>((_, reject) => {
-      timer = setTimeout(() => reject(Error("L’iPhone ne répond pas encore. Vérifiez la connexion puis réessayez.")), 20_000);
+      timer = setTimeout(
+        () =>
+          reject(
+            Error(
+              "L’iPhone ne répond pas encore. Vérifiez la connexion puis réessayez.",
+            ),
+          ),
+        20_000,
+      );
     }),
-  ]).finally(() => { if (timer) clearTimeout(timer); });
+  ]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
   const result = await pushRequest(
     "register",
     {
@@ -94,15 +106,20 @@ export async function enablePushDevice(
   await AsyncStorage.setItem(ownerKey, owner);
   return result;
 }
-export async function unregisterPushDevice() {
+export async function clearLocalPushDevice() {
+  await AsyncStorage.removeItem(ownerKey);
+  if (Platform.OS === "ios") {
+    const N = await import("expo-notifications");
+    await N.dismissAllNotificationsAsync();
+    await N.setBadgeCountAsync(0);
+  }
+}
+export async function unregisterPushDevice(clearLocal = true) {
   if (Platform.OS !== "ios") return;
   const owner = await AsyncStorage.getItem(ownerKey);
   if (!owner) return;
   await pushRequest("remove", {}, owner);
-  await AsyncStorage.removeItem(ownerKey);
-  const N = await import("expo-notifications");
-  await N.dismissAllNotificationsAsync();
-  await N.setBadgeCountAsync(0);
+  if (clearLocal) await clearLocalPushDevice();
 }
 export async function refreshPushDevice(owner: string) {
   if (Platform.OS === "ios" && !!(await AsyncStorage.getItem(ownerKey)))

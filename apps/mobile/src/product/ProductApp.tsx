@@ -1,3 +1,4 @@
+import { SectorSearch } from "./SectorPicker";
 import { usePushNotifications } from "./usePushNotifications";
 import {
   rootScreens,
@@ -48,7 +49,6 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Crypto from "expo-crypto";
 import reference from "../reference/prototype.json";
-import communes from "../reference/communes-idf.json";
 import { errorMessage, isEmailRateLimit } from "../lib/errors";
 import { tokens as t } from "./tokens";
 import {
@@ -108,26 +108,8 @@ import {
   Setting,
   TextButton,
   Wordmark,
+  SaveFeedbackContext,
 } from "./ui";
-const departments: Record<string, string> = {
-  "75": "Paris",
-  "77": "Seine-et-Marne",
-  "78": "Yvelines",
-  "91": "Essonne",
-  "92": "Hauts-de-Seine",
-  "93": "Seine-Saint-Denis",
-  "94": "Val-de-Marne",
-  "95": "Val-d’Oise",
-};
-const sectors = [
-  ...Array.from({ length: 20 }, (_, i) => ({
-    nom: `Paris ${i + 1}${i ? "e" : "er"}`,
-    code: String(75101 + i),
-    codeDepartement: "75",
-    codesPostaux: [String(75001 + i)],
-  })),
-  ...communes,
-];
 const navItems = [
   ["explore", "search", "Explorer"],
   ["favorites", "heart", "Favoris"],
@@ -274,6 +256,14 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const scroll = useRef<ScrollView>(null);
   const [modal, setModal] = useState("");
   const [notice, setNotice] = useState("");
+  useEffect(() => {
+    if (market.leaving) {
+      setModal("");
+      setNotice("");
+      history.current = [];
+      setScreen("welcome");
+    }
+  }, [market.leaving]);
   const [busy, setBusy] = useState(false);
   const actionInFlight = useRef(false);
   const [emailFeedback, setEmailFeedback] = useState("");
@@ -485,11 +475,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     }
   }, [market.error]);
   useEffect(() => {
-    if (notice) {
-      const timer = setTimeout(() => setNotice(""), 5500);
+    if (notice && (!live || market.pending === 0)) {
+      const timer = setTimeout(() => setNotice(""), 4000);
       return () => clearTimeout(timer);
     }
-  }, [notice]);
+  }, [notice, market.pending, live]);
   function restoreNotificationScroll() {
     const target = notificationRestore.current;
     if (target === null) return;
@@ -1314,10 +1304,14 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     payment: "Votre paiement",
     bookingDetail: "Votre séance",
     config:
-      config === "groups"
-        ? "Mes cours en groupe"
-        : (reference.coachSections.find((x) => x[0] === config)?.[2] ??
-          "Réglages"),
+      config === "dates"
+        ? "Modifier une date"
+        : config === "blocks"
+          ? "Mon indisponibilité"
+          : config === "groups"
+            ? "Mes cours en groupe"
+            : (reference.coachSections.find((x) => x[0] === config)?.[2] ??
+              "Réglages"),
     notifications: "Vos notifications",
     messages: "Mes messages",
     chat: "Votre conversation",
@@ -1764,8 +1758,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
               }
             />
             <P small muted>
-              Tous les secteurs franciliens sont sélectionnables. Les coachs
-              fictifs sont à Paris ; ailleurs, essayez la visio.
+              {live
+                ? "Vos préférences pourront évoluer à tout moment."
+                : "Les coachs de démonstration sont à Paris ; ailleurs, essayez la visio."}
             </P>
           </>
         ) : (
@@ -3683,6 +3678,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   + Indisponibilité
                 </TextButton>
               </Row>
+              <TextButton onPress={() => go("config-native", "dates")}>
+                Modifier une seule date
+              </TextButton>
               {coachSelf && !configFor(store, coachSelf.id).published && (
                 <Note style={{ marginBottom: 20 }}>
                   <P bold>Préparons votre première réservation.</P>
@@ -4309,18 +4307,6 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         )}
       </Section>
     );
-  const sectorResults = sectors.filter(
-    (c) =>
-      (!department || c.codeDepartement === department) &&
-      fold(sectorQuery)
-        .split(" ")
-        .filter(Boolean)
-        .every((word) =>
-          fold(
-            `${c.nom} ${c.codesPostaux.join(" ")} ${departments[c.codeDepartement]}`,
-          ).includes(word),
-        ),
-  );
   const modalTitles: Record<string, string> = {
     "open-group": "Ouvrir un cours en groupe",
     location: "Votre secteur en Île-de-France",
@@ -4477,60 +4463,13 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     );
   if (modal === "location")
     modalBody = (
-      <>
-        <P small muted style={{ marginBottom: 14 }}>
-          {pref.city} · secteur actuel
-          {live ? " · distances à vol d’oiseau depuis le secteur" : ""}
-        </P>
-        <Field
-          label="Commune ou code postal"
-          value={sectorQuery}
-          onChange={(q) => {
-            setSectorQuery(q);
-            setSectorLimit(15);
-          }}
-          placeholder="Versailles, Saint-Denis, 94000…"
-        />
-        <Select
-          label="Département"
-          value={department}
-          items={[
-            ["", "Toute l’Île-de-France"],
-            ...Object.entries(departments).map(
-              ([id, n]) => [id, `${id} · ${n}`] as [string, string],
-            ),
-          ]}
-          onChange={(d) => {
-            setDepartment(d);
-            setSectorLimit(15);
-          }}
-        />
-        <P small muted>
-          {sectorResults.length} secteurs ·{" "}
-          {Math.min(sectorLimit, sectorResults.length)} affichés
-        </P>
-        {sectorResults.slice(0, sectorLimit).map((c) => (
-          <Setting
-            key={c.code}
-            title={c.nom}
-            description={`${departments[c.codeDepartement]} · ${c.codesPostaux[0]}`}
-            onPress={() => {
-              preference({
-                city:
-                  c.codeDepartement === "75"
-                    ? c.nom
-                    : `${c.nom} · ${c.codeDepartement}`,
-              });
-              setModal("");
-            }}
-          />
-        ))}
-        {sectorLimit < sectorResults.length && (
-          <TextButton onPress={() => setSectorLimit(sectorLimit + 30)}>
-            Afficher plus de secteurs
-          </TextButton>
-        )}
-      </>
+      <SectorSearch
+        value={pref.city}
+        onChange={(city) => {
+          preference({ city });
+          setModal("");
+        }}
+      />
     );
   if (modal === "filters")
     modalBody = (
@@ -5034,6 +4973,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     focus,
     go,
     message: setNotice,
+    refresh: market.refresh,
     selectBooking: setSelectedBooking,
     openCoach: (id: string) => {
       const c = coaches.find((c) => c.id === id);
@@ -5311,7 +5251,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     );
   if (
     screen === "config" &&
-    ["schedule", "rules", "preparation", "notifications"].includes(config)
+    ["schedule", "rules", "preparation"].includes(config)
   )
     sticky = (
       <View style={styles.sticky}>
@@ -5337,183 +5277,182 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       </Section>
     );
   const body = (
-    <View
-      style={[
-        styles.device,
-        desktop
-          ? {
-              width: pageWidth,
-              height: Math.min(900, height - 60),
-              minHeight: height > 690 ? 610 : 0,
-              borderRadius: 30,
-            }
-          : { flex: 1, width: "100%" },
-      ]}
+    <SaveFeedbackContext.Provider
+      value={{ pending: live ? market.pending : 0, ...market.saveResult, live }}
     >
-      {live && market.pending > 0 && (
-        <View
-          accessibilityLiveRegion="polite"
-          style={{ padding: 8, backgroundColor: t.fog }}
-        >
-          <P small>Enregistrement sur Partant…</P>
-        </View>
-      )}
-      {desktop && (
-        <Row
-          between
-          style={{
-            height: 44,
-            backgroundColor: t.ink,
-            paddingHorizontal: 24,
-            paddingTop: 8,
-          }}
-        >
-          <P
-            small
-            style={{ color: "#fff", fontFamily: t.medium, fontSize: 12 }}
-          >
-            9:41
-          </P>
-          <P small style={{ color: "#fff", fontSize: 12 }}>
-            ▮▮▮ ◒ ▰
-          </P>
-        </Row>
-      )}
-      {pageTitle && (
-        <Pagebar
-          title={pageTitle}
-          onBack={back}
-          disabled={busy || (live && market.pending > 0)}
-          onHome={leaveToMain}
-          homeLabel={
-            store.account?.role === "coach"
-              ? "Revenir à mon agenda"
-              : "Revenir à l’exploration"
-          }
-          right={
-            screen === "profile" && coach ? (
-              <IconButton
-                name="heart"
-                filled={store.favorites.includes(coach.id)}
-                label="Ajouter ou retirer des favoris"
-                onPress={() => favorite(coach.id)}
-              />
-            ) : undefined
-          }
-        />
-      )}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      <View
+        pointerEvents={market.leaving ? "none" : "auto"}
+        style={[
+          styles.device,
+          desktop
+            ? {
+                width: pageWidth,
+                height: Math.min(900, height - 60),
+                minHeight: height > 690 ? 610 : 0,
+                borderRadius: 30,
+              }
+            : { flex: 1, width: "100%" },
+        ]}
       >
-        <ScrollView
-          ref={scroll}
-          testID="product-scroll"
-          scrollEventThrottle={16}
-          onScroll={(event) => {
-            if (
-              screen === "notifications" &&
-              notificationRestore.current === null
-            )
-              notificationOffset.current = Math.max(
-                0,
-                event.nativeEvent.contentOffset.y,
-              );
-          }}
-          onContentSizeChange={() => {
-            if (screen === "notifications") restoreNotificationScroll();
-          }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ flexGrow: 1 }}
-        >
-          {market.ready ? (
-            content
-          ) : (
-            <ActivityIndicator style={{ margin: 50 }} />
-          )}
-        </ScrollView>
-        {sticky}
-      </KeyboardAvoidingView>
-      {(bottom || coachBottom) && (
-        <View style={styles.bottomNav}>
-          {(coachBottom ? coachTabs : navItems).map(([id, icon, title]) => (
-            <Pressable
-              accessibilityRole="tab"
-              accessibilityState={{
-                selected: coachBottom
-                  ? screen === "coach" && coachTab === id
-                  : screen === id,
-              }}
-              key={id}
-              onPress={() => {
-                if (busy || (live && market.pending > 0)) return;
-                go(coachBottom ? "coach" : id);
-                if (coachBottom) setCoachTab(id);
-              }}
-              style={styles.navItem}
+        {desktop && (
+          <Row
+            between
+            style={{
+              height: 44,
+              backgroundColor: t.ink,
+              paddingHorizontal: 24,
+              paddingTop: 8,
+            }}
+          >
+            <P
+              small
+              style={{ color: "#fff", fontFamily: t.medium, fontSize: 12 }}
             >
-              <Icon
-                name={icon}
-                color={
-                  (
-                    coachBottom
-                      ? screen === "coach" && coachTab === id
-                      : screen === id
-                  )
-                    ? t.ink
-                    : t.muted
-                }
-              />
-              <P
-                style={{
-                  fontSize: 12,
-                  lineHeight: 17,
-                  color: (
-                    coachBottom
-                      ? screen === "coach" && coachTab === id
-                      : screen === id
-                  )
-                    ? t.ink
-                    : t.muted,
-                  fontFamily: (
-                    coachBottom
-                      ? screen === "coach" && coachTab === id
-                      : screen === id
-                  )
-                    ? t.bold
-                    : t.font,
-                }}
-              >
-                {title}
-              </P>
-            </Pressable>
-          ))}
-        </View>
-      )}
-      {store.staff && screen === "account" && (
-        <TextButton onPress={() => go("team")}>Espace équipe</TextButton>
-      )}
-      {!!notice && (!live || market.pending === 0) && (
-        <View pointerEvents="none" style={styles.toast}>
-          <P style={{ fontSize: 14, color: "#fff" }}>{notice}</P>
-        </View>
-      )}
-      {busy && (
-        <View
-          style={{
-            position: "absolute",
-            top: 8,
-            right: 8,
-            padding: 8,
-            backgroundColor: "#fff",
-            borderRadius: 20,
-          }}
+              9:41
+            </P>
+            <P small style={{ color: "#fff", fontSize: 12 }}>
+              ▮▮▮ ◒ ▰
+            </P>
+          </Row>
+        )}
+        {pageTitle && (
+          <Pagebar
+            title={pageTitle}
+            onBack={back}
+            disabled={busy || (live && market.pending > 0)}
+            onHome={leaveToMain}
+            homeLabel={
+              store.account?.role === "coach"
+                ? "Revenir à mon agenda"
+                : "Revenir à l’exploration"
+            }
+            right={
+              screen === "profile" && coach ? (
+                <IconButton
+                  name="heart"
+                  filled={store.favorites.includes(coach.id)}
+                  label="Ajouter ou retirer des favoris"
+                  onPress={() => favorite(coach.id)}
+                />
+              ) : undefined
+            }
+          />
+        )}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          <ActivityIndicator color={t.ink} />
-        </View>
-      )}
-    </View>
+          <ScrollView
+            ref={scroll}
+            testID="product-scroll"
+            scrollEventThrottle={16}
+            onScroll={(event) => {
+              if (
+                screen === "notifications" &&
+                notificationRestore.current === null
+              )
+                notificationOffset.current = Math.max(
+                  0,
+                  event.nativeEvent.contentOffset.y,
+                );
+            }}
+            onContentSizeChange={() => {
+              if (screen === "notifications") restoreNotificationScroll();
+            }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ flexGrow: 1 }}
+          >
+            {market.ready ? (
+              content
+            ) : (
+              <ActivityIndicator style={{ margin: 50 }} />
+            )}
+          </ScrollView>
+          {sticky}
+        </KeyboardAvoidingView>
+        {(bottom || coachBottom) && (
+          <View style={styles.bottomNav}>
+            {(coachBottom ? coachTabs : navItems).map(([id, icon, title]) => (
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{
+                  selected: coachBottom
+                    ? screen === "coach" && coachTab === id
+                    : screen === id,
+                }}
+                key={id}
+                onPress={() => {
+                  if (busy || (live && market.pending > 0)) return;
+                  go(coachBottom ? "coach" : id);
+                  if (coachBottom) setCoachTab(id);
+                }}
+                style={styles.navItem}
+              >
+                <Icon
+                  name={icon}
+                  color={
+                    (
+                      coachBottom
+                        ? screen === "coach" && coachTab === id
+                        : screen === id
+                    )
+                      ? t.ink
+                      : t.muted
+                  }
+                />
+                <P
+                  style={{
+                    fontSize: 12,
+                    lineHeight: 17,
+                    color: (
+                      coachBottom
+                        ? screen === "coach" && coachTab === id
+                        : screen === id
+                    )
+                      ? t.ink
+                      : t.muted,
+                    fontFamily: (
+                      coachBottom
+                        ? screen === "coach" && coachTab === id
+                        : screen === id
+                    )
+                      ? t.bold
+                      : t.font,
+                  }}
+                >
+                  {title}
+                </P>
+              </Pressable>
+            ))}
+          </View>
+        )}
+        {store.staff &&
+          (screen === "account" ||
+            (screen === "coach" && coachTab === "settings")) && (
+            <TextButton onPress={() => go("team")}>Espace équipe</TextButton>
+          )}
+        {!!notice && (!live || market.pending === 0) && (
+          <View pointerEvents="none" style={styles.toast}>
+            <P style={{ fontSize: 14, color: "#fff" }}>{notice}</P>
+          </View>
+        )}
+        {(busy || market.leaving) && (
+          <View
+            style={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              padding: 8,
+              backgroundColor: "#fff",
+              borderRadius: 20,
+            }}
+          >
+            <ActivityIndicator color={t.ink} />
+          </View>
+        )}
+      </View>
+    </SaveFeedbackContext.Provider>
   );
   return (
     <SafeAreaView

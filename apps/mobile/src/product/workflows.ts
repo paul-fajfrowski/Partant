@@ -947,7 +947,7 @@ function _reviewDossier(
   reason: string,
 ) {
   if ((!s.testMode && !s.staff) || !reason.trim())
-    throw Error("Ajoutez une décision motivée en mode Test.");
+    throw Error("L’équipe doit indiquer le motif de sa décision.");
   const cfg = configFor(s, id);
   if (cfg.dossier.status !== "pending")
     throw Error("Ce dossier n’attend pas de décision.");

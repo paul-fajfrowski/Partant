@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useContext, useEffect, useRef } from "react";
 import {
   Image,
+  ActivityIndicator,
   Modal,
   Platform,
   Pressable,
@@ -173,6 +174,12 @@ export function Section({
     <View style={[{ padding: width <= 740 ? 22 : 24 }, style]}>{children}</View>
   );
 }
+export const SaveFeedbackContext = React.createContext({
+  pending: 0,
+  success: 0,
+  failure: 0,
+  live: false,
+});
 export function Button({
   children,
   onPress,
@@ -192,25 +199,72 @@ export function Button({
   style?: ViewStyle;
   testID?: string;
 }) {
+  const saving = useContext(SaveFeedbackContext);
+  const snapshot = useRef<{ success: number; failure: number } | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+  const [requested, setRequested] = useState(false);
+  const saveButton =
+    typeof children === "string" &&
+    /^(Enregistrer|Soumettre|Activer un compte)/.test(children.trim());
+  useEffect(() => {
+    if (!snapshot.current) return;
+    if (saving.failure !== snapshot.current.failure) {
+      snapshot.current = null;
+      setRequested(false);
+      setConfirmed(false);
+    } else if (
+      saving.success > snapshot.current.success &&
+      saving.pending === 0
+    ) {
+      snapshot.current = null;
+      setRequested(false);
+      setConfirmed(true);
+    }
+  }, [saving.success, saving.failure, saving.pending]);
+  useEffect(() => {
+    if (!confirmed) return;
+    const timer = setTimeout(() => setConfirmed(false), 2200);
+    return () => clearTimeout(timer);
+  }, [confirmed]);
+  const waiting = saveButton && requested && saving.pending > 0;
+  const unavailable = disabled || (saveButton && saving.pending > 0);
   return (
     <Pressable
       testID={testID}
       accessibilityRole="button"
-      disabled={disabled}
-      accessibilityState={{ disabled }}
-      onPress={onPress}
+      disabled={unavailable}
+      accessibilityState={{ disabled: unavailable, busy: waiting }}
+      onPress={() => {
+        if (saveButton && saving.live) {
+          snapshot.current = {
+            success: saving.success,
+            failure: saving.failure,
+          };
+          setRequested(true);
+          setConfirmed(false);
+        }
+        onPress();
+      }}
       style={({ pressed }) => [
         s.pill,
         light && { backgroundColor: t.fog },
         white && { backgroundColor: "#fff" },
         style,
-        (disabled || pressed) && { opacity: disabled ? 0.35 : 0.8 },
+        (unavailable || pressed) && {
+          opacity: unavailable && !waiting ? 0.45 : 0.85,
+        },
       ]}
     >
       <Text style={[s.buttonText, (light || white) && { color: t.ink }]}>
-        {children}
+        {waiting ? "Enregistrement…" : confirmed ? "Enregistré" : children}
       </Text>
-      {icon && (
+      {waiting && (
+        <ActivityIndicator
+          size="small"
+          color={light || white ? t.ink : "#fff"}
+        />
+      )}
+      {icon && !waiting && (
         <Icon name={icon} size={17} color={light || white ? t.ink : "#fff"} />
       )}
     </Pressable>

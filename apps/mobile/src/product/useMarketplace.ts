@@ -1,4 +1,4 @@
-import { unregisterPushDevice } from "./pushDevice";
+import { unregisterPushDevice, clearLocalPushDevice } from "./pushDevice";
 import * as Messaging from "./messaging";
 import { useEffect, useRef, useState, Dispatch, SetStateAction } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -64,7 +64,8 @@ export function useMarketplace(live: boolean) {
     active = useRef(true);
   const queue = useRef<Promise<void>>(Promise.resolve()),
     jobs = useRef(0),
-    epoch = useRef(0);
+    epoch = useRef(0),
+    queueGeneration = useRef(0);
   const assign = (s: Store) => {
     const clean = { ...s };
     delete (clean as any)[commandLog];
@@ -99,9 +100,13 @@ export function useMarketplace(live: boolean) {
       unchanged?: boolean;
     };
   };
+  const signingOut = useRef(false);
+  const [leaving, setLeaving] = useState(false);
+  const [saveResult, setSaveResult] = useState({ success: 0, failure: 0 });
   const refreshing = useRef(false);
   async function refresh() {
-    if (!live || jobs.current || refreshing.current) return;
+    if (!live || signingOut.current || jobs.current || refreshing.current)
+      return;
     refreshing.current = true;
     try {
       const token = epoch.current;
@@ -162,6 +167,7 @@ export function useMarketplace(live: boolean) {
   async function messagingCommand(command: Command) {
     const account = current.current.account?.id;
     const token = epoch.current;
+    const generation = queueGeneration.current;
     if (!account) throw Error("Reconnectez-vous pour envoyer un message.");
     if (!live) {
       const next =
@@ -217,6 +223,7 @@ export function useMarketplace(live: boolean) {
         }
       })
       .finally(() => {
+        if (generation !== queueGeneration.current) return;
         jobs.current = Math.max(0, jobs.current - 1);
         if (active.current) setPending(jobs.current);
       });
@@ -228,6 +235,7 @@ export function useMarketplace(live: boolean) {
   const readConversation = (booking: string, seen: Messaging.ReadReceipt[]) =>
     messagingCommand({ name: "readConversation", args: [booking, seen] });
   const setStore: Dispatch<SetStateAction<Store>> = (updateValue) => {
+    if (signingOut.current) return;
     const before = current.current;
     const after =
       typeof updateValue === "function" ? updateValue(before) : updateValue;
@@ -254,34 +262,49 @@ export function useMarketplace(live: boolean) {
       return;
     }
     if (!commands.length) return;
+    const isSave = commands.some(
+      (c) => !["drafts", "readNotice", "readConversation"].includes(c.name),
+    );
     const token = epoch.current;
+    const generation = queueGeneration.current;
     assign(after);
     jobs.current++;
     setPending(jobs.current);
     queue.current = queue.current
       .then(async () => {
         if (token !== epoch.current) {
+          if (generation !== queueGeneration.current) return;
           jobs.current = Math.max(0, jobs.current - 1);
           setPending(jobs.current);
           return;
         }
         try {
           const saved = await execute(commands);
+          if (token !== epoch.current) return;
           if (jobs.current === 1) assign(saved);
+          if (isSave) setSaveResult((r) => ({ ...r, success: r.success + 1 }));
         } catch (e) {
-          epoch.current++;
+          if (token !== epoch.current) return;
+          if (isSave) setSaveResult((r) => ({ ...r, failure: r.failure + 1 }));
+          const recovery = ++epoch.current;
           setError(
             `${(e as Error).message} Actualisez pour vérifier l’état enregistré avant de réessayer.`,
           );
           const data = await invoke({});
+          if (recovery !== epoch.current || signingOut.current) return;
           version.current = data.version;
           assign(data.store);
         } finally {
-          jobs.current = Math.max(0, jobs.current - 1);
-          setPending(jobs.current);
+          if (generation === queueGeneration.current) {
+            jobs.current = Math.max(0, jobs.current - 1);
+            setPending(jobs.current);
+          }
         }
       })
-      .catch((e) => setError((e as Error).message));
+      .catch((e) => {
+        if (!signingOut.current && token === epoch.current)
+          setError((e as Error).message);
+      });
   };
   useEffect(() => {
     active.current = true;
@@ -310,12 +333,12 @@ export function useMarketplace(live: boolean) {
     if (!live) return;
     supabase.auth.getSession().then(({ data, error }) => {
       if (error) setError(error.message);
-      setSession(data.session);
+      if (!signingOut.current) setSession(data.session);
       setReady(true);
     });
-    const { data } = supabase.auth.onAuthStateChange((_event, s) =>
-      setSession(s),
-    );
+    const { data } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (!signingOut.current || !s) setSession(s);
+    });
     if (Platform.OS === "web")
       completeAuth(window.location.href).catch((e) => setError(e.message));
     else
@@ -468,18 +491,54 @@ export function useMarketplace(live: boolean) {
     );
   }
   async function signOut() {
-    await queue.current;
+    if (signingOut.current) return;
+    signingOut.current = true;
+    setLeaving(true);
     epoch.current++;
-    if (live) {
-      await unregisterPushDevice();
-      await AsyncStorage.multiRemove([
-        "partant-auth-intent",
-        "partant-auth-journey-v1",
-      ]);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      assign(connectedInitial());
-    } else assign(switchAccount(current.current, null));
+    queueGeneration.current++;
+    queue.current = Promise.resolve();
+    jobs.current = 0;
+    setPending(0);
+    refreshing.current = false;
+    const owner = current.current.account?.id;
+    // Exit the private UI immediately; never wait for queued edits or APNs.
+    assign(live ? connectedInitial() : switchAccount(current.current, null));
+    setSession(null);
+    identity.current = undefined;
+    version.current = undefined;
+    setLoadedIdentity(null);
+    setError("");
+    try {
+      if (live) {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        try {
+          await Promise.race([
+            unregisterPushDevice(false).catch(() => {}),
+            new Promise<void>((resolve) => {
+              timer = setTimeout(resolve, 800);
+            }),
+          ]);
+        } finally {
+          if (timer) clearTimeout(timer);
+        }
+        await clearLocalPushDevice().catch(() => {});
+        await AsyncStorage.multiRemove([
+          "partant-auth-intent",
+          "partant-auth-journey-v1",
+          ...(owner ? [`partant-messages-v1:connected:${owner}`] : []),
+        ]);
+        // Local scope revokes this session without disconnecting other devices.
+        // The SDK clears persisted credentials even when revocation is offline.
+        const { error } = await supabase.auth.signOut({ scope: "local" });
+        if (error)
+          setError(
+            "Vous êtes déconnecté de cet appareil. La révocation serveur n’a pas pu être confirmée hors connexion.",
+          );
+      }
+    } finally {
+      signingOut.current = false;
+      setLeaving(false);
+    }
   }
   const coaches = allCoaches(store).map((c) => {
     const reviews =
@@ -526,6 +585,8 @@ export function useMarketplace(live: boolean) {
     signOut,
     session,
     pending,
+    leaving,
+    saveResult,
     remoteSlots: [] as any[],
     counts: {} as Record<string, number>,
   };

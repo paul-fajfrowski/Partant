@@ -578,6 +578,8 @@ function applyCommand(source, actor, cmd) {
         case "reviewDossier":
             if (!actor.staff)
                 throw Error("Accès équipe requis.");
+            if (a[0] === actor.id)
+                throw Error("Un autre membre de l’équipe doit vérifier votre dossier.");
             n = W.reviewDossier({ ...s, testMode: true }, a[0], a[1], string(a[2], 1000));
             break;
         case "resolveTicket":
@@ -3223,7 +3225,7 @@ function _resolveTicket(s, id, response, decision) {
 }
 function _reviewDossier(s, id, status, reason) {
     if ((!s.testMode && !s.staff) || !reason.trim())
-        throw Error("Ajoutez une décision motivée en mode Test.");
+        throw Error("L’équipe doit indiquer le motif de sa décision.");
     const cfg = (0, model_1.configFor)(s, id);
     if (cfg.dossier.status !== "pending")
         throw Error("Ce dossier n’attend pas de décision.");

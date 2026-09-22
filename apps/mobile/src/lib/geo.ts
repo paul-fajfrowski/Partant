@@ -1,6 +1,7 @@
 export type Place = {
   label: string;
   city: string;
+  postcode?: string;
   latitude: number;
   longitude: number;
 };
@@ -21,6 +22,7 @@ export async function searchAddresses(
     .map((f: any) => ({
       label: f.properties.label,
       city: f.properties.city,
+      postcode: f.properties.postcode,
       longitude: f.geometry.coordinates[0],
       latitude: f.geometry.coordinates[1],
     }));

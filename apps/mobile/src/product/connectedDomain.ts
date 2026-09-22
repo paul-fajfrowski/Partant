@@ -631,6 +631,7 @@ export function applyCommand(
       break;
     case "reviewDossier":
       if (!actor.staff) throw Error("Accès équipe requis.");
+      if (a[0] === actor.id) throw Error("Un autre membre de l’équipe doit vérifier votre dossier.");
       n = W.reviewDossier(
         { ...s, testMode: true },
         a[0],

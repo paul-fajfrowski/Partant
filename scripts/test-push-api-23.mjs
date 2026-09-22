@@ -95,7 +95,7 @@ try {
     { action: "preferences", device, categories: { messages: false } },
     a,
   );
-  ok(result.data.categories.messages === false, "preference persisted");
+  ok(result.status === 200 && result.data.categories?.messages === false, `preference persisted (HTTP ${result.status}: ${result.data.error ?? "ok"})`);
   result = await api(
     "push-devices",
     { action: "preferences", device, categories: { unknown: true } },

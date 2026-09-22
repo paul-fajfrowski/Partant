@@ -80,14 +80,16 @@ async function match(text) {
   await click("Disponibilités");
   await click("Enregistrer la semaine");
   ok(stored().settings["0"].weeklyConfigured, "Weekly schedule saved");
+  await click("Modifier une seule date");
   await toggle("Fermer cette journée");
-  await click("Ajouter une exception");
+  await click("Enregistrer cette date");
   ok(
     Object.values(stored().settings["0"].exceptions).some(
       (v) => v.length === 0,
     ),
     "Dated closure saved",
   );
+  await click("Retour");
   await click("Retour");
   await click("Préparer vos clients");
   input("À apporter", "Une serviette et une bouteille d’eau.");

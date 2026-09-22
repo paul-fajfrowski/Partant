@@ -1,3 +1,4 @@
+import { SectorPicker } from "./SectorPicker";
 import { PushSettings } from "./PushSettings";
 import { BookingNotificationHistory } from "./NotificationsScreen";
 import { placeTypes } from "./locations";
@@ -265,16 +266,10 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
           field("Adresse e-mail fictive", "email", me.email)
         )}
         {field("Téléphone facultatif", "phone", info.phone)}
-        <Toggle
-          label="Rappels avant mes séances"
-          value={val("reminders", String(info.reminders)) === "true"}
-          onChange={(v) => setForm({ ...form, reminders: String(v) })}
-        />
         {me.role === "client" && (
-          <Toggle
-            label="Alertes de disponibilité"
-            value={val("alerts", String(info.alerts)) === "true"}
-            onChange={(v) => setForm({ ...form, alerts: String(v) })}
+          <SectorPicker
+            value={val("sector", s.preferences.city)}
+            onChange={(sector) => setForm({ ...form, sector })}
           />
         )}
         <Button
@@ -296,6 +291,10 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
               setStore({
                 ...s,
                 account,
+                preferences: {
+                  ...s.preferences,
+                  city: val("sector", s.preferences.city),
+                },
                 identities: [
                   account,
                   ...(s.identities ?? []).filter((a) => a.id !== me.id),
@@ -304,9 +303,8 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
                   ...s.accountInfo,
                   [me.id]: {
                     phone: val("phone", info.phone),
-                    reminders:
-                      val("reminders", String(info.reminders)) === "true",
-                    alerts: val("alerts", String(info.alerts)) === "true",
+                    reminders: info.reminders,
+                    alerts: info.alerts,
                   },
                 },
               });
@@ -316,7 +314,20 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
         >
           Enregistrer
         </Button>
-        <PushSettings owner={me.id} live={!!s.connected} />
+        {me.role === "coach" ? (
+          <Setting
+            title="Préférences de notification"
+            onPress={() => go("config-native", "notifications")}
+          />
+        ) : (
+          <PushSettings
+            owner={me.id}
+            live={!!s.connected}
+            store={s}
+            setStore={setStore}
+            onSaved={p.refresh}
+          />
+        )}
         <Setting
           title={
             s.connected
@@ -790,11 +801,7 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
     );
   if (screen === "team") {
     if (!s.testMode && !s.staff)
-      return (
-        <Note>
-          Activez le mode Test pour accéder à cet espace de démonstration.
-        </Note>
-      );
+      return <Note>Cet espace est réservé à l’équipe Partant habilitée.</Note>;
     return (
       <>
         <Eyebrow>LES COULISSES DE LA RENCONTRE</Eyebrow>
@@ -804,7 +811,10 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
             ? "Espace réservé à l’équipe habilitée. Chaque décision est enregistrée et notifiée au coach."
             : "Équipe Partant · simulation. Aucun contrôle documentaire réel."}
         </Note>
-        <H2 style={{ marginVertical: 20 }}>Dossiers coach</H2>
+        <H2 style={{ marginVertical: 20 }}>Dossiers à vérifier</H2>
+        {!allCoaches(s).some(
+          (c) => configFor(s, c.id).dossier.status === "pending",
+        ) && <P muted>Aucun dossier en attente.</P>}
         {allCoaches(s)
           .filter((c) => configFor(s, c.id).dossier.status === "pending")
           .map((c) => (
@@ -816,6 +826,12 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
               />
               {selection === c.id && (
                 <>
+                  {s.connected && c.id === me?.id && (
+                    <Note>
+                      Votre propre dossier doit être vérifié par un autre membre
+                      de l’équipe.
+                    </Note>
+                  )}
                   <Note>
                     {s.connected
                       ? configFor(s, c.id).dossier.documents.map((path, i) => (
@@ -844,6 +860,7 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
                   )}
                   {field("Motif de la décision", "docReason", "", true)}
                   <Button
+                    disabled={!!s.connected && c.id === me?.id}
                     onPress={() =>
                       update((x) =>
                         W.reviewDossier(

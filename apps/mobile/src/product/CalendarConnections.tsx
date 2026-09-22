@@ -56,11 +56,6 @@ export function CalendarConnections({ live }: { live: boolean }) {
   return (
     <View style={{ gap: 16, marginBottom: 28 }}>
       <H2>Google Calendar</H2>
-      <P muted>
-        Vos événements occupés masquent les créneaux disponibles. Vos séances
-        Partant sont ajoutées dans l’agenda de votre choix, sans les noms des
-        participants.
-      </P>
       {!live ? (
         <Note>
           Disponible avec un compte coach connecté. Les événements de
@@ -194,11 +189,8 @@ export function CalendarConnections({ live }: { live: boolean }) {
         </>
       )}
       <H2>Apple Calendar</H2>
-      <P muted>
-        Depuis le détail d’une séance, « Ajouter au calendrier » exporte le
-        rendez-vous vers Apple Calendar. Il ne s’agit pas d’une synchronisation
-        de vos disponibilités iCloud.
-      </P>
+      <P muted>Dans le détail d’une séance, touchez « Ajouter au calendrier », puis confirmez l’ajout dans votre calendrier Apple.</P>
+      <P small muted>L’ajout est à votre initiative ; les changements ultérieurs ne sont pas synchronisés avec iCloud.</P>
       <H2>Outlook</H2>
       <P muted>Branchement prévu dans une prochaine étape.</P>
     </View>

@@ -1,19 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { Platform, Linking, Switch, View } from "react-native";
-import { Button, H2, P, Row, Rule, TextButton } from "./ui";
+import { Platform, Linking, Switch, View, AppState } from "react-native";
+import { Button, H2, P, Row, TextButton, SaveFeedbackContext } from "./ui";
 import {
   defaultPushCategories,
   enablePushDevice,
   pushRequest,
   unregisterPushDevice,
   PushStatus,
+  PushCategories,
 } from "./pushDevice";
+import { Store, configFor, coachAccountId } from "./model";
+import { saveSettings, infoFor } from "./workflows";
 export function PushSettings({
   owner,
   live,
+  store,
+  setStore,
+  onSaved,
 }: {
   owner: string;
   live: boolean;
+  store?: Store;
+  setStore?: React.Dispatch<React.SetStateAction<Store>>;
+  onSaved?: () => Promise<unknown>;
 }) {
   const [status, setStatus] = useState<PushStatus>({
     categories: defaultPushCategories,
@@ -22,22 +31,36 @@ export function PushSettings({
   });
   const [busy, setBusy] = useState(false),
     [feedback, setFeedback] = useState(""),
-    [loaded, setLoaded] = useState(false);
+    [loaded, setLoaded] = useState(!live);
+  const [osAllowed, setOsAllowed] = useState(true);
+  const coach = store?.account?.role === "coach";
+  const writeState = React.useContext(SaveFeedbackContext);
   useEffect(() => {
     let active = true;
-    if (live)
-      pushRequest("status", {}, owner)
-        .then((value) => {
-          if (active) {
-            setStatus(value);
-            setLoaded(true);
-          }
-        })
-        .catch((e) => {
-          if (active) setFeedback(e.message);
-        });
+    async function refresh() {
+      if (!live) return;
+      try {
+        const value = await pushRequest("status", {}, owner);
+        if (active) {
+          setStatus(value);
+          setLoaded(true);
+        }
+        if (Platform.OS === "ios") {
+          const N = await import("expo-notifications");
+          const p = await N.getPermissionsAsync();
+          if (active) setOsAllowed(p.granted);
+        }
+      } catch (e) {
+        if (active) setFeedback((e as Error).message);
+      }
+    }
+    void refresh();
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") void refresh();
+    });
     return () => {
       active = false;
+      sub.remove();
     };
   }, [owner, live]);
   const run = async (fn: () => Promise<void>) => {
@@ -52,91 +75,188 @@ export function PushSettings({
       setBusy(false);
     }
   };
-  if (!live) return null;
+  let categories = status.categories;
+  if (!live && store) {
+    const cfg = configFor(store, coachAccountId(store)),
+      info = infoFor(store, owner);
+    categories = {
+      ...status.categories,
+      ...(coach ? cfg.notifications : {}),
+      reminder: coach ? cfg.notifications.reminder : info.reminders,
+      availability: info.alerts,
+    };
+  }
+  function toggle(key: keyof PushCategories, value: boolean) {
+    if (live)
+      void run(async () => {
+        setStatus(
+          await pushRequest(
+            "preferences",
+            { categories: { [key]: value } },
+            owner,
+          ),
+        );
+        await onSaved?.();
+      });
+    else if (store && setStore) {
+      if (coach && ["booking", "changes", "reminder"].includes(key)) {
+        const id = coachAccountId(store),
+          cfg = configFor(store, id);
+        setStore(
+          saveSettings(store, id, {
+            ...cfg,
+            notifications: { ...cfg.notifications, [key]: value },
+          }),
+        );
+      } else {
+        setStatus((s) => ({
+          ...s,
+          categories: { ...s.categories, [key]: value },
+        }));
+        if (key === "reminder" || key === "availability")
+          setStore({
+            ...store,
+            accountInfo: {
+              ...store.accountInfo,
+              [owner]: {
+                ...infoFor(store, owner),
+                [key === "reminder" ? "reminders" : "alerts"]: value,
+              },
+            },
+          });
+      }
+    }
+  }
+  const groups: { title: string; items: [keyof PushCategories, string][] }[] = [
+    {
+      title: "Vos séances",
+      items: [
+        [
+          "booking",
+          coach ? "Nouvelles réservations" : "Confirmations de réservation",
+        ],
+        ["changes", "Modifications et annulations"],
+        ["reminder", "Rappels de séance"],
+      ],
+    },
+    {
+      title: "Vos échanges",
+      items: [
+        ["messages", "Messages privés"],
+        ["activity", "Avis et suivi de vos demandes"],
+        ...(!coach
+          ? [
+              ["availability", "Alertes de disponibilité"] as [
+                keyof PushCategories,
+                string,
+              ],
+            ]
+          : []),
+      ],
+    },
+  ];
   return (
-    <View style={{ marginVertical: 24 }}>
-      <Rule />
-      <H2 style={{ marginVertical: 16 }}>Sur votre téléphone</H2>
+    <View style={{ marginVertical: 12 }}>
+      <H2 style={{ marginBottom: 12 }}>Sur votre téléphone</H2>
       <P muted>
-        {Platform.OS !== "ios"
-          ? "Activez les notifications depuis l’application iPhone. Vos préférences ci-dessous s’appliqueront à vos appareils."
-          : status.registered
-            ? "Cet iPhone reçoit vos notifications."
-            : "Recevez les informations utiles même lorsque Partant est fermée."}
+        {!live
+          ? "Aucun envoi externe en démonstration."
+          : Platform.OS !== "ios"
+            ? "Activez les notifications depuis l’application iPhone."
+            : status.registered && osAllowed
+              ? "Les notifications sont activées sur cet iPhone."
+              : "Recevez vos informations même lorsque Partant est fermée."}
       </P>
-      {loaded && !status.configured && (
-        <P muted style={{ marginTop: 12 }}>
+      {live && loaded && !status.configured && (
+        <P small muted>
           L’activation des notifications est en cours de préparation.
         </P>
       )}
-      {Platform.OS === "ios" && loaded && status.configured && (
-        <Button
-          light
-          disabled={busy}
-          style={{ marginVertical: 16 }}
-          onPress={() =>
-            run(async () => {
-              if (status.registered) {
-                await unregisterPushDevice();
-                setStatus({ ...status, registered: false });
-                setFeedback("Notifications désactivées sur cet iPhone.");
-              } else {
-                setStatus(await enablePushDevice(owner, true));
-                setFeedback("Notifications activées sur cet iPhone.");
-              }
-            })
-          }
-        >
-          {status.registered
-            ? "Désactiver sur cet iPhone"
-            : "Activer les notifications"}
-        </Button>
+      {live && Platform.OS === "ios" && loaded && status.configured && (
+        <>
+          <Button
+            light
+            disabled={busy}
+            style={{ marginTop: 16 }}
+            onPress={() =>
+              run(async () => {
+                if (status.registered) {
+                  await unregisterPushDevice();
+                  setStatus({ ...status, registered: false });
+                } else {
+                  setStatus(await enablePushDevice(owner, true));
+                  setOsAllowed(true);
+                }
+              })
+            }
+          >
+            {busy
+              ? "Mise à jour…"
+              : status.registered
+                ? "Désactiver sur cet iPhone"
+                : "Activer les notifications"}
+          </Button>
+          {!osAllowed && (
+            <TextButton onPress={() => Linking.openSettings()}>
+              Autoriser dans les réglages de l’iPhone
+            </TextButton>
+          )}
+        </>
       )}
-      {Platform.OS === "ios" && (
-        <TextButton onPress={() => Linking.openSettings()}>
-          Réglages de l’iPhone
-        </TextButton>
+      {!loaded && live && !feedback && (
+        <P small muted style={{ marginTop: 16 }}>
+          Chargement de vos préférences…
+        </P>
       )}
       {loaded &&
-        (
-          [
-            ["booking", "Réservations"],
-            ["changes", "Modifications et annulations"],
-            ["reminder", "Rappels de séance"],
-            ["messages", "Messages privés"],
-            ["activity", "Avis, assistance et activité"],
-          ] as const
-        ).map(([key, label]) => (
-          <Row
-            key={key}
-            style={{ justifyContent: "space-between", paddingVertical: 10 }}
-          >
-            <P style={{ flex: 1, paddingRight: 12 }}>{label}</P>
-            <Switch
-              accessibilityLabel={label}
-              disabled={busy}
-              value={status.categories[key]}
-              onValueChange={(value) =>
+        groups.map((group) => (
+          <View key={group.title} style={{ marginTop: 24 }}>
+            <H2 style={{ marginBottom: 8 }}>{group.title}</H2>
+            {group.items.map(([key, label]) => (
+              <Row
+                key={key}
+                style={{
+                  minHeight: 58,
+                  justifyContent: "space-between",
+                  gap: 12,
+                }}
+              >
+                <P style={{ flex: 1 }}>{label}</P>
+                <Switch
+                  accessibilityLabel={label}
+                  disabled={busy || writeState.pending > 0}
+                  value={!!categories[key]}
+                  onValueChange={(v) => toggle(key, v)}
+                  trackColor={{ false: "#dedede", true: "#141414" }}
+                  thumbColor="#fff"
+                />
+              </Row>
+            ))}
+          </View>
+        ))}
+      <P small muted style={{ marginTop: 20 }}>
+        {busy
+          ? "Mise à jour…"
+          : "Vos préférences sont enregistrées automatiquement. L’historique reste disponible dans Partant."}
+      </P>
+      {!!feedback && (
+        <View accessibilityLiveRegion="polite" style={{ marginTop: 12 }}>
+          <P>{feedback}</P>
+          {!loaded && (
+            <Button
+              light
+              onPress={() =>
                 run(async () => {
-                  setStatus(
-                    await pushRequest(
-                      "preferences",
-                      { categories: { [key]: value } },
-                      owner,
-                    ),
-                  );
+                  setStatus(await pushRequest("status", {}, owner));
+                  setLoaded(true);
                 })
               }
-              trackColor={{ false: "#dedede", true: "#141414" }}
-            />
-          </Row>
-        ))}
-      <P small muted style={{ marginTop: 12 }}>
-        Les aperçus masquent le contenu des messages et les adresses.
-        L’historique reste disponible dans Partant. Vos préférences de rappels
-        et de séances restent prioritaires.
-      </P>
-      {!!feedback && <P style={{ marginTop: 12 }}>{feedback}</P>}
+            >
+              Réessayer
+            </Button>
+          )}
+        </View>
+      )}
     </View>
   );
 }

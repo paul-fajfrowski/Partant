@@ -1,3 +1,4 @@
+import { SectorPicker } from "./SectorPicker";
 import { PushSettings } from "./PushSettings";
 import { CalendarConnections } from "./CalendarConnections";
 import {
@@ -7,7 +8,7 @@ import {
 import { CoachPlacesEditor } from "./CoachPlacesEditor";
 import { validateLocations } from "./locations";
 import { copyDay } from "./agendaTools";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useContext } from "react";
 import { Pressable, View, Switch } from "react-native";
 import {
   Store,
@@ -49,6 +50,7 @@ import {
   Setting,
   TextButton,
   Eyebrow,
+  SaveFeedbackContext,
 } from "./ui";
 import reference from "../reference/prototype.json";
 export const euro = (n: number) =>
@@ -83,12 +85,14 @@ export type FlowProps = {
   go: (s: string, focus?: string) => void;
   focus?: string;
   message: (s: string) => void;
+  refresh?: () => Promise<unknown>;
   selectBooking: (id: string) => void;
   openCoach: (id: string) => void;
   choose: (coach: Coach, day: string, time: string, offer: Offer) => void;
 };
 const sectionFields: Record<string, (keyof CoachSettings)[]> = {
-  schedule: ["week", "weeklyConfigured", "exceptions"],
+  schedule: ["week", "weeklyConfigured"],
+  dates: ["exceptions"],
   rules: ["notice", "horizon", "cancelHours"],
   places: ["locations", "studio", "studioAddress", "radius", "travelFee"],
   documents: ["dossier", "published"],
@@ -110,14 +114,10 @@ export function CoachConfiguration(
   useEffect(() => setDiscard(false), [key]);
   return (
     <>
-      <Note style={{ marginBottom: 20 }}>
-        Vos modifications restent en brouillon dans votre espace. Utilisez «
-        Enregistrer » pour les appliquer.
-      </Note>
       {props.store.coachDrafts?.[key] && (
         <>
           <TextButton onPress={() => setDiscard(true)}>
-            Abandonner le brouillon
+            Annuler mes modifications
           </TextButton>
           {discard && (
             <Note style={{ marginBottom: 20 }}>
@@ -155,6 +155,7 @@ function ConfigurationEditor({
   message,
   go,
   saveAction,
+  refresh,
 }: FlowProps & {
   section: string;
   saveAction?: React.MutableRefObject<(() => void) | null>;
@@ -177,10 +178,16 @@ function ConfigurationEditor({
     savedDraft?.form?.exceptionDay ?? addDays(today(), 1),
   );
   const [exceptionClosed, setExceptionClosed] = useState(
-    savedDraft?.form?.exceptionClosed ?? false,
+    savedDraft?.form?.exceptionClosed ??
+      (
+        cfg.exceptions[exceptionDay] ??
+        cfg.week[(new Date(exceptionDay + "T12:00:00").getDay() + 6) % 7]
+      ).length === 0,
   );
   const [exception, setException] = useState<Interval[]>(
-    savedDraft?.form?.exception ?? [["", ""]],
+    savedDraft?.form?.exception ??
+      cfg.exceptions[exceptionDay] ??
+      cfg.week[(new Date(exceptionDay + "T12:00:00").getDay() + 6) % 7],
   );
   const [blockDay, setBlockDay] = useState(
     savedDraft?.form?.blockDay ?? addDays(today(), 1),
@@ -214,23 +221,39 @@ function ConfigurationEditor({
     blockTitle,
   };
   const initialDraft = useRef(JSON.stringify({ cfg, profile, edit, form }));
+  const flushDraft = useRef<() => void>(() => {});
+  const feedbackState = useContext(SaveFeedbackContext);
+  const seenFailure = useRef(feedbackState.failure);
+  useEffect(() => {
+    if (feedbackState.failure !== seenFailure.current) {
+      seenFailure.current = feedbackState.failure;
+      initialDraft.current = "";
+      flushDraft.current();
+    }
+  }, [feedbackState.failure]);
+  useEffect(() => () => flushDraft.current(), []);
   useEffect(() => {
     const signature = JSON.stringify({ cfg, profile, edit, form });
-    if (signature === initialDraft.current) return;
-    const fields = sectionFields[section] ?? [];
-    const partial = Object.fromEntries(fields.map((k) => [k, cfg[k]]));
-    setStore((s) => ({
-      ...s,
-      coachDrafts: {
-        ...s.coachDrafts,
-        [draftKey]: {
-          cfg: partial,
-          form,
-          ...(["profile", "places"].includes(section) ? { profile } : {}),
-          ...(section === "offers" ? { edit } : {}),
+    const persist = () => {
+      if (signature === initialDraft.current) return;
+      const fields = sectionFields[section] ?? [];
+      const partial = Object.fromEntries(fields.map((k) => [k, cfg[k]]));
+      setStore((s) => ({
+        ...s,
+        coachDrafts: {
+          ...s.coachDrafts,
+          [draftKey]: {
+            cfg: partial,
+            form,
+            ...(["profile", "places"].includes(section) ? { profile } : {}),
+            ...(section === "offers" ? { edit } : {}),
+          },
         },
-      },
-    }));
+      }));
+    };
+    flushDraft.current = persist;
+    const timer = setTimeout(persist, 450);
+    return () => clearTimeout(timer);
   }, [
     cfg,
     profile,
@@ -269,9 +292,7 @@ function ConfigurationEditor({
       initialDraft.current = JSON.stringify({ cfg: next, profile, edit, form });
       commit(saveSettings(store, actual, merged));
       initialDraft.current = JSON.stringify({ cfg: next, profile, edit, form });
-      message(
-        "Réglages enregistrés. Les réservations confirmées sont conservées.",
-      );
+      if (!store.connected) message("Réglages enregistrés.");
     });
   const text = (label: string, key: keyof Coach, multi = false) => (
     <Field
@@ -303,7 +324,14 @@ function ConfigurationEditor({
   );
   const dates = Array.from({ length: 90 }, (_, i) => {
     const d = addDays(today(), i);
-    return [d, d] as [string, string];
+    return [
+      d,
+      new Date(d + "T12:00:00").toLocaleDateString("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      }),
+    ] as [string, string];
   });
   useEffect(() => {
     if (saveAction)
@@ -386,15 +414,24 @@ function ConfigurationEditor({
             setProfile({ ...profile, tags: v.split(",").map((s) => s.trim()) })
           }
         />
-        {text("Quartier / secteur", "area")}
+        <SectorPicker
+          value={profile.area}
+          onChange={(area) => setProfile({ ...profile, area })}
+          suggestedAddress={
+            Object.values(coachLocations(store, c)).find((l) => !!l.address)
+              ?.address || profile.address
+          }
+        />
         <Button
           onPress={() =>
             run(() => {
               const { formats, place, address, ...profileFields } = profile;
               commit(saveCoach(store, actual, profileFields));
-              message(
-                "Profil enregistré. Un changement d’identité ou de qualification demande une nouvelle vérification.",
-              );
+              if (profile.name !== c.name || profile.cert !== c.cert)
+                message(
+                  "Profil enregistré. Soumettez vos justificatifs actualisés pour la vérification.",
+                );
+              else if (!store.connected) message("Profil enregistré.");
             })
           }
         >
@@ -406,11 +443,6 @@ function ConfigurationEditor({
     return (
       <>
         {feedback}
-        <P muted style={{ marginVertical: 16 }}>
-          Créez une offre par formule : par exemple, renforcement 30 min à 30 €
-          et renforcement 60 min à 50 €. Choisissez ensuite leurs plages dans
-          Disponibilités.
-        </P>
         <TextButton onPress={() => go("config-native", "schedule")}>
           Associer mes séances aux disponibilités
         </TextButton>
@@ -739,50 +771,71 @@ function ConfigurationEditor({
         <Button onPress={() => save({ ...cfg, weeklyConfigured: true })}>
           Enregistrer la semaine
         </Button>
-        <H2 style={{ marginVertical: 20 }}>Exceptions datées</H2>
+        <Setting
+          title="Modifier une seule date"
+          description="Une absence ou des horaires différents, sans changer votre semaine."
+          onPress={() => go("config-native", "dates")}
+        />
+      </>
+    );
+  if (section === "dates")
+    return (
+      <>
+        {feedback}
+        <P muted style={{ marginBottom: 16 }}>
+          Ces horaires remplacent votre semaine habituelle uniquement à la date
+          choisie. Les séances réservées restent confirmées.
+        </P>
+        <H2 style={{ marginVertical: 20 }}>Modifier une seule date</H2>
         {Object.entries(cfg.exceptions).map(([d, list]) => (
           <Setting
             key={d}
-            title={d}
+            title={new Date(d + "T12:00:00").toLocaleDateString("fr-FR", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            })}
             description={
               list
                 .map((x) => intervalSummary(x, ownOffers, cfg.locations))
-                .join(" · ") || "Fermé"
+                .join(" · ") || "Indisponible"
             }
             onPress={() => {
               setExceptionDay(d);
               setExceptionClosed(!list.length);
               setException(
                 list.length
-                  ? list.map(([a, b, ids]) => [
+                  ? list.map(([a, b, ids, venues]) => [
                       a,
                       b,
                       ids == null ? ids : [...ids],
+                      venues == null ? venues : [...venues],
                     ])
                   : [["", ""]],
               );
               setDeleteException(false);
-              message(
-                "Exception sélectionnée. Modifiez ses horaires ci-dessous.",
-              );
+              message("Date sélectionnée.");
             }}
           />
         ))}
         <Select
-          label="Jour de l’exception"
+          label="Date à modifier"
           value={exceptionDay}
           items={dates}
           onChange={(d) => {
             setExceptionDay(d);
             setDeleteException(false);
-            const list = cfg.exceptions[d];
+            const list =
+              cfg.exceptions[d] ??
+              cfg.week[(new Date(d + "T12:00:00").getDay() + 6) % 7];
             setExceptionClosed(list?.length === 0);
             setException(
               list?.length
-                ? list.map(([a, b, ids]) => [
+                ? list.map(([a, b, ids, venues]) => [
                     a,
                     b,
                     ids == null ? ids : [...ids],
+                    venues == null ? venues : [...venues],
                   ])
                 : [["", ""]],
             );
@@ -810,19 +863,19 @@ function ConfigurationEditor({
           }
         >
           {cfg.exceptions[exceptionDay]
-            ? "Enregistrer l’exception"
-            : "Ajouter une exception"}
+            ? "Enregistrer cette date"
+            : "Enregistrer cette date"}
         </Button>
         {cfg.exceptions[exceptionDay] && (
           <TextButton onPress={() => setDeleteException(true)}>
-            Supprimer cette exception
+            Revenir aux horaires habituels
           </TextButton>
         )}
         {deleteException && (
           <Note>
             <P>
-              Supprimer l’exception du {exceptionDay} ? Les horaires habituels
-              de ce jour s’appliqueront de nouveau.
+              Rétablir les horaires habituels du {exceptionDay} ? Les horaires
+              habituels de ce jour s’appliqueront de nouveau.
             </P>
             <Button
               style={{ marginTop: 12 }}
@@ -837,13 +890,10 @@ function ConfigurationEditor({
               Confirmer la suppression
             </Button>
             <TextButton onPress={() => setDeleteException(false)}>
-              Conserver l’exception
+              Garder ces horaires
             </TextButton>
           </Note>
         )}
-        <TextButton onPress={() => go("availability-help-native")}>
-          Aide : comprendre un créneau indisponible
-        </TextButton>
       </>
     );
   if (section === "rules")
@@ -931,7 +981,9 @@ function ConfigurationEditor({
         <Note style={{ marginVertical: 20 }}>
           {
             {
-              approved: "Dossier validé · simulation",
+              approved: store.connected
+                ? "Dossier validé"
+                : "Dossier validé · simulation",
               expired: "Validité expirée : soumettez un dossier à jour",
               pending: "En attente de décision",
               draft: "À compléter",
@@ -941,6 +993,23 @@ function ConfigurationEditor({
           }
           {cfg.dossier.reason ? " · " + cfg.dossier.reason : ""}
         </Note>
+        <P muted style={{ marginBottom: 20 }}>
+          {cfg.dossier.status === "pending"
+            ? "L’équipe Partant vérifie vos justificatifs. Sa décision apparaîtra ici et dans vos notifications."
+            : cfg.dossier.status === "approved"
+              ? "Votre vérification est à jour. Retrouvez les étapes restantes dans votre checklist."
+              : "Ajoutez les justificatifs puis soumettez votre dossier à l’équipe Partant."}
+        </P>
+        {store.staff && (
+          <TextButton onPress={() => go("team")}>
+            Ouvrir l’espace équipe
+          </TextButton>
+        )}
+        {cfg.dossier.status === "pending" && (
+          <TextButton onPress={() => go("support-native")}>
+            Contacter l’équipe
+          </TextButton>
+        )}
         {cfg.dossier.status !== "pending" && (
           <>
             {[
@@ -1084,9 +1153,24 @@ function ConfigurationEditor({
         <Eyebrow style={{ marginBottom: 20 }}>VOS RÉGLAGES</Eyebrow>
         {(
           [
-            ["name", "Nom professionnel de démonstration"],
-            ["email", "E-mail de contact fictif"],
-            ["address", "Adresse professionnelle fictive"],
+            [
+              "name",
+              store.connected
+                ? "Nom professionnel"
+                : "Nom professionnel de démonstration",
+            ],
+            [
+              "email",
+              store.connected
+                ? "E-mail professionnel"
+                : "E-mail de contact fictif",
+            ],
+            [
+              "address",
+              store.connected
+                ? "Adresse professionnelle"
+                : "Adresse professionnelle fictive",
+            ],
           ] as const
         ).map(([key, label]) => (
           <Field
@@ -1111,10 +1195,15 @@ function ConfigurationEditor({
             setCfg({ ...cfg, business: { ...cfg.business, status } })
           }
         />
+        <H2 style={{ marginTop: 24, marginBottom: 12 }}>Compte de versement</H2>
+        <P muted style={{ marginBottom: 16 }}>
+          Le rattachement de votre banque et de votre IBAN sera disponible à
+          l’activation des paiements sécurisés.
+        </P>
         <Note>
           {cfg.payoutReady
             ? "Versements activés · compte de test"
-            : "Activez les versements de test pour publier"}
+            : "Tests uniquement · aucun virement réel"}
         </Note>
         <Rule />
         <Row between>
@@ -1129,16 +1218,18 @@ function ConfigurationEditor({
           <P>Versement</P>
           <P bold>Après la séance</P>
         </Row>
-        <Button
-          style={{ marginTop: 24 }}
-          onPress={() => {
-            const next = { ...cfg, payoutReady: true };
-            setCfg(next);
-            save(next);
-          }}
-        >
-          Activer un compte de test
-        </Button>
+        {!cfg.payoutReady && (
+          <Button
+            style={{ marginTop: 24 }}
+            onPress={() => {
+              const next = { ...cfg, payoutReady: true };
+              setCfg(next);
+              save(next);
+            }}
+          >
+            Activer un compte de test
+          </Button>
+        )}
         <Button light style={{ marginTop: 12 }} onPress={() => save()}>
           Enregistrer
         </Button>
@@ -1148,42 +1239,15 @@ function ConfigurationEditor({
       </>
     );
   if (section === "notifications")
-    return (
-      <>
-        {feedback}
-        <P muted style={{ marginBottom: 20 }}>
-          Rester au courant, sans multiplier les sollicitations.
-        </P>
-        {(
-          [
-            ["booking", "Nouvelle réservation"],
-            ["changes", "Modification ou annulation"],
-            ["reminder", "Rappel avant une séance"],
-            ["marketing", "Actualités et conseils Partant"],
-          ] as const
-        ).map(([key, label]) => (
-          <Toggle
-            key={key}
-            label={label}
-            value={cfg.notifications[key]}
-            onChange={(v) =>
-              setCfg({
-                ...cfg,
-                notifications: { ...cfg.notifications, [key]: v },
-              })
-            }
-          />
-        ))}
-        <Note style={{ marginVertical: 24 }}>
-          L’historique reste consultable. Les SMS et e-mails métier ne sont pas
-          activés. La démonstration n’envoie aucune notification externe.
-        </Note>
-        <Button onPress={() => save()}>Enregistrer</Button>
-        {store.account && (
-          <PushSettings owner={store.account.id} live={!!store.connected} />
-        )}
-      </>
-    );
+    return store.account ? (
+      <PushSettings
+        owner={store.account.id}
+        live={!!store.connected}
+        store={store}
+        setStore={setStore}
+        onSaved={refresh}
+      />
+    ) : null;
   if (section === "calendars" || section === "blocks")
     return (
       <>
@@ -1196,91 +1260,99 @@ function ConfigurationEditor({
         {section === "calendars" && (
           <>
             <CalendarConnections live={!!store.connected} />
-            <Note style={{ marginVertical: 20 }}>
-              Un événement occupé masque les créneaux publics. Le libellé reste
-              privé.
-            </Note>
           </>
         )}
-        <Select
-          label="Jour"
-          value={blockDay}
-          items={dates}
-          onChange={setBlockDay}
-        />
-        <Field label="De" value={blockStart} onChange={setBlockStart} />
-        <Field label="À" value={blockEnd} onChange={setBlockEnd} />
-        <Field
-          label="Libellé privé"
-          value={blockTitle}
-          onChange={setBlockTitle}
-        />
-        <Button
-          onPress={() =>
-            run(() => {
-              validateIntervals([[blockStart, blockEnd]]);
-              if (
-                store.bookings.some(
-                  (b) =>
-                    b.coach === actual &&
-                    b.day === blockDay &&
-                    b.status === "confirmed" &&
-                    overlap(
-                      b.time,
-                      b.duration,
-                      blockStart,
-                      mins(blockEnd) - mins(blockStart),
-                    ),
-                ) ||
-                (store.groups ?? []).some(
-                  (g) =>
-                    !g.cancelled &&
-                    g.offer.coach === actual &&
-                    g.day === blockDay &&
-                    overlap(
-                      g.time,
-                      g.offer.duration,
-                      blockStart,
-                      mins(blockEnd) - mins(blockStart),
-                    ),
-                )
-              )
-                throw Error("Une séance ou un cours occupe déjà ce moment.");
-              const next = {
-                ...cfg,
-                blocks: [
-                  ...cfg.blocks,
-                  {
-                    id: uid(),
-                    day: blockDay,
-                    start: blockStart,
-                    end: blockEnd,
-                    title: blockTitle,
-                  },
-                ],
-              };
-              setCfg(next);
-              save(next);
-            })
-          }
-        >
-          Bloquer ce créneau
-        </Button>
-        {cfg.blocks.map((b) => (
+        {section === "calendars" ? (
           <Setting
-            key={b.id}
-            title={b.title}
-            description={`${b.day} · ${b.start}–${b.end} · Retirer`}
-            onPress={() => {
-              const next = {
-                ...cfg,
-                blocks: cfg.blocks.filter((x) => x.id !== b.id),
-              };
-              setCfg(next);
-              save(next);
-            }}
+            title="Ajouter une indisponibilité"
+            description="Un rendez-vous personnel ou une absence."
+            onPress={() => go("config-native", "blocks")}
           />
-        ))}
+        ) : (
+          <>
+            <Select
+              label="Jour"
+              value={blockDay}
+              items={dates}
+              onChange={setBlockDay}
+            />
+            <Field label="De" value={blockStart} onChange={setBlockStart} />
+            <Field label="À" value={blockEnd} onChange={setBlockEnd} />
+            <Field
+              label="Libellé privé"
+              value={blockTitle}
+              onChange={setBlockTitle}
+            />
+            <Button
+              onPress={() =>
+                run(() => {
+                  validateIntervals([[blockStart, blockEnd]]);
+                  if (
+                    store.bookings.some(
+                      (b) =>
+                        b.coach === actual &&
+                        b.day === blockDay &&
+                        b.status === "confirmed" &&
+                        overlap(
+                          b.time,
+                          b.duration,
+                          blockStart,
+                          mins(blockEnd) - mins(blockStart),
+                        ),
+                    ) ||
+                    (store.groups ?? []).some(
+                      (g) =>
+                        !g.cancelled &&
+                        g.offer.coach === actual &&
+                        g.day === blockDay &&
+                        overlap(
+                          g.time,
+                          g.offer.duration,
+                          blockStart,
+                          mins(blockEnd) - mins(blockStart),
+                        ),
+                    )
+                  )
+                    throw Error(
+                      "Une séance ou un cours occupe déjà ce moment.",
+                    );
+                  const next = {
+                    ...cfg,
+                    blocks: [
+                      ...cfg.blocks,
+                      {
+                        id: uid(),
+                        day: blockDay,
+                        start: blockStart,
+                        end: blockEnd,
+                        title: blockTitle,
+                      },
+                    ],
+                  };
+                  setCfg(next);
+                  save(next);
+                })
+              }
+            >
+              Bloquer ce créneau
+            </Button>
+            {cfg.blocks.map((b) => (
+              <Setting
+                key={b.id}
+                title={b.title}
+                description={`${b.day} · ${b.start}–${b.end} · Retirer`}
+                onPress={() => {
+                  const next = {
+                    ...cfg,
+                    blocks: cfg.blocks.filter((x) => x.id !== b.id),
+                  };
+                  setCfg(next);
+                  save(next);
+                }}
+              />
+            ))}
+          </>
+        )}
       </>
     );
   return <Note>Choisissez une rubrique de configuration.</Note>;

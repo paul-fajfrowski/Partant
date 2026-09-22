@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     if (!rate.data) return reply({ error: "Réessayez dans une minute." }, 429);
     if (input.action === "register" && input.environment !== (Deno.env.get("APNS_ENVIRONMENT") ?? "sandbox"))
       return reply({error:"Cette version de l’application n’est pas configurée pour les notifications. Contactez l’assistance."},400);
-    const result = await admin.rpc("product_push_device", {
+    const result = await admin.rpc("product_push_settings", {
       p_actor: data.user.id,
       p_session: session,
       p_action: input.action,
