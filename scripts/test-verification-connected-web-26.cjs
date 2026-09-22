@@ -8,6 +8,10 @@ process.env.PARTANT_QA_FETCH_MODULE = path.resolve(
 const H = require("./native-web-harness.cjs");
 const { d, w, click, input, wait, ok } = H;
 const { control } = require("./fixtures/verification-26.cjs");
+const documentLabel =
+  Number(process.env.PARTANT_QA_WIDTH || 390) >= 1080
+    ? "Documents & vérifications"
+    : "Documents & vérification";
 const has = (t) => d.body.textContent.includes(t);
 const button = (t) =>
   [...d.querySelectorAll('[role="button"],[role="tab"]')].find(
@@ -18,7 +22,11 @@ async function until(fn) {
     if (fn()) return;
     await wait();
   }
-  throw Error("Expected state not reached: " + JSON.stringify(control) + d.body.textContent.slice(-1400));
+  throw Error(
+    "Expected state not reached: " +
+      JSON.stringify(control) +
+      d.body.textContent.slice(-1400),
+  );
 }
 (async () => {
   await click("Me connecter");
@@ -29,26 +37,33 @@ async function until(fn) {
   await click("Me connecter");
   await until(() => button("Réglages"));
   await click("Réglages");
-  await click("Documents & vérification");
+  await click(documentLabel);
   await click("Vos pratiques et votre statut");
   await click("Running");
-  await new Promise(r=>setTimeout(r,750));
-  control.delay=900; control.fail=true;
+  await new Promise((r) => setTimeout(r, 750));
+  control.delay = 900;
+  control.fail = true;
   await click("Enregistrer mes pratiques");
-  ok(has("Enregistrement…"),"Dossier save indicates pending server acknowledgement");
-  await until(()=>has("L’enregistrement n’a pas abouti"));
-  ok(!has("Enregistré"),"Failed dossier save is never confirmed");
-  ok(button("Running")?.getAttribute("aria-pressed")==="true","Selected discipline retained after failure");
-  control.fail=false;control.delay=0;
-  await new Promise(r=>setTimeout(r,750));
-  await click("Enregistrer mes pratiques");
-  await until(()=>!button("Enregistrer mes pratiques"));
-  ok(has("Running"),"Successful retry saved new practice");
-  await click("Retour");await click("Documents & vérification");
-  ok(has("Running"),"Saved practice retained after navigation");
-  H.finish(
-    "connected dossier acknowledgement and failure recovery",
+  ok(
+    has("Enregistrement…"),
+    "Dossier save indicates pending server acknowledgement",
   );
+  await until(() => has("L’enregistrement n’a pas abouti"));
+  ok(!has("Enregistré"), "Failed dossier save is never confirmed");
+  ok(
+    button("Running")?.getAttribute("aria-pressed") === "true",
+    "Selected discipline retained after failure",
+  );
+  control.fail = false;
+  control.delay = 0;
+  await new Promise((r) => setTimeout(r, 750));
+  await click("Enregistrer mes pratiques");
+  await until(() => !button("Enregistrer mes pratiques"));
+  ok(has("Running"), "Successful retry saved new practice");
+  await click("Retour");
+  await click(documentLabel);
+  ok(has("Running"), "Saved practice retained after navigation");
+  H.finish("connected dossier acknowledgement and failure recovery");
 })().catch((e) => {
   console.error(e);
   H.close();

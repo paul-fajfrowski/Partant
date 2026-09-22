@@ -107,6 +107,7 @@ const sectionFields: Record<string, (keyof CoachSettings)[]> = {
 export function CoachConfiguration(
   props: FlowProps & {
     section: string;
+    initialDate?: string;
     saveAction?: React.MutableRefObject<(() => void) | null>;
   },
 ) {
@@ -148,7 +149,10 @@ export function CoachConfiguration(
       {props.section === "documents" ? (
         <CoachVerification key={key} {...props} />
       ) : (
-        <ConfigurationEditor key={`${key}:${revision}`} {...props} />
+        <ConfigurationEditor
+          key={`${key}:${revision}:${props.initialDate ?? ""}`}
+          {...props}
+        />
       )}
     </>
   );
@@ -158,12 +162,14 @@ function ConfigurationEditor({
   setStore,
   coachId,
   section,
+  initialDate,
   message,
   go,
   saveAction,
   refresh,
 }: FlowProps & {
   section: string;
+  initialDate?: string;
   saveAction?: React.MutableRefObject<(() => void) | null>;
 }) {
   const actual = coachAccountId(store),
@@ -181,17 +187,21 @@ function ConfigurationEditor({
   const [copyConfirm, setCopyConfirm] = useState(false);
   const [deleteException, setDeleteException] = useState(false);
   const [exceptionDay, setExceptionDay] = useState(
-    savedDraft?.form?.exceptionDay ?? addDays(today(), 1),
+    initialDate ?? savedDraft?.form?.exceptionDay ?? addDays(today(), 1),
   );
   const [exceptionClosed, setExceptionClosed] = useState(
-    savedDraft?.form?.exceptionClosed ??
+    (initialDate && initialDate !== savedDraft?.form?.exceptionDay
+      ? undefined
+      : savedDraft?.form?.exceptionClosed) ??
       (
         cfg.exceptions[exceptionDay] ??
         cfg.week[(new Date(exceptionDay + "T12:00:00").getDay() + 6) % 7]
       ).length === 0,
   );
   const [exception, setException] = useState<Interval[]>(
-    savedDraft?.form?.exception ??
+    (initialDate && initialDate !== savedDraft?.form?.exceptionDay
+      ? undefined
+      : savedDraft?.form?.exception) ??
       cfg.exceptions[exceptionDay] ??
       cfg.week[(new Date(exceptionDay + "T12:00:00").getDay() + 6) % 7],
   );

@@ -1,5 +1,9 @@
 # Partant
 
+**WebApp — livraison 27 :** [parcours ordinateur, architecture partagée et recette](docs/webapp-27.md). [Construire et ouvrir la WebApp localement](apps/web/README.md).
+
+**Documents & vérifications — livraison 26 :** [dossier par pratique, justificatifs réutilisables et décisions équipe](docs/documents-verifications-26.md).
+
 **Livraison 24 — ergonomie coach et client :** [changements, validation des dossiers et recette](docs/coach-experience-24.md).
 
 

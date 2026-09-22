@@ -10,6 +10,9 @@ export default function App() {
     HankenMedium: require("./assets/hanken-600.ttf"),
     HankenBold: require("./assets/hanken-800.ttf"),
   });
+  React.useEffect(() => {
+    if (Platform.OS === "web") document.documentElement.lang = "fr";
+  }, []);
   if (error) throw error;
   if (!loaded)
     return (

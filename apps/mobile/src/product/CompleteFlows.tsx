@@ -49,7 +49,9 @@ import {
   Eyebrow,
 } from "./ui";
 import reference from "../reference/prototype.json";
-export function CompleteFlows(p: FlowProps & { screen: string }) {
+export function CompleteFlows(
+  p: FlowProps & { screen: string; teamSection?: "support" },
+) {
   const {
     store: s,
     setStore,
@@ -772,37 +774,42 @@ export function CompleteFlows(p: FlowProps & { screen: string }) {
             ? "Espace réservé à l’équipe habilitée. Chaque décision est enregistrée et notifiée au coach."
             : "Équipe Partant · simulation. Aucun contrôle documentaire réel."}
         </Note>
-        <H2 style={{ marginVertical: 20 }}>Dossiers à vérifier</H2>
-        {!allCoaches(s).some(
-          (c) =>
-            pendingPractices(configFor(s, c.id).dossier, c, today()).length > 0,
-        ) && <P muted>Aucun dossier en attente.</P>}
-        {allCoaches(s)
-          .filter(
-            (c) =>
-              pendingPractices(configFor(s, c.id).dossier, c, today()).length >
-              0,
-          )
-          .map((c) => (
-            <View key={c.id}>
-              <Setting
-                title={c.name}
-                description="Dossier en attente"
-                onPress={() => setSelection(c.id)}
-              />
-              {selection === c.id && (
-                <>
-                  <PracticeReviewPanel
-                    key={c.id}
-                    store={s}
-                    coach={c}
-                    setStore={setStore}
-                    message={message}
+        {p.teamSection !== "support" && (
+          <>
+            <H2 style={{ marginVertical: 20 }}>Dossiers à vérifier</H2>
+            {!allCoaches(s).some(
+              (c) =>
+                pendingPractices(configFor(s, c.id).dossier, c, today())
+                  .length > 0,
+            ) && <P muted>Aucun dossier en attente.</P>}
+            {allCoaches(s)
+              .filter(
+                (c) =>
+                  pendingPractices(configFor(s, c.id).dossier, c, today())
+                    .length > 0,
+              )
+              .map((c) => (
+                <View key={c.id}>
+                  <Setting
+                    title={c.name}
+                    description="Dossier en attente"
+                    onPress={() => setSelection(c.id)}
                   />
-                </>
-              )}
-            </View>
-          ))}
+                  {selection === c.id && (
+                    <>
+                      <PracticeReviewPanel
+                        key={c.id}
+                        store={s}
+                        coach={c}
+                        setStore={setStore}
+                        message={message}
+                      />
+                    </>
+                  )}
+                </View>
+              ))}
+          </>
+        )}
         <H2 style={{ marginVertical: 20 }}>Demandes d’assistance</H2>
         {(s.tickets ?? []).map((t) => (
           <View key={t.id}>

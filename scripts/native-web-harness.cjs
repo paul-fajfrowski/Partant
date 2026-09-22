@@ -14,6 +14,8 @@ const scripts = [
 ].map((m) =>
   fs.readFileSync(path.join(root, "apps/mobile/dist", m[1]), "utf8"),
 );
+const viewportWidth = Number(process.env.PARTANT_QA_WIDTH || 390);
+const viewportHeight = Number(process.env.PARTANT_QA_HEIGHT || 844);
 const errors = [];
 const vc = new VirtualConsole();
 vc.on("jsdomError", (e) => {
@@ -28,8 +30,8 @@ const dom = new JSDOM(
     pretendToBeVisual: true,
     virtualConsole: vc,
     beforeParse(w) {
-      Object.defineProperty(w, "innerWidth", { value: 390 });
-      Object.defineProperty(w, "innerHeight", { value: 844 });
+      Object.defineProperty(w, "innerWidth", { value: viewportWidth });
+      Object.defineProperty(w, "innerHeight", { value: viewportHeight });
 
       w.matchMedia = (q) => ({
         matches: false,
@@ -78,10 +80,10 @@ const dom = new JSDOM(
 const w = dom.window,
   d = w.document;
 Object.defineProperty(w.document.documentElement, "clientWidth", {
-  get: () => 390,
+  get: () => viewportWidth,
 });
 Object.defineProperty(w.document.documentElement, "clientHeight", {
-  get: () => 844,
+  get: () => viewportHeight,
 });
 if (process.env.PARTANT_QA_SESSION) {
   const saved = JSON.parse(

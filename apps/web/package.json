@@ -1,0 +1,10 @@
+{
+  "name": "partant-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node ../../scripts/build-webapp.mjs",
+    "dev": "npm --prefix ../mobile run web",
+    "preview": "python3 -m http.server 8081 --bind 127.0.0.1 --directory dist"
+  }
+}

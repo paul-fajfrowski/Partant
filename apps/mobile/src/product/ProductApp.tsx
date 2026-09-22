@@ -1,4 +1,13 @@
-import { approvedPractices, canOffer } from "./verification";
+import { approvedPractices } from "./verification";
+import {
+  DesktopShell,
+  DESKTOP_BREAKPOINT,
+  type DesktopNavItem,
+} from "./web/DesktopShell";
+import { DesktopSettings, DesktopSettingsLayout } from "./web/DesktopSettings";
+import { DesktopEntry } from "./web/DesktopEntry";
+import { DesktopAgenda } from "./web-agenda/DesktopAgenda";
+import { TeamReviewWorkspace } from "./web/TeamReviewWorkspace";
 import { SectorSearch } from "./SectorPicker";
 import { usePushNotifications } from "./usePushNotifications";
 import {
@@ -175,9 +184,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         : null,
     };
   });
-  const { width, height } = useWindowDimensions();
-  const desktop = Platform.OS === "web" && width > 740;
-  const pageWidth = desktop ? (width > 900 ? 430 : 410) : Math.min(width, 740);
+  const { width } = useWindowDimensions();
+  // A desktop browser is a workspace. Phone simulations keep their narrow viewport.
+  const webWide = Platform.OS === "web" && width >= DESKTOP_BREAKPOINT;
+  const pageWidth = Math.min(width, 740);
+  const [webTeamSupport, setWebTeamSupport] = useState(false);
   const [screen, setScreen] = useState("welcome");
   usePushNotifications(
     market.profileReady ? store.account?.id : undefined,
@@ -1145,7 +1156,19 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     const times = available(c);
     const shown = primary(c);
     return (
-      <View key={c.id} style={styles.card}>
+      <View
+        key={c.id}
+        style={[
+          styles.card,
+          webWide && {
+            marginHorizontal: 0,
+            width: map ? "100%" : width >= 1660 ? "31.5%" : "48%",
+            borderBottomWidth: 0,
+            marginBottom: 20,
+          },
+        ]}
+        testID={webWide ? "desktop-coach-card" : undefined}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Voir le profil de ${c.name}`}
@@ -1154,7 +1177,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           <Photo
             uri={c.photoUri}
             index={c.photo}
-            height={desktop ? 164 : (pageWidth - 48) / 2.6}
+            height={webWide ? 220 : (pageWidth - 48) / 2.6}
             style={{ borderRadius: 12 }}
             label={`Portrait de ${c.name}`}
           >
@@ -1834,7 +1857,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   if (screen === "explore")
     content = (
       <>
-        <View style={[styles.top, { paddingTop: desktop ? 16 : 20 }]}>
+        <View style={[styles.top, { paddingTop: webWide ? 16 : 20 }]}>
           <Row between>
             <Wordmark light />
             <Pressable
@@ -1858,7 +1881,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           <H1
             style={{
               color: "#fff",
-              marginTop: desktop ? 14 : 8,
+              marginTop: webWide ? 14 : 8,
               marginBottom: 8,
             }}
           >
@@ -1870,7 +1893,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ marginTop: desktop ? 16 : 12, marginRight: -24 }}
+            style={{ marginTop: webWide ? 16 : 12, marginRight: -24 }}
             contentContainerStyle={{ gap: 8, paddingRight: 24 }}
           >
             <Chip
@@ -1924,7 +1947,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{
               paddingHorizontal: 24,
-              paddingTop: desktop ? 12 : 8,
+              paddingTop: webWide ? 12 : 8,
               gap: 22,
             }}
           >
@@ -1942,7 +1965,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   alignItems: "center",
                   gap: 4,
                   paddingTop: 6,
-                  paddingBottom: desktop ? 12 : 8,
+                  paddingBottom: webWide ? 12 : 8,
                   borderBottomWidth: sport === label ? 3 : 0,
                   borderColor: t.ink,
                 }}
@@ -1967,7 +1990,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           <Row
             style={{
               marginHorizontal: 24,
-              marginTop: desktop ? 14 : 10,
+              marginTop: webWide ? 14 : 10,
               paddingLeft: 16,
               paddingRight: 6,
               paddingVertical: 2,
@@ -2043,8 +2066,8 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             between
             style={{
               paddingHorizontal: 24,
-              paddingTop: desktop ? 16 : 12,
-              paddingBottom: desktop ? 14 : 10,
+              paddingTop: webWide ? 16 : 12,
+              paddingBottom: webWide ? 14 : 10,
             }}
           >
             <View style={{ flex: 1 }}>
@@ -2100,8 +2123,23 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             </Row>
           )}
           {map ? (
-            <>
-              <View style={{ marginHorizontal: 16 }}>
+            <View
+              style={
+                webWide
+                  ? {
+                      flexDirection: "row",
+                      gap: 24,
+                      padding: 24,
+                      alignItems: "flex-start",
+                    }
+                  : undefined
+              }
+            >
+              <View
+                style={
+                  webWide ? { flex: 1, minWidth: 0 } : { marginHorizontal: 16 }
+                }
+              >
                 <CoachMap
                   points={results.flatMap((c) =>
                     Object.entries(coachLocations(store, c))
@@ -2140,13 +2178,32 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                 )}
               </View>
               {results.length > 0 && (
-                <View style={{ marginTop: 20 }}>
+                <View
+                  style={
+                    webWide
+                      ? { width: "42%", minWidth: 280 }
+                      : { marginTop: 20 }
+                  }
+                >
                   {card(results.find((c) => c.id === mapCoach) ?? results[0])}
                 </View>
               )}
-            </>
+            </View>
           ) : results.length ? (
-            results.map(card)
+            <View
+              style={
+                webWide
+                  ? {
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                      gap: 24,
+                      paddingHorizontal: 24,
+                    }
+                  : undefined
+              }
+            >
+              {results.map(card)}
+            </View>
           ) : (
             <Section>
               <H2>
@@ -2245,7 +2302,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         <Photo
           uri={coach.photoUri}
           index={coach.photo}
-          height={desktop ? 264 : pageWidth / 1.5}
+          height={webWide ? 360 : pageWidth / 1.5}
           label={`Portrait de ${coach.name}`}
         />
         <Section style={styles.sheet}>
@@ -3462,7 +3519,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         <View
           style={[
             styles.top,
-            { paddingBottom: 42, paddingTop: desktop ? 16 : 20 },
+            { paddingBottom: 42, paddingTop: webWide ? 16 : 20 },
           ]}
         >
           <Row between>
@@ -5060,7 +5117,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         "alerts-native": "Mes alertes",
         "support-native": "Mes demandes",
         "report-native": "Assistance",
-        team: "Équipe Partant · démo",
+        team: "Équipe Partant",
         "group-manage": "Gérer mon cours",
         "group-details-native": "Un moment à plusieurs",
         "partial-native": "Annuler certaines places",
@@ -5125,6 +5182,11 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         <CoachConfiguration
           {...flowProps}
           section={config}
+          initialDate={
+            config === "dates" && /^\d{4}-\d{2}-\d{2}$/.test(focus)
+              ? focus
+              : undefined
+          }
           saveAction={configSave}
         />
       </Section>
@@ -5318,6 +5380,266 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         </Button>
       </View>
     );
+  if (webWide && screen === "coach" && activeCoach) {
+    if (coachTab === "agenda")
+      content = (
+        <DesktopAgenda
+          store={store}
+          coachId={activeCoach}
+          initialDate={day}
+          onSelectedDate={setDay}
+          onReopen={(key) => {
+            if (!busy && (!live || !market.pending))
+              setStore((s) => ({
+                ...s,
+                closed: s.closed.filter((k) => k !== key),
+              }));
+          }}
+          renderDay={(selectedDay) => {
+            const own = coaches.find((c) => c.id === activeCoach);
+            const offers = store.offers.filter(
+              (o) => o.coach === activeCoach && o.active,
+            );
+            const selected =
+              offers.find((o) => o.id === agendaOfferId) ?? offers[0];
+            const times =
+              own && selected ? market.times(own, selectedDay, selected) : [];
+            const closed = store.closed.filter((k) =>
+              k.startsWith(`${activeCoach}|${selectedDay}|`),
+            );
+            const pending = busy || (live && market.pending > 0);
+            return (
+              <View testID="desktop-day-slots" style={{ paddingVertical: 16 }}>
+                <H2 style={{ marginBottom: 16 }}>Disponibilités proposées</H2>
+                {selected ? (
+                  <Select
+                    label="Voir les créneaux de"
+                    value={selected.id}
+                    items={offers.map((o) => [
+                      o.id,
+                      `${o.name} · ${o.duration} min · ${euro(o.price)}${o.kind === "Groupe" ? "/pers." : ""}`,
+                    ])}
+                    onChange={setAgendaOfferId}
+                  />
+                ) : (
+                  <TextButton onPress={() => go("config-native", "offers")}>
+                    Créer ma première offre
+                  </TextButton>
+                )}
+                <Row wrap>
+                  {times.map((time) => (
+                    <Pressable
+                      key={time}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        selected?.kind === "Groupe"
+                          ? `Gérer le cours de ${time}`
+                          : `Fermer le départ de ${time}`
+                      }
+                      disabled={pending}
+                      onPress={() => {
+                        if (selected?.kind === "Groupe") {
+                          const group = store.groups?.find(
+                            (g) =>
+                              g.offer.id === selected.id &&
+                              g.day === selectedDay &&
+                              g.time === time &&
+                              !g.cancelled,
+                          );
+                          if (group) go("group-manage", group.id);
+                          else go("config-native", "groups");
+                        } else
+                          setStore((s) => ({
+                            ...s,
+                            closed: [
+                              ...new Set([
+                                ...s.closed,
+                                `${activeCoach}|${selectedDay}|${time}`,
+                              ]),
+                            ],
+                          }));
+                      }}
+                      style={styles.slot}
+                    >
+                      <P>{time}</P>
+                    </Pressable>
+                  ))}
+                  {closed.map((key) => (
+                    <Pressable
+                      key={key}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Rouvrir le départ de ${key.split("|")[2]}`}
+                      disabled={pending}
+                      onPress={() =>
+                        setStore((s) => ({
+                          ...s,
+                          closed: s.closed.filter((k) => k !== key),
+                        }))
+                      }
+                      style={styles.slot}
+                    >
+                      <P muted>{key.split("|")[2]} · fermé</P>
+                    </Pressable>
+                  ))}
+                </Row>
+                {!!selected && !times.length && !closed.length && (
+                  <P muted>
+                    Aucun départ proposé pour cette offre à cette date.
+                  </P>
+                )}
+                <P small muted style={{ marginTop: 16 }}>
+                  Fermer un départ le retire de toutes vos offres. Les séances
+                  déjà réservées restent confirmées.
+                </P>
+              </View>
+            );
+          }}
+          onBooking={(id) => {
+            setSelectedBooking(id);
+            go("bookingDetail");
+          }}
+          onGroup={(id) => go("group-manage", id)}
+          onDate={(date) => {
+            go("config-native", "dates");
+            setFocus(date);
+          }}
+          onExternal={(id) => go("external-session-native", id)}
+          onConfigure={(section) =>
+            section === "external"
+              ? go("external-session-native")
+              : go("config-native", section)
+          }
+        />
+      );
+    if (coachTab === "settings")
+      content = (
+        <DesktopSettings
+          published={configFor(store, activeCoach).published}
+          onSelect={(section) => go("config-native", section)}
+          onChecklist={() => go("checklist-native")}
+          onPreview={() => {
+            const own = coaches.find((c) => c.id === activeCoach);
+            if (own) openProfile(own);
+          }}
+          onPrivacy={() => go("privacy-native")}
+          disabled={busy || (live && market.pending > 0)}
+          onPublication={() =>
+            run(() => setStore(W.publish(store, activeCoach)))
+          }
+        />
+      );
+    // These existing views retain their shared client/revenue actions.
+    if (
+      ["clients", "activity"].includes(coachTab) &&
+      React.isValidElement<{ children: React.ReactNode }>(content)
+    ) {
+      const parts = React.Children.toArray(content.props.children);
+      content = <View>{parts.slice(1)}</View>;
+    }
+  }
+  if (webWide && screen === "config")
+    content = (
+      <DesktopSettingsLayout
+        current={config}
+        disabled={busy || (live && market.pending > 0)}
+        onSelect={(section) => go("config-native", section)}
+      >
+        {content}
+      </DesktopSettingsLayout>
+    );
+  if (webWide && ["messages", "chat"].includes(screen) && store.account) {
+    const detail =
+      screen === "chat" ? (
+        content
+      ) : (
+        <Section>
+          <Eyebrow>VOS ÉCHANGES</Eyebrow>
+          <H1 style={{ marginVertical: 16 }}>Une personne. Un fil.</H1>
+          <P muted>
+            Choisissez une conversation pour retrouver vos échanges et vos
+            séances.
+          </P>
+        </Section>
+      );
+    content = (
+      <View
+        style={{ flexDirection: "row", flex: 1, minHeight: 550 }}
+        testID="desktop-messages"
+      >
+        <View
+          style={{ width: 320, borderRightWidth: 1, borderColor: t.border }}
+        >
+          <Section>
+            <MessagesScreen
+              store={store}
+              drafts={messageDrafts.drafts}
+              onOpen={(c) => {
+                const saved = messageDrafts.drafts[c.id]?.booking;
+                setSelectedBooking(
+                  c.bookings.some((b) => b.id === saved)
+                    ? saved!
+                    : c.booking.id,
+                );
+                go("chat");
+              }}
+            />
+          </Section>
+        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>{detail}</View>
+      </View>
+    );
+  }
+  if (webWide && screen === "team" && store.staff && !webTeamSupport)
+    content = (
+      <TeamReviewWorkspace
+        store={store}
+        setStore={setStore}
+        message={setNotice}
+        onSupport={() => setWebTeamSupport(true)}
+      />
+    );
+  if (webWide && screen === "team" && webTeamSupport)
+    content = (
+      <>
+        <Section>
+          <TextButton onPress={() => setWebTeamSupport(false)}>
+            ← Revenir aux dossiers
+          </TextButton>
+          <CompleteFlows {...flowProps} screen="team" teamSection="support" />
+        </Section>
+      </>
+    );
+  const entryScreen = [
+    "welcome",
+    "login",
+    "code",
+    "completeAccount",
+    "onboarding",
+  ].includes(screen);
+  if (webWide && entryScreen) {
+    const form =
+      screen === "welcome" &&
+      React.isValidElement<{ children: React.ReactNode }>(content)
+        ? React.Children.toArray(content.props.children)
+        : null;
+    // Welcome was augmented with a demo footer: retain the underlying choice form.
+    let entryContent: React.ReactNode = content;
+    if (screen === "welcome") {
+      const welcome = form?.[0];
+      const original =
+        React.isValidElement<{ children: React.ReactNode }>(welcome) &&
+        welcome.type === React.Fragment
+          ? welcome
+          : content;
+      if (React.isValidElement<{ children: React.ReactNode }>(original)) {
+        const parts = React.Children.toArray(original.props.children);
+        entryContent = parts.slice(1);
+      }
+    }
+    content = (
+      <DesktopEntry coach={role === "coach"}>{entryContent}</DesktopEntry>
+    );
+  }
   // Every secondary screen retains a way out, including unavailable data states.
   const pageTitle =
     barTitle[screen] ?? (!rootScreens.includes(screen) ? "Partant" : undefined);
@@ -5342,37 +5664,14 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         pointerEvents={market.leaving ? "none" : "auto"}
         style={[
           styles.device,
-          desktop
-            ? {
-                width: pageWidth,
-                height: Math.min(900, height - 60),
-                minHeight: height > 690 ? 610 : 0,
-                borderRadius: 30,
-              }
-            : { flex: 1, width: "100%" },
+          {
+            flex: 1,
+            width: "100%",
+            maxWidth: Platform.OS === "web" && !webWide ? 740 : undefined,
+            alignSelf: "center",
+          },
         ]}
       >
-        {desktop && (
-          <Row
-            between
-            style={{
-              height: 44,
-              backgroundColor: t.ink,
-              paddingHorizontal: 24,
-              paddingTop: 8,
-            }}
-          >
-            <P
-              small
-              style={{ color: "#fff", fontFamily: t.medium, fontSize: 12 }}
-            >
-              9:41
-            </P>
-            <P small style={{ color: "#fff", fontSize: 12 }}>
-              ▮▮▮ ◒ ▰
-            </P>
-          </Row>
-        )}
         {pageTitle && (
           <Pagebar
             title={pageTitle}
@@ -5429,7 +5728,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           </ScrollView>
           {sticky}
         </KeyboardAvoidingView>
-        {(bottom || coachBottom) && (
+        {!webWide && (bottom || coachBottom) && (
           <View style={styles.bottomNav}>
             {(coachBottom ? coachTabs : navItems).map(([id, icon, title]) => (
               <Pressable
@@ -5485,7 +5784,8 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             ))}
           </View>
         )}
-        {store.staff &&
+        {!webWide &&
+          store.staff &&
           (screen === "account" ||
             (screen === "coach" && coachTab === "settings")) && (
             <TextButton onPress={() => go("team")}>Espace équipe</TextButton>
@@ -5514,10 +5814,10 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   );
   return (
     <SafeAreaView
-      edges={desktop ? [] : ["top", "bottom"]}
+      edges={webWide ? [] : ["top", "bottom"]}
       style={{
         flex: 1,
-        backgroundColor: desktop
+        backgroundColor: webWide
           ? t.desktop
           : ["welcome", "explore", "coach"].includes(screen)
             ? t.ink
@@ -5526,66 +5826,97 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     >
       <StatusBar
         style={
-          !desktop && ["welcome", "explore", "coach"].includes(screen)
+          !webWide && ["welcome", "explore", "coach"].includes(screen)
             ? "light"
             : "dark"
         }
       />
-      {desktop ? (
-        <View style={styles.desktop}>
-          <View style={{ maxWidth: width > 900 ? 380 : 280, flex: 1 }}>
-            <View style={{ marginBottom: height > 690 ? 68 : 30 }}>
-              <Wordmark />
-            </View>
-            <Eyebrow>LE SPORT, À PORTÉE DE SÉANCE.</Eyebrow>
-            <H1
-              style={{
-                fontSize: width > 900 ? 58 : 48,
-                lineHeight: width > 900 ? 59.16 : 49,
-                letterSpacing: -3,
-                marginTop: 16,
-                marginBottom: 24,
-              }}
-            >
-              Le bon coach.{"\n"}Le bon{"\n"}moment.
-            </H1>
-            <P muted style={{ maxWidth: 300 }}>
-              Des personnes qui vous font avancer. Des créneaux qui vous vont.
-            </P>
-            <View style={{ marginTop: 36 }}>
-              <TextButton
-                style={{ alignItems: "flex-start" }}
-                onPress={() =>
-                  Linking.openURL(
-                    "http://127.0.0.1:8766/partant.html?version=a1-a9",
-                  )
-                }
-              >
-                Prototype de référence ↗
-              </TextButton>
-              <TextButton
-                style={{ alignItems: "flex-start" }}
-                onPress={() => {
-                  if (Platform.OS === "web")
-                    window.location.assign(
-                      live ? "/?data=preview" : "/?data=connected",
-                    );
-                }}
-              >
-                {live
-                  ? "Voir les profils de démonstration"
-                  : "Tester les données Supabase"}{" "}
-                ↗
-              </TextButton>
-              <P small muted style={{ marginTop: 20, fontSize: 12 }}>
-                React Native ·{" "}
-                {live ? "données partagées" : "démonstration locale"}
-                {"\n"}Paiements et intégrations externes non activés.
+      {webWide ? (
+        <DesktopShell
+          role={store.account?.role === "coach" ? "coach" : "client"}
+          activeItem={
+            (screen === "coach"
+              ? coachTab
+              : screen === "config"
+                ? "settings"
+                : screen === "chat"
+                  ? "messages"
+                  : screen === "account-native"
+                    ? "account"
+                    : screen === "support-native"
+                      ? "help"
+                      : screen) as DesktopNavItem
+          }
+          title={
+            screen === "coach"
+              ? ({
+                  agenda: "Agenda",
+                  clients: "Mes clients",
+                  activity: "Mon activité",
+                  settings: "Mes réglages",
+                }[coachTab] ?? "Mon espace")
+              : screen === "config"
+                ? "Réglages coach"
+                : screen === "team"
+                  ? "Espace équipe"
+                  : ({
+                      explore: "Explorer",
+                      favorites: "Mes favoris",
+                      bookings: "Mes séances",
+                      account: "Mon espace",
+                      welcome: "Bienvenue",
+                      login: "Connexion",
+                      messages: "Messages",
+                      chat: "Messages",
+                      notifications: "Notifications",
+                    }[screen] ??
+                    pageTitle ??
+                    "Partant")
+          }
+          userName={store.account?.name}
+          accountLabel={!store.account ? "Se connecter" : undefined}
+          staff={!!store.staff}
+          unreadCounts={{ messages: unreadMessages, notifications: unread }}
+          navigationDisabled={busy || (live && market.pending > 0)}
+          contentWidth={
+            entryScreen ||
+            ["explore", "coach", "config", "messages", "chat", "team"].includes(
+              screen,
+            )
+              ? "wide"
+              : ["setup", "payment", "confirmation"].includes(screen)
+                ? "form"
+                : "reading"
+          }
+          sidebarFooter={
+            !live ? (
+              <P small muted>
+                Démonstration · données fictives
               </P>
-            </View>
-          </View>
+            ) : undefined
+          }
+          onNavigate={(item) => {
+            if (busy || (live && market.pending > 0)) return;
+            if (["agenda", "clients", "activity", "settings"].includes(item)) {
+              go("coach");
+              setCoachTab(item);
+            } else if (item === "help") go("support-native");
+            else if (item === "account")
+              go(
+                store.account
+                  ? store.account.role === "coach"
+                    ? "account-native"
+                    : "account"
+                  : "welcome",
+              );
+            else {
+              if (item === "team") setWebTeamSupport(false);
+              go(item);
+            }
+          }}
+        >
           {body}
-        </View>
+        </DesktopShell>
       ) : (
         body
       )}
@@ -5600,18 +5931,6 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   );
 }
 const styles = StyleSheet.create({
-  desktop: {
-    flex: 1,
-    width: "100%",
-    maxWidth: 1080,
-    alignSelf: "center",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 76,
-    paddingVertical: 30,
-    paddingHorizontal: 40,
-  },
   device: {
     backgroundColor: "#fff",
     overflow: "hidden",

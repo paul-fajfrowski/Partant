@@ -79,6 +79,64 @@ export function AgendaTools({
   };
   if (store.account?.role !== "coach")
     return <Note>Connectez-vous à votre espace coach.</Note>;
+  if (screen === "external-session-native" && focus) {
+    const appointment = store.externalSessions?.find(
+      (b) => b.id === focus && b.coach === coachId,
+    );
+    if (!appointment) return <Note>Ce rendez-vous n’est plus disponible.</Note>;
+    return (
+      <>
+        <P small muted>
+          RENDEZ-VOUS DIRECT
+        </P>
+        <H1 style={{ marginVertical: 18 }}>{appointment.name}</H1>
+        <P>
+          {dayLabel(appointment.day)} · {appointment.time} –{" "}
+          {endTime(appointment.time, appointment.duration)}
+        </P>
+        <P muted style={{ marginVertical: 18 }}>
+          {appointment.serviceName}
+          {"\n"}
+          {appointment.address}
+        </P>
+        {appointment.cancelled ? (
+          <Note>Ce rendez-vous a été annulé.</Note>
+        ) : (
+          <>
+            <TextButton onPress={() => setCancelId(appointment.id)}>
+              Annuler ce rendez-vous
+            </TextButton>
+            {cancelId === appointment.id && (
+              <Note>
+                <P>
+                  Cette annulation libère votre agenda. Prévenez directement{" "}
+                  {appointment.name}.
+                </P>
+                <Button
+                  onPress={() =>
+                    run(() => {
+                      setStore(cancelExternalSession(store, appointment.id));
+                      setCancelId("");
+                      message("Rendez-vous annulé.");
+                    })
+                  }
+                >
+                  Confirmer l’annulation du rendez-vous
+                </Button>
+                <TextButton onPress={() => setCancelId("")}>
+                  Conserver le rendez-vous
+                </TextButton>
+              </Note>
+            )}
+          </>
+        )}
+        {!!error && <Note>{error}</Note>}
+        <TextButton onPress={() => go("external-session-native")}>
+          Ajouter un rendez-vous direct
+        </TextButton>
+      </>
+    );
+  }
   if (screen === "repeat-group-native") {
     if (!g) return <Note>Cours inaccessible.</Note>;
     const current = offers.find((o) => o.id === g.offer.id);
