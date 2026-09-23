@@ -6,6 +6,7 @@ import { saveVerification, uid } from "./workflows";
 import { chooseDocument, openDocument } from "./deviceFiles";
 import {
   Button,
+  Dialog,
   Chip,
   Eyebrow,
   Field,
@@ -55,6 +56,7 @@ export function CoachVerification({ store, setStore, go, message }: FlowProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [history, setHistory] = useState(false);
+  const [library, setLibrary] = useState(false);
   const feedback = useContext(SaveFeedbackContext);
   const request = useRef<{ success: number; failure: number } | null>(null);
   const initial = useRef(JSON.stringify(v));
@@ -159,23 +161,137 @@ export function CoachVerification({ store, setStore, go, message }: FlowProps) {
     (p) => practiceState(v, p, today()) === "pending",
   ).length;
   const busy = uploading || feedback.pending > 0;
+  const commonKinds: ProofKind[] = ["identity", "insurance"];
+  const commonMissing = commonKinds.filter(
+    (kind) =>
+      !v.files.some(
+        (f) =>
+          f.kind === kind &&
+          f.path.trim() &&
+          (!f.expires || f.expires >= today()),
+      ),
+  );
+  const specificMissing = v.practices.flatMap((practice) =>
+    missingProofs(v, practice, today())
+      .filter((kind) => !commonKinds.includes(kind))
+      .map((kind) => ({ practice, kind })),
+  );
+  const expiredProof = v.files.find((f) => f.expires && f.expires < today());
+  const needsContext = (p: string) =>
+    (v.professionalStatus !== "qualified" ||
+      ["Yoga", "Récupération"].includes(p)) &&
+    v.context.trim().length < 20;
+  const contextMissing = v.practices.some(needsContext);
+  const nextProof = commonMissing.length
+    ? { kind: commonMissing[0], practice: "" }
+    : (specificMissing[0] ??
+      (expiredProof
+        ? { kind: expiredProof.kind, practice: expiredProof.practices[0] ?? "" }
+        : undefined));
+  const readyPractices = v.practices.filter(
+    (p) =>
+      !missingProofs(v, p, today()).length &&
+      !needsContext(p) &&
+      !filesFor(v, p).some((f) => f.expires && f.expires < today()) &&
+      !["approved", "pending"].includes(practiceState(v, p, today())),
+  );
+
   return (
     <>
       <Eyebrow>DOCUMENTS & VÉRIFICATIONS</Eyebrow>
-      <H1 style={{ marginVertical: 20 }}>
-        Vos pratiques.{"\n"}La confiance en plus.
-      </H1>
-      {error ? <Note style={{ marginBottom: 16 }}>{error}</Note> : null}
+      <H1 style={{ marginTop: 16, marginBottom: 12 }}>Votre dossier coach.</H1>
+      <P muted>
+        Ajoutez vos pièces, puis envoyez vos pratiques à l’équipe pour
+        vérification.
+      </P>
+      {error && !editor ? (
+        <Note style={{ marginVertical: 16 }}>{error}</Note>
+      ) : null}
       {!store.connected && (
         <P small muted>
           Simulation : utilisez uniquement des références fictives.
         </P>
       )}
-      <P muted>
-        {!v.practices.length
-          ? "Choisissez ce que vous souhaitez enseigner. Nous adapterons votre dossier."
-          : `${approved} pratique${approved > 1 ? "s" : ""} validée${approved > 1 ? "s" : ""} sur ${v.practices.length}${pending ? ` · ${pending} en vérification` : ""}`}
-      </P>
+      <View
+        style={{
+          backgroundColor: "#f5f5f3",
+          borderRadius: 24,
+          padding: 20,
+          marginTop: 20,
+          marginBottom: 8,
+        }}
+      >
+        <P bold>
+          {!v.practices.length
+            ? "Commençons par vos pratiques"
+            : nextProof
+              ? "Votre prochaine étape"
+              : contextMissing
+                ? "Précisons votre activité"
+                : readyPractices.length
+                  ? "Prêt à envoyer"
+                  : pending
+                    ? "Votre dossier est en cours d’examen"
+                    : "Vos pratiques sont validées"}
+        </P>
+        <P small muted style={{ marginTop: 6 }}>
+          {!v.practices.length
+            ? "Choisissez ce que vous souhaitez enseigner. Nous adapterons votre dossier."
+            : nextProof
+              ? "Les pièces communes sont demandées une seule fois. Vos qualifications sont ensuite associées aux pratiques concernées."
+              : contextMissing
+                ? "Décrivez vos séances et votre encadrement en quelques mots pour que l’équipe puisse examiner votre situation."
+                : readyPractices.length
+                  ? "Vos pièces sont ajoutées. L’équipe doit encore les vérifier avant d’autoriser vos pratiques."
+                  : pending
+                    ? "Vous recevrez une notification après vérification. Aucune nouvelle pièce n’est attendue pour le moment."
+                    : "Vous pouvez retrouver vos justificatifs et leur validité ci-dessous."}
+        </P>
+        {!!v.practices.length && (
+          <P small style={{ marginTop: 10 }}>
+            {approved} validée{approved > 1 ? "s" : ""} · {pending} en
+            vérification · {v.practices.length - approved - pending} à préparer
+          </P>
+        )}
+        {nextProof && !!v.practices.length && (
+          <Button
+            style={{ marginTop: 16 }}
+            disabled={busy}
+            onPress={() => {
+              const candidates = (
+                nextProof.practice ? filesFor(v, nextProof.practice) : v.files
+              ).filter((f) => f.kind === nextProof.kind);
+              const existing =
+                candidates.find((f) => f.expires && f.expires < today()) ??
+                candidates[0];
+              if (existing) {
+                setEditor({ ...existing });
+                setRemove(false);
+              } else addFile(nextProof.kind, nextProof.practice);
+            }}
+          >{`Compléter · ${proofKinds[nextProof.kind]}`}</Button>
+        )}
+        {!nextProof && contextMissing && (
+          <Button
+            style={{ marginTop: 16 }}
+            disabled={busy}
+            onPress={() => setEditingPractices(true)}
+          >
+            Compléter ma situation
+          </Button>
+        )}
+        {!nextProof && !contextMissing && !!readyPractices.length && (
+          <Button
+            style={{ marginTop: 16 }}
+            disabled={busy}
+            onPress={() => save(v, readyPractices)}
+          >
+            {readyPractices.length === 1
+              ? `Envoyer ${readyPractices[0]} à vérifier`
+              : `Envoyer ${readyPractices.length} pratiques à vérifier`}
+          </Button>
+        )}
+      </View>
       <Setting
         title="Vos pratiques et votre statut"
         description={
@@ -224,7 +340,8 @@ export function CoachVerification({ store, setStore, go, message }: FlowProps) {
               })
             }
           />
-          {v.professionalStatus !== "qualified" && (
+          {(v.professionalStatus !== "qualified" ||
+            v.practices.some((p) => ["Yoga", "Récupération"].includes(p))) && (
             <Field
               label="Votre situation et votre encadrement"
               value={v.context}
@@ -244,18 +361,25 @@ export function CoachVerification({ store, setStore, go, message }: FlowProps) {
       {!!v.practices.length && (
         <>
           <Rule />
-          <H2>Votre dossier professionnel</H2>
+          <H2>1. Vos pièces communes</H2>
           <P small muted style={{ marginTop: 8 }}>
-            Ces documents sont communs à toutes vos pratiques.
+            Identité et assurance · {2 - commonMissing.length} sur 2 ajoutées.
+            Un seul dépôt pour toutes vos pratiques.
           </P>
           {(["identity", "insurance"] as ProofKind[]).map((kind) => {
-            const file = v.files.find((f) => f.kind === kind);
+            const file =
+              v.files.find(
+                (f) =>
+                  f.kind === kind &&
+                  f.path &&
+                  (!f.expires || f.expires >= today()),
+              ) ?? v.files.find((f) => f.kind === kind);
             return (
               <Setting
                 key={kind}
                 title={proofKinds[kind]}
                 description={
-                  file
+                  file?.path
                     ? file.expires && file.expires < today()
                       ? "À renouveler"
                       : "Document ajouté · privé"
@@ -270,15 +394,29 @@ export function CoachVerification({ store, setStore, go, message }: FlowProps) {
             );
           })}
           <Rule />
-          <H2>Vos pratiques à vérifier</H2>
+          <H2>2. Vos qualifications par pratique</H2>
+          <P small muted style={{ marginTop: 8 }}>
+            Un document peut couvrir plusieurs pratiques. Ouvrez une pratique
+            pour compléter ou consulter ses pièces.
+          </P>
           {v.practices.map((practice) => {
             const state = practiceState(v, practice, today()),
-              missing = missingProofs(v, practice, today());
+              missing = missingProofs(v, practice, today()),
+              specific = missing.filter((kind) => !commonKinds.includes(kind));
             return (
-              <View key={practice}>
+              <View
+                key={practice}
+                style={{
+                  marginTop: 12,
+                  borderWidth: 1,
+                  borderColor: "#e7e7e7",
+                  borderRadius: 20,
+                  paddingHorizontal: 16,
+                }}
+              >
                 <Setting
                   title={practice}
-                  description={`${reviewLabels[state]}${state === "draft" && missing.length ? ` · ${missing.length} justificatif${missing.length > 1 ? "s" : ""} à compléter` : ""}`}
+                  description={`${state === "draft" && !missing.length && !needsContext(practice) ? "Prête à envoyer" : reviewLabels[state]}${specific.length ? ` · ${specific.length} pièce${specific.length > 1 ? "s" : ""} spécifique${specific.length > 1 ? "s" : ""} à ajouter` : ""}`}
                   onPress={() =>
                     setExpanded(expanded === practice ? "" : practice)
                   }
@@ -304,28 +442,25 @@ export function CoachVerification({ store, setStore, go, message }: FlowProps) {
                             f.kind === kind && !docs.some((d) => d.id === f.id),
                         );
                         return (
-                          <View key={kind} style={{ marginTop: 14 }}>
-                            <P bold>{proofKinds[kind]}</P>
-                            {docs.map((f) => (
-                              <TextButton
-                                key={f.id}
-                                onPress={() => {
-                                  setEditor({ ...f });
-                                  setRemove(false);
-                                }}
-                              >
-                                {f.title}
-                                {f.expires && f.expires < today()
-                                  ? " · Expiré"
-                                  : ""}
-                              </TextButton>
-                            ))}
-                            {!docs.length && (
-                              <TextButton
+                          <View key={kind}>
+                            {docs.length ? (
+                              docs.map((f) => (
+                                <Setting
+                                  key={f.id}
+                                  title={proofKinds[kind]}
+                                  description={`${f.title} · ${f.expires && f.expires < today() ? "À renouveler" : "Pièce ajoutée"}`}
+                                  onPress={() => {
+                                    setEditor({ ...f });
+                                    setRemove(false);
+                                  }}
+                                />
+                              ))
+                            ) : (
+                              <Setting
+                                title={`Ajouter · ${proofKinds[kind]}`}
+                                description="À ajouter"
                                 onPress={() => addFile(kind, practice)}
-                              >
-                                Ajouter · {proofKinds[kind]}
-                              </TextButton>
+                              />
                             )}
                             {reusable.map((f) => (
                               <TextButton
@@ -370,14 +505,21 @@ export function CoachVerification({ store, setStore, go, message }: FlowProps) {
                       ["identity", "insurance"].includes(kind),
                     ) && (
                       <P small muted style={{ marginTop: 12 }}>
-                        Complétez aussi le dossier professionnel commun
-                        ci-dessus.
+                        Les pièces communes sont encore à compléter dans la
+                        première section.
                       </P>
                     )}
                     {!["approved", "pending"].includes(state) && (
                       <Button
                         style={{ marginTop: 16 }}
-                        disabled={busy || !!missing.length}
+                        disabled={
+                          busy ||
+                          !!missing.length ||
+                          needsContext(practice) ||
+                          filesFor(v, practice).some(
+                            (f) => f.expires && f.expires < today(),
+                          )
+                        }
                         onPress={() => save(v, [practice])}
                       >{`Soumettre ${practice}`}</Button>
                     )}
@@ -399,48 +541,80 @@ export function CoachVerification({ store, setStore, go, message }: FlowProps) {
             );
           })}
           <Rule />
-          <H2>Vos documents</H2>
-          <P small muted style={{ marginTop: 8 }}>
-            Un seul dépôt, même pour plusieurs pratiques. L’identité et
-            l’assurance constituent le dossier commun demandé par Partant.
-          </P>
-          {!v.files.length && (
-            <P muted style={{ marginTop: 16 }}>
-              Ajoutez votre premier justificatif depuis une pratique ou
-              ci-dessous.
-            </P>
-          )}
-          {v.files.map((f) => (
-            <Setting
-              key={f.id}
-              title={f.title}
-              description={`${["identity", "insurance"].includes(f.kind) ? "Dossier commun" : f.practices.join(" · ") || "Aucune pratique associée"}${f.expires ? ` · ${f.expires < today() ? "Expiré le" : "Valable jusqu’au"} ${new Date(f.expires + "T12:00:00").toLocaleDateString("fr-FR")}` : ""}`}
-              onPress={() => {
-                setEditor({ ...f });
-                setRemove(false);
-              }}
-            />
-          ))}
-          {!editor && (
-            <TextButton onPress={() => addFile()}>
-              Ajouter un document
-            </TextButton>
+          <Setting
+            title="Tous mes documents"
+            description={`${v.files.length} document${v.files.length > 1 ? "s" : ""} · consulter, réutiliser ou remplacer`}
+            onPress={() => setLibrary(!library)}
+          />
+          {library && (
+            <>
+              {v.files.map((f) => (
+                <Setting
+                  key={f.id}
+                  title={f.title}
+                  description={`${commonKinds.includes(f.kind) ? "Pièce commune" : f.practices.join(" · ") || "Aucune pratique associée"}${f.expires ? ` · ${f.expires < today() ? "Expiré le" : "Valable jusqu’au"} ${new Date(f.expires + "T12:00:00").toLocaleDateString("fr-FR")}` : ""}`}
+                  onPress={() => {
+                    setEditor({ ...f });
+                    setRemove(false);
+                  }}
+                />
+              ))}
+              <TextButton onPress={() => addFile()}>
+                Ajouter un document
+              </TextButton>
+            </>
           )}
           {editor && (
-            <View
-              style={{
-                borderWidth: 1,
-                borderColor: "#dedede",
-                borderRadius: 24,
-                padding: 18,
-                marginVertical: 18,
+            <Dialog
+              title={
+                v.files.some((f) => f.id === editor.id)
+                  ? "Modifier un document"
+                  : proofKinds[editor.kind]
+              }
+              open
+              onClose={() => {
+                if (!busy) {
+                  setEditor(null);
+                  setRemove(false);
+                }
               }}
             >
-              <H2>
-                {v.files.some((f) => f.id === editor.id)
-                  ? "Modifier un document"
-                  : "Nouveau document"}
-              </H2>
+              {error ? <Note>{error}</Note> : null}
+              {!v.files.some((f) => f.id === editor.id) &&
+                !commonKinds.includes(editor.kind) &&
+                v.files
+                  .filter(
+                    (f) =>
+                      f.kind === editor.kind &&
+                      f.path &&
+                      (!f.expires || f.expires >= today()),
+                  )
+                  .map((f) => (
+                    <Setting
+                      key={f.id}
+                      title={`Réutiliser ${f.title}`}
+                      description="Déjà dans votre dossier · aucun nouveau dépôt"
+                      onPress={() => {
+                        if (!busy)
+                          save({
+                            ...v,
+                            files: v.files.map((x) =>
+                              x.id === f.id
+                                ? {
+                                    ...x,
+                                    practices: [
+                                      ...new Set([
+                                        ...x.practices,
+                                        ...editor.practices,
+                                      ]),
+                                    ],
+                                  }
+                                : x,
+                            ),
+                          });
+                      }}
+                    />
+                  ))}
               <Select
                 label="Type de justificatif"
                 value={editor.kind}
@@ -602,7 +776,7 @@ export function CoachVerification({ store, setStore, go, message }: FlowProps) {
                   </TextButton>
                 </Note>
               )}
-            </View>
+            </Dialog>
           )}
           {dirty && !editor && !editingPractices && (
             <Button disabled={busy} onPress={() => save()}>

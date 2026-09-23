@@ -59,7 +59,7 @@ async function fillFile(label, path, expiry = "") {
   await click("Pilates");
   await click("Enregistrer mes pratiques");
   ok(
-    has("Votre dossier professionnel") && has("Vos pratiques à vérifier"),
+    has("1. Vos pièces communes") && has("2. Vos qualifications par pratique"),
     "Common dossier and scoped practices separated",
   );
   ok(!has("Complétez les quatre"), "No fixed four-document wall");

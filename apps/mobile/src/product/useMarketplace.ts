@@ -58,6 +58,13 @@ export function useMarketplace(live: boolean) {
     [error, setError] = useState(""),
     [pending, setPending] = useState(0);
   const [session, setSession] = useState<Session | null>(null);
+  const [profileError, setProfileError] = useState("");
+  const [authReturning, setAuthReturning] = useState(
+    () =>
+      live &&
+      Platform.OS === "web" &&
+      new URLSearchParams(window.location.search).has("code"),
+  );
   const [loadedIdentity, setLoadedIdentity] = useState<
     string | null | undefined
   >(undefined);
@@ -105,26 +112,48 @@ export function useMarketplace(live: boolean) {
   const signingOut = useRef(false);
   const [leaving, setLeaving] = useState(false);
   const [saveResult, setSaveResult] = useState({ success: 0, failure: 0 });
-  const refreshing = useRef(false);
+  // A guest request must never hold up the newly authenticated identity.
+  const refreshing = useRef<{
+    epoch: number;
+    promise: Promise<Store | undefined>;
+  } | null>(null);
+  function adoptIdentity(id: string | undefined) {
+    if (identity.current === id) return;
+    epoch.current++;
+    identity.current = id;
+    version.current = undefined;
+    setLoadedIdentity(undefined);
+    setProfileError("");
+    assign(connectedInitial());
+  }
   async function refresh() {
-    if (!live || signingOut.current || jobs.current || refreshing.current)
-      return;
-    refreshing.current = true;
-    try {
-      const token = epoch.current;
-      const data = await invoke({
-        ifVersion: version.current,
-        ifStaff: !!current.current.staff,
-        scope: identity.current ?? null,
-      });
-      if (token !== epoch.current || jobs.current || !active.current) return;
-      version.current = data.version;
-      if (!data.unchanged) assign(data.store);
-      setLoadedIdentity(identity.current ?? null);
-      return current.current;
-    } finally {
-      refreshing.current = false;
-    }
+    if (!live || signingOut.current || jobs.current) return;
+    const token = epoch.current;
+    if (refreshing.current?.epoch === token) return refreshing.current.promise;
+    const scope = identity.current ?? null;
+    setProfileError("");
+    const promise = (async () => {
+      try {
+        const data = await invoke({
+          ifVersion: version.current,
+          ifStaff: !!current.current.staff,
+          scope,
+        });
+        if (token !== epoch.current || jobs.current || !active.current) return;
+        version.current = data.version;
+        if (!data.unchanged) assign(data.store);
+        setLoadedIdentity(scope);
+        return current.current;
+      } catch (e) {
+        if (token !== epoch.current || !active.current) return;
+        setProfileError((e as Error).message);
+        throw e;
+      } finally {
+        if (refreshing.current?.epoch === token) refreshing.current = null;
+      }
+    })();
+    refreshing.current = { epoch: token, promise };
+    return promise;
   }
   async function execute(
     commands: Command[],
@@ -342,7 +371,9 @@ export function useMarketplace(live: boolean) {
       if (!signingOut.current || !s) setSession(s);
     });
     if (Platform.OS === "web")
-      completeAuth(window.location.href).catch((e) => setError(e.message));
+      completeAuth(window.location.href)
+        .catch((e) => setError(e.message))
+        .finally(() => setAuthReturning(false));
     else
       Linking.getInitialURL()
         .then((url) => {
@@ -359,12 +390,7 @@ export function useMarketplace(live: boolean) {
   }, [live]);
   useEffect(() => {
     if (!live || !ready) return;
-    if (identity.current !== session?.user.id) {
-      epoch.current++;
-      identity.current = session?.user.id;
-      version.current = undefined;
-      assign(connectedInitial());
-    }
+    adoptIdentity(session?.user.id);
     void refresh().catch((e) => setError(e.message));
     let nextPoll = 0;
     let failures = 0;
@@ -430,28 +456,42 @@ export function useMarketplace(live: boolean) {
     name: string,
     role: "client" | "coach",
   ) {
-    const { data, error } = await supabase.auth.verifyOtp({
-      email,
-      token: code,
-      type: "email",
-    });
+    const { data, error } = await withAuthTimeout(
+      supabase.auth.verifyOtp({
+        email,
+        token: code,
+        type: "email",
+      }),
+    );
     if (error) throw error;
     if (!data.user) throw Error("Connexion impossible.");
-    identity.current = data.user.id;
+    adoptIdentity(data.user.id);
     setSession(data.session);
-    const loaded = await invoke({});
-    version.current = loaded.version;
-    const saved = await execute([], { name, role });
-    assign(saved);
-    setLoadedIdentity(data.user.id);
+    await registerProfile(data.user.id, name, role);
+  }
+  async function registerProfile(
+    id: string,
+    name: string,
+    role: "client" | "coach",
+  ) {
+    // Invalidate reads started before registration; its acknowledged snapshot wins.
+    epoch.current++;
+    jobs.current++;
+    try {
+      const saved = await execute([], { name, role });
+      assign(saved);
+      setLoadedIdentity(id);
+      setProfileError("");
+    } finally {
+      jobs.current = Math.max(0, jobs.current - 1);
+    }
   }
   async function finishSocial(name: string, role: "client" | "coach") {
     if (!session?.user)
       throw Error("Connectez-vous avant de compléter votre compte.");
     await queue.current;
-    assign(await execute([], { name, role }));
-    setLoadedIdentity(session.user.id);
-    await AsyncStorage.removeItem("partant-auth-intent");
+    await registerProfile(session.user.id, name, role);
+    void AsyncStorage.removeItem("partant-auth-intent").catch(() => {});
   }
   async function submitCoachApplication(body: string) {
     if (current.current.account?.role !== "client")
@@ -572,7 +612,7 @@ export function useMarketplace(live: boolean) {
     queue.current = Promise.resolve();
     jobs.current = 0;
     setPending(0);
-    refreshing.current = false;
+    refreshing.current = null;
     const owner = current.current.account?.id;
     // Exit the private UI immediately; never wait for queued edits or APNs.
     assign(live ? connectedInitial() : switchAccount(current.current, null));
@@ -638,6 +678,8 @@ export function useMarketplace(live: boolean) {
     store,
     profileReady:
       !live || (ready && loadedIdentity === (session?.user.id ?? null)),
+    profileError,
+    authReturning,
     submitCoachApplication,
     submitPrivacyRequest,
     deleteOwnAccount,

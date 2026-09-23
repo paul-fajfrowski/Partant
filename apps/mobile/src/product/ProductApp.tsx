@@ -250,17 +250,19 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     if (!live || !market.profileReady || !market.session || store.account)
       return;
     let cancelled = false;
-    AsyncStorage.getItem("partant-auth-intent").then((raw) => {
-      if (cancelled) return;
-      if (raw) {
-        try {
-          const intent = JSON.parse(raw);
-          setRole(intent.role === "coach" ? "coach" : "client");
-          setName(intent.name || "");
-        } catch {}
-      }
-      setScreen("completeAccount");
-    });
+    AsyncStorage.getItem("partant-auth-intent")
+      .catch(() => null)
+      .then((raw) => {
+        if (cancelled) return;
+        if (raw) {
+          try {
+            const intent = JSON.parse(raw);
+            setRole(intent.role === "coach" ? "coach" : "client");
+            setName(intent.name || "");
+          } catch {}
+        }
+        setScreen("completeAccount");
+      });
     return () => {
       cancelled = true;
     };
@@ -431,10 +433,10 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       routedAccount.current === store.account.id
     )
       return;
-    routedAccount.current = store.account.id;
     setCodeRecipient("");
     initial.current = true;
     if (!live) {
+      routedAccount.current = store.account.id;
       if (["welcome", "completeAccount", "login"].includes(screen))
         setScreen(store.account.role === "coach" ? "coach" : "explore");
       return;
@@ -442,12 +444,14 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     const account = store.account;
     let cancelled = false;
     (async () => {
-      const journey = pendingJourney.current ?? (await readJourney());
+      const journey =
+        pendingJourney.current ?? (await readJourney().catch(() => null));
       if (cancelled) return;
+      routedAccount.current = account.id;
       pendingJourney.current = null;
-      await clearJourney();
-      await AsyncStorage.removeItem("partant-auth-intent");
-      if (cancelled) return;
+      // Storage housekeeping is independent of navigation, especially on iPhone.
+      void clearJourney().catch(() => {});
+      void AsyncStorage.removeItem("partant-auth-intent").catch(() => {});
       history.current = [];
       setModal("");
       setRole(account.role);
@@ -5616,6 +5620,72 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     "completeAccount",
     "onboarding",
   ].includes(screen);
+  const authTransition =
+    live &&
+    !market.leaving &&
+    (market.authReturning ||
+      (!!market.session &&
+        (!market.profileReady ||
+          ["welcome", "login", "code"].includes(screen) ||
+          (screen === "completeAccount" && !!store.account))) ||
+      (busy && ["login", "code", "completeAccount"].includes(screen)));
+  if (authTransition) {
+    sticky = null;
+    content = (
+      <Section
+        style={{ flex: 1, justifyContent: "center", paddingVertical: 64 }}
+      >
+        <Wordmark />
+        {!market.profileError && (
+          <ActivityIndicator
+            color={t.ink}
+            style={{ alignSelf: "flex-start", marginTop: 32 }}
+          />
+        )}
+        <H1 style={{ marginTop: 24, marginBottom: 12 }}>
+          {market.profileError
+            ? "Reprenons la connexion."
+            : market.session
+              ? "Votre espace arrive."
+              : "Connexion en cours."}
+        </H1>
+        <View accessibilityLiveRegion="polite">
+          <P muted>
+            {market.profileError
+              ? "Votre connexion est confirmée, mais votre espace n’a pas pu être chargé."
+              : market.session
+                ? "Nous préparons vos informations et vos séances."
+                : "Nous attendons la confirmation de votre connexion."}
+          </P>
+        </View>
+        {!!market.profileError && (
+          <Button
+            style={{ marginTop: 24 }}
+            disabled={busy}
+            onPress={() =>
+              run(async () => {
+                await market.refresh();
+              })
+            }
+          >
+            Réessayer
+          </Button>
+        )}
+        {!!market.session && (
+          <TextButton
+            onPress={() =>
+              run(async () => {
+                await market.signOut();
+                go("welcome");
+              })
+            }
+          >
+            Revenir à l’accueil
+          </TextButton>
+        )}
+      </Section>
+    );
+  }
   if (webWide && entryScreen) {
     const form =
       screen === "welcome" &&
@@ -5624,7 +5694,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
         : null;
     // Welcome was augmented with a demo footer: retain the underlying choice form.
     let entryContent: React.ReactNode = content;
-    if (screen === "welcome") {
+    if (screen === "welcome" && !authTransition) {
       const welcome = form?.[0];
       const original =
         React.isValidElement<{ children: React.ReactNode }>(welcome) &&
@@ -5672,7 +5742,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           },
         ]}
       >
-        {pageTitle && (
+        {pageTitle && !authTransition && (
           <Pagebar
             title={pageTitle}
             onBack={back}
@@ -5728,7 +5798,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           </ScrollView>
           {sticky}
         </KeyboardAvoidingView>
-        {!webWide && (bottom || coachBottom) && (
+        {!authTransition && !webWide && (bottom || coachBottom) && (
           <View style={styles.bottomNav}>
             {(coachBottom ? coachTabs : navItems).map(([id, icon, title]) => (
               <Pressable
@@ -5795,7 +5865,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             <P style={{ fontSize: 14, color: "#fff" }}>{notice}</P>
           </View>
         )}
-        {(busy || market.leaving) && (
+        {((busy && !authTransition) || market.leaving) && (
           <View
             style={{
               position: "absolute",
@@ -5877,7 +5947,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           accountLabel={!store.account ? "Se connecter" : undefined}
           staff={!!store.staff}
           unreadCounts={{ messages: unreadMessages, notifications: unread }}
-          navigationDisabled={busy || (live && market.pending > 0)}
+          navigationDisabled={
+            authTransition || busy || (live && market.pending > 0)
+          }
           contentWidth={
             entryScreen ||
             ["explore", "coach", "config", "messages", "chat", "team"].includes(

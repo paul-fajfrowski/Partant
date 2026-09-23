@@ -246,7 +246,7 @@ async function noOverflow(page, label) {
   }
   await coach.getByTestId("desktop-setting-documents").click();
   await coach
-    .getByText("Votre dossier professionnel", { exact: true })
+    .getByText("1. Vos pièces communes", { exact: true })
     .waitFor();
   ok(
     !(await coach
@@ -286,7 +286,7 @@ async function noOverflow(page, label) {
   await noOverflow(coach, "Documents fit small desktop");
   await coach.setViewportSize({ width: 390, height: 844 });
   await coach
-    .getByText("Votre dossier professionnel", { exact: true })
+    .getByText("1. Vos pièces communes", { exact: true })
     .waitFor();
   ok(
     !(await coach.getByTestId("desktop-shell").count()),

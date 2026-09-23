@@ -91,6 +91,12 @@ if (process.env.PARTANT_QA_SESSION) {
   );
   w.localStorage.setItem(saved.key, JSON.stringify(saved.session));
 }
+if (process.env.PARTANT_QA_STORAGE) {
+  for (const [key, value] of Object.entries(
+    JSON.parse(process.env.PARTANT_QA_STORAGE),
+  ))
+    w.localStorage.setItem(key, JSON.stringify(value));
+}
 for (const script of scripts) w.eval(script);
 const wait = () => new Promise((r) => setTimeout(r, 150));
 let count = 0;
