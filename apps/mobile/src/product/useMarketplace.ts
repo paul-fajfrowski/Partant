@@ -1,4 +1,7 @@
-import { coachAgendaPreview } from "./coachAgendaPreview";
+import {
+  coachAgendaPreview,
+  restoreCoachAgendaPreview,
+} from "./coachAgendaPreview";
 import { unregisterPushDevice, clearLocalPushDevice } from "./pushDevice";
 import * as Messaging from "./messaging";
 import { report, deleteAccount } from "./workflows";
@@ -352,7 +355,12 @@ export function useMarketplace(live: boolean) {
       .then((raw) => {
         if (raw) {
           try {
-            assign({ ...initialStore, ...JSON.parse(raw) });
+            const restored = { ...initialStore, ...JSON.parse(raw) };
+            assign(
+              previewKey === "partant-native-recette-coach-realiste-30"
+                ? restoreCoachAgendaPreview(restored)
+                : restored,
+            );
           } catch {}
         }
         setReady(true);

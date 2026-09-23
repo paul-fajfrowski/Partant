@@ -88,7 +88,7 @@ export function coachAgendaPreview(): Store {
       ...configFor(s, "0"),
       published: true,
       weeklyConfigured: true,
-      notice: 0,
+      notice: 2,
       blocks: [],
       exceptions: {},
       week: Array.from({ length: 7 }, (_, i) =>
@@ -196,4 +196,12 @@ export function coachAgendaPreview(): Store {
     b.day < today() ? { ...b, status: "completed" } : b,
   );
   return s;
+}
+
+/** Repair only the initial isolated demo, without touching a real coach’s rules. */
+export function restoreCoachAgendaPreview(store: Store): Store {
+  const cfg = store.settings?.["0"];
+  return cfg?.notice === 0
+    ? { ...store, settings: { ...store.settings, "0": { ...cfg, notice: 2 } } }
+    : store;
 }

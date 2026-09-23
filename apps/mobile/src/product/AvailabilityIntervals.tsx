@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Switch, View } from "react-native";
-import { Offer, generatedTimes, today } from "./model";
+import { Pressable, Switch, View } from "react-native";
+import { Offer, generatedTimes, today, validateIntervals, mins } from "./model";
 import type { CoachSettings, Interval } from "./extendedTypes";
-import { Button, Dialog, Field, P, Row, Rule, TextButton } from "./ui";
+import { Button, Dialog, Field, P, Row, TextButton, Icon, Setting } from "./ui";
 
 const price = (o: Offer) =>
   `${o.price.toLocaleString("fr-FR")} €${o.kind === "Groupe" ? "/pers." : ""}`;
@@ -13,6 +13,38 @@ export function intervalSummary(
 ) {
   return `${a}–${b} · ${ids == null ? "Toutes les séances" : ids.map((id) => offers.find((o) => o.id === id)?.name ?? "Offre indisponible").join(", ")} · ${places == null ? "Tous les lieux autorisés" : places.map((id) => locations?.[id]?.name ?? "Lieu à vérifier").join(", ")}`;
 }
+const compact = (values: string[]) =>
+  values.length > 2
+    ? `${values.slice(0, 2).join(", ")} +${values.length - 2}`
+    : values.join(", ");
+const validTime = (time: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
+
+/** UI-only validation; validateIntervals still checks the complete list on apply/save. */
+export function intervalEditorIssue(
+  range: Interval,
+  list: Interval[],
+  index: number | null,
+) {
+  const [start, end] = range;
+  if (!start || !end) return "Renseignez le début et la fin de la plage.";
+  if (!validTime(start) || !validTime(end))
+    return "Utilisez le format HH:mm, par exemple 09:15.";
+  if (mins(end) <= mins(start)) return "La fin doit être après le début.";
+  const collision = list.find(
+    (r, i) =>
+      i !== index &&
+      validTime(r[0]) &&
+      validTime(r[1]) &&
+      mins(start) < mins(r[1]) &&
+      mins(r[0]) < mins(end),
+  );
+  if (collision)
+    return `Cette plage chevauche ${collision[0]}–${collision[1]}. Ajustez vos horaires.`;
+  if (range[2]?.length === 0) return "Choisissez au moins une séance.";
+  if (range[3]?.length === 0) return "Choisissez au moins un lieu.";
+  return "";
+}
+
 export function AvailabilityIntervals({
   list,
   offers,
@@ -24,269 +56,406 @@ export function AvailabilityIntervals({
   settings: CoachSettings;
   onChange: (list: Interval[]) => void;
 }) {
-  const [placeEditing, setPlaceEditing] = useState<number | null>(null);
-  const [placeSelection, setPlaceSelection] = useState<string[] | null>(null);
-  const [editing, setEditing] = useState<number | null>(null);
-  const [selection, setSelection] = useState<string[] | null>(null);
-  const replace = (index: number, value: Interval) =>
-    onChange(list.map((range, i) => (i === index ? value : range)));
+  const [editor, setEditor] = useState<{
+    index: number | null;
+    range: Interval;
+    duplicated?: boolean;
+  } | null>(null);
+  const [stage, setStage] = useState<"range" | "offers" | "places">("range");
+  const [preview, setPreview] = useState(false),
+    [removing, setRemoving] = useState(false),
+    [discard, setDiscard] = useState(false);
+  const [error, setError] = useState("");
+  const [original, setOriginal] = useState("");
+  const names = (ids: string[] | null | undefined) =>
+    ids == null
+      ? "Toutes mes séances"
+      : compact(
+          ids.map(
+            (id) =>
+              offers.find((o) => o.id === id)?.name ?? "Offre indisponible",
+          ),
+        );
+  const places = (ids: string[] | null | undefined) =>
+    ids == null
+      ? "Tous les lieux compatibles"
+      : compact(
+          ids.map((id) => settings.locations?.[id]?.name ?? "Lieu à vérifier"),
+        );
+  const start = (index: number | null, range: Interval, duplicated = false) => {
+    const copy = JSON.parse(JSON.stringify(range)) as Interval;
+    setEditor({ index, range: copy, duplicated });
+    setOriginal(JSON.stringify(copy));
+    setStage("range");
+    setPreview(false);
+    setRemoving(false);
+    setDiscard(false);
+    setError("");
+  };
+  const close = () => {
+    if (editor && JSON.stringify(editor.range) !== original) setDiscard(true);
+    else setEditor(null);
+  };
+  const edit = (range: Interval) => {
+    if (editor) setEditor({ ...editor, range });
+    setError("");
+  };
+  const issue = editor
+    ? intervalEditorIssue(editor.range, list, editor.index)
+    : "";
+  const sorted = list
+    .map((range, index) => ({ range, index }))
+    .sort(
+      (a, b) =>
+        (validTime(a.range[0]) ? mins(a.range[0]) : 9999) -
+        (validTime(b.range[0]) ? mins(b.range[0]) : 9999),
+    );
+  const apply = () => {
+    if (!editor) return;
+    try {
+      if (issue) throw Error(issue);
+      const next =
+        editor.index === null
+          ? [...list, editor.range]
+          : list.map((r, i) => (i === editor.index ? editor.range : r));
+      onChange(validateIntervals(next));
+      setEditor(null);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
   return (
-    <View style={{ gap: 10 }}>
-      {list.map(([a, b, ids, places], i) => (
-        <View key={i}>
-          <Row style={{ alignItems: "flex-start" }}>
-            <View style={{ flex: 1 }}>
-              <Field
-                label={`Début de plage ${i + 1}`}
-                value={a}
-                placeholder="HH:mm"
-                onChange={(v) => replace(i, [v, b, ids ?? null, places])}
-              />
+    <View>
+      {sorted.map(({ range, index }) => (
+        <Pressable
+          key={index}
+          accessibilityRole="button"
+          accessibilityLabel={`Modifier la plage ${range[0] || "à compléter"}${range[1] ? `–${range[1]}` : ""}`}
+          onPress={() => start(index, range)}
+          style={{
+            paddingVertical: 16,
+            borderBottomWidth: 1,
+            borderColor: "#e7e7e7",
+            minHeight: 64,
+          }}
+        >
+          <Row between>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <P bold>
+                {range[0] && range[1]
+                  ? `${range[0]}–${range[1]}`
+                  : "Plage à compléter"}
+              </P>
+              <P small muted numberOfLines={2} style={{ marginTop: 4 }}>
+                {names(range[2])} · {places(range[3])}
+              </P>
             </View>
-            <View style={{ flex: 1 }}>
-              <Field
-                label={`Fin de plage ${i + 1}`}
-                value={b}
-                placeholder="HH:mm"
-                onChange={(v) => replace(i, [a, v, ids ?? null, places])}
-              />
-            </View>
+            <Icon name="chevron" size={18} />
           </Row>
-          <Button
-            light
-            onPress={() => {
-              setSelection(ids == null ? null : [...ids]);
-              setEditing(i);
-            }}
-          >
-            Séances de la plage {i + 1}
-          </Button>
-          <P small muted style={{ marginTop: 8 }}>
-            {ids == null
-              ? "Toutes vos séances, à leurs tarifs respectifs."
-              : ids
-                  .map((id) => {
-                    const o = offers.find((x) => x.id === id);
-                    return o
-                      ? `${o.name} · ${o.duration} min · ${price(o)}${o.active ? "" : " · en pause"}`
-                      : "Offre indisponible";
-                  })
-                  .join("\n")}
-          </P>
-          <Button
-            light
-            style={{ marginTop: 12 }}
-            onPress={() => {
-              setPlaceSelection(places == null ? null : [...places]);
-              setPlaceEditing(i);
-            }}
-          >
-            Lieux de la plage {i + 1}
-          </Button>
-          <P small muted style={{ marginTop: 8 }}>
-            {places == null
-              ? "Tous les lieux autorisés par la séance."
-              : places
-                  .map(
-                    (id) => settings.locations?.[id]?.name ?? "Lieu à vérifier",
-                  )
-                  .join(" · ")}
-          </P>
-          {!!a && !!b && (
-            <View style={{ marginTop: 12, gap: 6 }}>
-              <P small bold>
-                Séances possibles dans cette plage
-              </P>
-              {offers
-                .filter(
-                  (o) =>
-                    o.active &&
-                    o.kind !== "Groupe" &&
-                    (ids == null || ids.includes(o.id)),
-                )
-                .map((o) => {
-                  const day = today();
-                  const times = generatedTimes(
-                    {
-                      ...settings,
-                      exceptions: { [day]: [[a, b, ids, places]] },
-                    },
-                    day,
-                    o.duration,
-                    o.id,
-                  );
-                  return (
-                    <P key={o.id} small muted>
-                      {o.name} :{" "}
-                      {times.length
-                        ? `${times.slice(0, 4).join(" · ")}${times.length > 4 ? "…" : ""}`
-                        : "la séance ne tient pas dans cette plage"}
-                    </P>
-                  );
-                })}
-              <P small muted>
-                Les réservations et indisponibilités retireront les départs
-                occupés.
-              </P>
-            </View>
-          )}
-          <TextButton onPress={() => onChange(list.filter((_, j) => j !== i))}>
-            Retirer la plage {i + 1}
-          </TextButton>
-          <Rule />
-        </View>
+        </Pressable>
       ))}
-      <Button light onPress={() => onChange([...list, ["", ""]])}>
-        Ajouter une plage
-      </Button>
       {!list.length && (
-        <P small muted>
-          Journée fermée. Ajoutez vos horaires pour l’ouvrir.
+        <P muted style={{ marginVertical: 20 }}>
+          Aucune disponibilité. Ajoutez votre première plage.
         </P>
       )}
-      <Dialog
-        open={placeEditing !== null}
-        title="Où êtes-vous sur cette plage ?"
-        onClose={() => setPlaceEditing(null)}
+      <Button
+        light
+        style={{ marginTop: 16 }}
+        onPress={() => start(null, ["", "", null, null])}
       >
-        <P muted>
-          Exemple : votre salle le matin, la piste le soir. Le client verra
-          uniquement les lieux compatibles avec sa séance et son horaire.
-        </P>
-        <Row between style={{ minHeight: 64 }}>
-          <P>Tous mes lieux</P>
-          <Switch
-            accessibilityLabel="Tous mes lieux"
-            value={placeSelection === null}
-            onValueChange={(v) =>
-              setPlaceSelection(
-                v ? null : Object.keys(settings.locations ?? {}),
-              )
-            }
-          />
-        </Row>
-        {placeSelection !== null &&
-          Object.entries(settings.locations ?? {}).map(([id, place]) => (
-            <Row key={id} between style={{ minHeight: 64 }}>
-              <View style={{ flex: 1 }}>
-                <P bold>{place.name}</P>
-                <P small muted>
-                  {place.address || place.sector || place.type}
+        Ajouter une plage
+      </Button>
+      <Dialog
+        open={!!editor}
+        title={
+          discard
+            ? "Quitter cette modification ?"
+            : stage === "offers"
+              ? "Séances proposées"
+              : stage === "places"
+                ? "Lieu de la plage"
+                : editor?.duplicated
+                  ? "Dupliquer la plage"
+                  : editor?.index == null
+                    ? "Ajouter une plage"
+                    : "Modifier la plage"
+        }
+        onClose={close}
+      >
+        {editor &&
+          (discard ? (
+            <>
+              <P>
+                Les changements de cette plage n’ont pas été appliqués à la
+                journée.
+              </P>
+              <Button
+                style={{ marginTop: 20 }}
+                onPress={() => setDiscard(false)}
+              >
+                Continuer à modifier
+              </Button>
+              <TextButton
+                onPress={() => {
+                  setEditor(null);
+                  setDiscard(false);
+                }}
+              >
+                Abandonner ces changements
+              </TextButton>
+            </>
+          ) : stage !== "range" ? (
+            <>
+              <TextButton onPress={() => setStage("range")}>
+                Retour à la plage
+              </TextButton>
+              <Row between style={{ minHeight: 56 }}>
+                <P>
+                  {stage === "offers" ? "Toutes mes séances" : "Tous mes lieux"}
                 </P>
-              </View>
-              <Switch
-                accessibilityLabel={`Autoriser ${place.name}`}
-                value={placeSelection.includes(id)}
-                onValueChange={(v) =>
-                  setPlaceSelection(
-                    v
-                      ? [...placeSelection, id]
-                      : placeSelection.filter((x) => x !== id),
-                  )
-                }
+                <Switch
+                  accessibilityLabel={
+                    stage === "offers" ? "Toutes mes séances" : "Tous mes lieux"
+                  }
+                  value={editor.range[stage === "offers" ? 2 : 3] == null}
+                  onValueChange={(v) => {
+                    const r = [...editor.range] as Interval;
+                    if (stage === "offers")
+                      r[2] = v
+                        ? null
+                        : offers.filter((o) => o.active).map((o) => o.id);
+                    else
+                      r[3] = v ? null : Object.keys(settings.locations ?? {});
+                    edit(r);
+                  }}
+                />
+              </Row>
+              {stage === "offers" ? (
+                editor.range[2] == null ? (
+                  <P small muted>
+                    Inclut les offres actives actuelles et celles que vous
+                    créerez.
+                  </P>
+                ) : (
+                  offers.map((o) => (
+                    <Row key={o.id} between style={{ minHeight: 68, gap: 12 }}>
+                      <View style={{ flex: 1 }}>
+                        <P bold>
+                          {o.name}
+                          {!o.active ? " · en pause" : ""}
+                        </P>
+                        <P small muted>
+                          {o.duration} min · {price(o)}
+                        </P>
+                      </View>
+                      <Switch
+                        accessibilityLabel={`Proposer ${o.name}`}
+                        value={editor.range[2]!.includes(o.id)}
+                        onValueChange={(v) =>
+                          edit([
+                            editor.range[0],
+                            editor.range[1],
+                            v
+                              ? [...editor.range[2]!, o.id]
+                              : editor.range[2]!.filter((id) => id !== o.id),
+                            editor.range[3],
+                          ])
+                        }
+                      />
+                    </Row>
+                  ))
+                )
+              ) : editor.range[3] == null ? (
+                <P small muted>
+                  Seuls les lieux autorisés par chaque séance seront proposés.
+                </P>
+              ) : (
+                Object.entries(settings.locations ?? {}).map(([id, p]) => (
+                  <Row key={id} between style={{ minHeight: 68, gap: 12 }}>
+                    <View style={{ flex: 1 }}>
+                      <P bold>{p.name}</P>
+                      <P small muted>
+                        {p.address || p.sector || p.type}
+                      </P>
+                    </View>
+                    <Switch
+                      accessibilityLabel={`Autoriser ${p.name}`}
+                      value={editor.range[3]!.includes(id)}
+                      onValueChange={(v) =>
+                        edit([
+                          editor.range[0],
+                          editor.range[1],
+                          editor.range[2],
+                          v
+                            ? [...editor.range[3]!, id]
+                            : editor.range[3]!.filter((x) => x !== id),
+                        ])
+                      }
+                    />
+                  </Row>
+                ))
+              )}
+              <Button
+                style={{ marginTop: 20 }}
+                onPress={() => setStage("range")}
+              >
+                Revenir aux horaires
+              </Button>
+            </>
+          ) : (
+            <>
+              {editor.duplicated && (
+                <P small muted style={{ marginBottom: 16 }}>
+                  Séances et lieux conservés. Choisissez les nouveaux horaires.
+                </P>
+              )}
+              <Row style={{ alignItems: "flex-start" }}>
+                <View style={{ flex: 1 }}>
+                  <Field
+                    label="Début de plage"
+                    value={editor.range[0]}
+                    placeholder="HH:mm"
+                    onChange={(v) =>
+                      edit([
+                        v,
+                        editor.range[1],
+                        editor.range[2],
+                        editor.range[3],
+                      ])
+                    }
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Field
+                    label="Fin de plage"
+                    value={editor.range[1]}
+                    placeholder="HH:mm"
+                    onChange={(v) =>
+                      edit([
+                        editor.range[0],
+                        v,
+                        editor.range[2],
+                        editor.range[3],
+                      ])
+                    }
+                  />
+                </View>
+              </Row>
+              {!!(
+                error || (editor.range[0] && editor.range[1] ? issue : "")
+              ) && (
+                <View
+                  accessibilityLiveRegion="polite"
+                  style={{ marginBottom: 12 }}
+                >
+                  <P small style={{ color: "#a32626" }}>
+                    {error || issue}
+                  </P>
+                </View>
+              )}
+              <Setting
+                title="Séances proposées"
+                description={names(editor.range[2])}
+                onPress={() => setStage("offers")}
               />
-            </Row>
+              <Setting
+                title="Lieu de la plage"
+                description={places(editor.range[3])}
+                onPress={() => setStage("places")}
+              />
+              <TextButton onPress={() => setPreview((v) => !v)}>
+                {preview
+                  ? "Masquer l’aperçu des horaires"
+                  : "Voir l’aperçu des horaires"}
+              </TextButton>
+              {preview && (
+                <View style={{ gap: 8, marginVertical: 12 }}>
+                  {offers
+                    .filter(
+                      (o) =>
+                        o.active &&
+                        (editor.range[2] == null ||
+                          editor.range[2].includes(o.id)),
+                    )
+                    .map((o) => {
+                      const times =
+                        !issue && o.kind !== "Groupe"
+                          ? generatedTimes(
+                              {
+                                ...settings,
+                                exceptions: { [today()]: [editor.range] },
+                              },
+                              today(),
+                              o.duration,
+                              o.id,
+                            )
+                          : [];
+                      return (
+                        <P key={o.id} small muted>
+                          {o.name} · {o.duration} min · {price(o)} :{" "}
+                          {o.kind === "Groupe"
+                            ? "à programmer dans Mes cours en groupe"
+                            : issue
+                              ? "complétez les horaires"
+                              : times.length
+                                ? times.join(" · ")
+                                : "durée supérieure à la plage"}
+                        </P>
+                      );
+                    })}
+                  <P small muted>
+                    À titre indicatif. Les réservations et indisponibilités
+                    retireront les départs occupés.
+                  </P>
+                </View>
+              )}
+              <Button
+                style={{ marginTop: 16 }}
+                disabled={!!issue}
+                onPress={apply}
+              >
+                Appliquer à la journée
+              </Button>
+              <P small muted style={{ marginTop: 8 }}>
+                Enregistrez ensuite vos modifications pour les rendre
+                disponibles.
+              </P>
+              {editor.index !== null && (
+                <>
+                  <TextButton
+                    onPress={() =>
+                      start(
+                        null,
+                        ["", "", editor.range[2], editor.range[3]],
+                        true,
+                      )
+                    }
+                  >
+                    Dupliquer cette plage
+                  </TextButton>
+                  <TextButton onPress={() => setRemoving((v) => !v)}>
+                    Retirer cette plage
+                  </TextButton>
+                  {removing && (
+                    <View>
+                      <P small>
+                        Les réservations existantes restent confirmées.
+                      </P>
+                      <TextButton
+                        onPress={() => {
+                          onChange(list.filter((_, i) => i !== editor.index));
+                          setEditor(null);
+                        }}
+                      >
+                        Confirmer le retrait
+                      </TextButton>
+                    </View>
+                  )}
+                </>
+              )}
+            </>
           ))}
-        {!Object.keys(settings.locations ?? {}).length && (
-          <P small muted>
-            Configurez d’abord vos lieux dans Lieux & déplacements.
-          </P>
-        )}
-        <Button
-          disabled={placeSelection?.length === 0}
-          onPress={() => {
-            if (placeEditing !== null && list[placeEditing]) {
-              const [a, b, ids] = list[placeEditing];
-              replace(placeEditing, [a, b, ids, placeSelection]);
-              setPlaceEditing(null);
-            }
-          }}
-        >
-          Appliquer les lieux
-        </Button>
-      </Dialog>
-      <Dialog
-        open={editing !== null}
-        title="Quelles séances proposer ?"
-        onClose={() => setEditing(null)}
-      >
-        <P muted>
-          Chaque séance conserve sa durée et son prix. Une réservation bloque le
-          coach pour toutes ses offres pendant ce temps.
-        </P>
-        <Row between style={{ minHeight: 64 }}>
-          <P style={{ flex: 1 }}>Toutes mes séances</P>
-          <Switch
-            accessibilityLabel="Toutes mes séances"
-            value={selection === null}
-            onValueChange={(v) =>
-              setSelection(
-                v ? null : offers.filter((o) => o.active).map((o) => o.id),
-              )
-            }
-            trackColor={{ false: "#ddd", true: "#141414" }}
-            thumbColor="#fff"
-          />
-        </Row>
-        {selection === null ? (
-          <P small muted>
-            Inclut aussi les séances que vous créerez plus tard.
-          </P>
-        ) : (
-          offers.map((o) => (
-            <Row key={o.id} between style={{ minHeight: 68, gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <P bold>
-                  {o.name}
-                  {!o.active ? " · en pause" : ""}
-                </P>
-                <P small muted>
-                  {o.kind} · {o.duration} min · {price(o)}
-                </P>
-              </View>
-              <Switch
-                accessibilityLabel={`Proposer ${o.name}`}
-                value={selection.includes(o.id)}
-                onValueChange={(v) =>
-                  setSelection(
-                    v
-                      ? [...selection, o.id]
-                      : selection.filter((id) => id !== o.id),
-                  )
-                }
-                trackColor={{ false: "#ddd", true: "#141414" }}
-                thumbColor="#fff"
-              />
-            </Row>
-          ))
-        )}
-        {!offers.length && (
-          <P small muted style={{ marginTop: 12 }}>
-            Créez d’abord vos offres dans Séances & tarifs.
-          </P>
-        )}
-        {selection?.length === 0 && (
-          <P small muted>
-            Choisissez au moins une séance.
-          </P>
-        )}
-        <Button
-          style={{ marginTop: 20 }}
-          disabled={selection?.length === 0}
-          onPress={() => {
-            if (editing !== null && list[editing]) {
-              replace(editing, [
-                list[editing][0],
-                list[editing][1],
-                selection,
-                list[editing][3],
-              ]);
-              setEditing(null);
-            }
-          }}
-        >
-          Appliquer à cette plage
-        </Button>
       </Dialog>
     </View>
   );

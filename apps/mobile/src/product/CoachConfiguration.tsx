@@ -1,3 +1,4 @@
+import { AvailabilityWeekEditor } from "./AvailabilityWeekEditor";
 import { CoachVerification } from "./CoachVerification";
 import { selectedPractices } from "./verification";
 import { SectorPicker } from "./SectorPicker";
@@ -9,7 +10,6 @@ import {
 } from "./AvailabilityIntervals";
 import { CoachPlacesEditor } from "./CoachPlacesEditor";
 import { validateLocations } from "./locations";
-import { copyDay } from "./agendaTools";
 import React, { useEffect, useRef, useState, useContext } from "react";
 import { Pressable, View, Switch } from "react-native";
 import {
@@ -181,10 +181,7 @@ function ConfigurationEditor({
     ...savedDraft?.cfg,
   }));
   const [profile, setProfile] = useState<Coach>(savedDraft?.profile ?? c);
-  const [expanded, setExpanded] = useState(0);
   const [error, setError] = useState("");
-  const [copyTargets, setCopyTargets] = useState<number[]>([]);
-  const [copyConfirm, setCopyConfirm] = useState(false);
   const [deleteException, setDeleteException] = useState(false);
   const [exceptionDay, setExceptionDay] = useState(
     initialDate ?? savedDraft?.form?.exceptionDay ?? addDays(today(), 1),
@@ -671,135 +668,16 @@ function ConfigurationEditor({
     return (
       <>
         {feedback}
-        {[
-          "Lundi",
-          "Mardi",
-          "Mercredi",
-          "Jeudi",
-          "Vendredi",
-          "Samedi",
-          "Dimanche",
-        ].map((label, i) => (
-          <View key={label}>
-            <Setting
-              title={label}
-              description={
-                cfg.week[i].length
-                  ? cfg.week[i]
-                      .map((x) => intervalSummary(x, ownOffers, cfg.locations))
-                      .join(" · ")
-                  : "Fermé"
-              }
-              onPress={() => {
-                setExpanded(expanded === i ? -1 : i);
-                setCopyTargets([]);
-                setCopyConfirm(false);
-              }}
-            />
-            {expanded === i &&
-              intervals(cfg.week[i], (v) =>
-                setCfg({
-                  ...cfg,
-                  week: cfg.week.map((x, j) => (j === i ? v : x)),
-                }),
-              )}
-          </View>
-        ))}
-        {expanded >= 0 && (
-          <>
-            <H2 style={{ marginVertical: 16 }}>Copier cette journée</H2>
-            <P small muted>
-              Les plages, séances et lieux du jour ouvert seront copiés.
-              Vérifiez les jours à remplacer avant d’enregistrer.
-            </P>
-            <Row wrap style={{ marginVertical: 16 }}>
-              {[
-                "Lundi",
-                "Mardi",
-                "Mercredi",
-                "Jeudi",
-                "Vendredi",
-                "Samedi",
-                "Dimanche",
-              ].map(
-                (label, i) =>
-                  i !== expanded && (
-                    <Chip
-                      key={label}
-                      active={copyTargets.includes(i)}
-                      onPress={() => {
-                        setCopyConfirm(false);
-                        setCopyTargets(
-                          copyTargets.includes(i)
-                            ? copyTargets.filter((x) => x !== i)
-                            : [...copyTargets, i],
-                        );
-                      }}
-                    >
-                      Vers {label.toLowerCase()}
-                    </Chip>
-                  ),
-              )}
-            </Row>
-            <Button
-              light
-              disabled={!copyTargets.length}
-              onPress={() => setCopyConfirm(true)}
-            >
-              Copier vers ces jours
-            </Button>
-            {copyConfirm && (
-              <Note style={{ marginVertical: 16 }}>
-                <P>
-                  Remplacer les horaires de {copyTargets.length} jour(s) par
-                  ceux du jour ouvert ? Les exceptions et réservations sont
-                  conservées.
-                </P>
-                <Button
-                  style={{ marginTop: 12 }}
-                  onPress={() =>
-                    run(() => {
-                      setCfg({
-                        ...cfg,
-                        week: copyDay(cfg.week, expanded, copyTargets),
-                        weeklyConfigured: true,
-                      });
-                      setCopyConfirm(false);
-                      setCopyTargets([]);
-                      message(
-                        "Copie prête. Enregistrez la semaine pour l’appliquer.",
-                      );
-                    })
-                  }
-                >
-                  Confirmer la copie
-                </Button>
-                <TextButton onPress={() => setCopyConfirm(false)}>
-                  Garder les horaires actuels
-                </TextButton>
-              </Note>
-            )}
-          </>
-        )}
-        <TextButton onPress={() => go("config-native", "offers")}>
-          Gérer mes séances et leurs tarifs
-        </TextButton>
-        <P small muted>
-          Choisissez les séances proposées sur chaque plage. Pour un cours
-          collectif, vous choisissez également la date et l’heure dans « Mes
-          cours en groupe ».
-        </P>
-        <Note style={{ marginVertical: 20 }}>
-          Les séances déjà confirmées sont conservées lorsque vous changez vos
-          horaires.
-        </Note>
-        <Button onPress={() => save({ ...cfg, weeklyConfigured: true })}>
-          Enregistrer la semaine
-        </Button>
-        <Setting
-          title="Modifier une seule date"
-          description="Une absence ou des horaires différents, sans changer votre semaine."
-          onPress={() => go("config-native", "dates")}
+        <AvailabilityWeekEditor
+          showSave={!saveAction}
+          settings={{
+            ...cfg,
+            locations: cfg.locations ?? coachLocations(store, c),
+          }}
+          offers={ownOffers}
+          onChange={(week) => setCfg({ ...cfg, week })}
+          onSave={() => save({ ...cfg, weeklyConfigured: true })}
+          onSingleDate={() => go("config-native", "dates")}
         />
       </>
     );

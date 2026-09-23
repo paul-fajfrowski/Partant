@@ -5344,7 +5344,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     sticky = (
       <View style={styles.sticky}>
         <Button onPress={() => configSave.current?.()}>
-          Enregistrer les réglages
+          {config === "schedule"
+            ? "Enregistrer les modifications"
+            : "Enregistrer les réglages"}
         </Button>
       </View>
     );
