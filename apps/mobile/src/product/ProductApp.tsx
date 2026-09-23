@@ -1,3 +1,9 @@
+import {
+  AvailabilityRangeButton,
+  AvailabilityRangeDetails,
+} from "./AvailabilityRange";
+import type { RangeSelection } from "./rangeDetailsModel";
+import { agendaDay } from "./web-agenda/agendaView";
 import { approvedPractices } from "./verification";
 import {
   DesktopShell,
@@ -76,6 +82,7 @@ import {
   initialPreferences,
   initialStore,
   configFor,
+  intervalsFor,
   coachAccountId,
   allCoaches,
   now,
@@ -310,6 +317,9 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const [code, setCode] = useState("");
   const [step, setStep] = useState(0);
   const [day, setDay] = useState(today());
+  const [selectedRange, setSelectedRange] = useState<RangeSelection | null>(
+    null,
+  );
   const [week, setWeek] = useState(0);
   const [period, setPeriod] = useState("all");
   const [hour, setHour] = useState("");
@@ -400,6 +410,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       setNotificationActionsOnly(false);
       notificationOffset.current = 0;
       notificationRestore.current = null;
+      setSelectedRange(null);
       lastIdentity.current = store.account?.id;
     }
   }, [store.account?.id]);
@@ -3772,7 +3783,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   + Indisponibilité
                 </TextButton>
               </Row>
-              <TextButton onPress={() => go("config-native", "dates")}>
+              <TextButton
+                onPress={() => {
+                  go("config-native", "dates");
+                  setFocus(day);
+                }}
+              >
                 Modifier une seule date
               </TextButton>
               {coachSelf && !configFor(store, coachSelf.id).published && (
@@ -3795,37 +3811,48 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                 </Note>
               )}
               {dateStrip()}
+              {coachSelf && (
+                <View style={{ marginTop: 24 }}>
+                  <Row between>
+                    <H2 style={{ fontSize: 18, marginBottom: 8 }}>
+                      Mes disponibilités
+                    </H2>
+                    <TextButton onPress={() => go("config-native", "schedule")}>
+                      Configurer
+                    </TextButton>
+                  </Row>
+                  {intervalsFor(configFor(store, coachSelf.id), day).map(
+                    (range, index) => (
+                      <AvailabilityRangeButton
+                        key={index}
+                        store={store}
+                        selection={{ coach: coachSelf.id, day, range }}
+                        onPress={() =>
+                          setSelectedRange({ coach: coachSelf.id, day, range })
+                        }
+                      />
+                    ),
+                  )}
+                  {!intervalsFor(configFor(store, coachSelf.id), day)
+                    .length && (
+                    <P small muted>
+                      Aucune disponibilité définie pour cette date.
+                    </P>
+                  )}
+                </View>
+              )}
+              <H2 style={{ fontSize: 18, marginTop: 24 }}>Mes rendez-vous</H2>
+              {activeCoach &&
+                !agendaDay(store, activeCoach, day).appointments && (
+                  <P small muted style={{ marginTop: 8 }}>
+                    Aucune réservation pour le moment.
+                  </P>
+                )}
               {
                 <TextButton onPress={() => go("external-session-native")}>
                   + Rendez-vous pris directement
                 </TextButton>
               }
-              <Row between style={{ marginTop: 24 }}>
-                <P bold>
-                  {todayBookings.filter((b) => b.kind !== "Groupe").length +
-                    (store.groups ?? []).filter(
-                      (g) =>
-                        g.offer.coach === activeCoach &&
-                        g.day === day &&
-                        !g.cancelled,
-                    ).length +
-                    (store.externalSessions ?? []).filter(
-                      (b) =>
-                        b.coach === activeCoach &&
-                        b.day === day &&
-                        !b.cancelled,
-                    ).length}{" "}
-                  rendez-vous au planning
-                </P>
-                <TextButton
-                  onPress={() => {
-                    setConfig("schedule");
-                    go("config");
-                  }}
-                >
-                  Configurer
-                </TextButton>
-              </Row>
               {(store.externalSessions ?? [])
                 .filter(
                   (b) =>
@@ -3905,7 +3932,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                 }}
               />
               <H2 style={{ fontSize: 18, marginTop: 24, marginBottom: 14 }}>
-                Disponibilités proposées
+                Départs réservables
               </H2>
 
               {agendaOffer && (
@@ -5392,6 +5419,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
           coachId={activeCoach}
           initialDate={day}
           onSelectedDate={setDay}
+          onRange={setSelectedRange}
           onReopen={(key) => {
             if (!busy && (!live || !market.pending))
               setStore((s) => ({
@@ -5414,7 +5442,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
             const pending = busy || (live && market.pending > 0);
             return (
               <View testID="desktop-day-slots" style={{ paddingVertical: 16 }}>
-                <H2 style={{ marginBottom: 16 }}>Disponibilités proposées</H2>
+                <H2 style={{ marginBottom: 16 }}>Départs réservables</H2>
                 {selected ? (
                   <Select
                     label="Voir les créneaux de"
@@ -5992,6 +6020,29 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       ) : (
         body
       )}
+      <AvailabilityRangeDetails
+        store={store}
+        selection={
+          store.account?.role === "coach" &&
+          selectedRange?.coach === activeCoach
+            ? selectedRange
+            : null
+        }
+        onClose={() => setSelectedRange(null)}
+        onDate={(date) => {
+          setSelectedRange(null);
+          go("config-native", "dates");
+          setFocus(date);
+        }}
+        onOffers={() => {
+          setSelectedRange(null);
+          go("config-native", "offers");
+        }}
+        onGroup={(id) => {
+          setSelectedRange(null);
+          go("group-manage", id);
+        }}
+      />
       <Dialog
         title={modalTitles[modal] ?? ""}
         open={!!modal}

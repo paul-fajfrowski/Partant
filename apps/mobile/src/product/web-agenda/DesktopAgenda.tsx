@@ -1,3 +1,5 @@
+import { AvailabilityRangeButton } from "../AvailabilityRange";
+import type { RangeSelection } from "../rangeDetailsModel";
 import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Store, addDays, configFor, dayLabel, endTime, today } from "../model";
@@ -17,6 +19,7 @@ export type DesktopAgendaProps = {
   onGroup: (id: string) => void;
   /** Opens the existing date editor; selecting a day alone never edits it. */
   onDate: (date: string) => void;
+  onRange: (selection: RangeSelection) => void;
   onConfigure: (section: AgendaSection) => void;
   onExternal?: (id: string) => void;
   initialDate?: string;
@@ -79,6 +82,7 @@ function CoachAgenda({
   onBooking,
   onGroup,
   onDate,
+  onRange,
   onConfigure,
   onExternal,
   initialDate,
@@ -224,22 +228,27 @@ function CoachAgenda({
                 </Text>
               </Pressable>
               <View style={s.ranges}>
-                <Text style={s.rangeLabel}>
-                  {day.exception
-                    ? "PLAGES DE CETTE DATE"
-                    : "PLAGES CONFIGURÉES"}
-                </Text>
+                <Text style={s.rangeLabel}>MES DISPONIBILITÉS</Text>
                 {day.ranges.length ? (
-                  day.ranges.map(([from, to], i) => (
-                    <Text key={i} style={s.rangeTime}>
-                      {from}–{to}
-                    </Text>
+                  day.ranges.map((range, i) => (
+                    <AvailabilityRangeButton
+                      key={i}
+                      compact
+                      store={store}
+                      selection={{ coach: coachId, day: day.day, range }}
+                      onPress={() => {
+                        setSelected(day.day);
+                        onSelectedDate?.(day.day);
+                        onRange({ coach: coachId, day: day.day, range });
+                      }}
+                    />
                   ))
                 ) : (
-                  <Text style={s.mutedSmall}>Aucune plage</Text>
+                  <Text style={s.mutedSmall}>Non définies</Text>
                 )}
               </View>
               <View style={s.events}>
+                <Text style={s.rangeLabel}>MES RENDEZ-VOUS</Text>
                 {day.items.length ? (
                   day.items.map((item) => {
                     const dark = item.kind === "booking" && !item.completed;
@@ -298,7 +307,9 @@ function CoachAgenda({
                     );
                   })
                 ) : (
-                  <Text style={s.emptyDay}>Aucune séance prévue.</Text>
+                  <Text style={s.emptyDay}>
+                    Aucune réservation pour le moment.
+                  </Text>
                 )}
               </View>
             </View>
