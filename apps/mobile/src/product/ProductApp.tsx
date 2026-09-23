@@ -1,3 +1,4 @@
+import { BackNavigationProvider, useBackNavigation } from "./BackNavigation";
 import { MobileAgendaAppointments } from "./MobileAgendaAppointments";
 import {
   AvailabilityRangeList,
@@ -150,7 +151,15 @@ const sportItems = [
 ];
 const euro = (n: number) =>
   `${Number.isInteger(n) ? n : n.toFixed(2).replace(".", ",")} €`;
-export default function ProductApp({ live = false }: { live?: boolean }) {
+export default function ProductApp(props: { live?: boolean }) {
+  return (
+    <BackNavigationProvider>
+      <ProductAppContent {...props} />
+    </BackNavigationProvider>
+  );
+}
+function ProductAppContent({ live = false }: { live?: boolean }) {
+  const localBack = useBackNavigation();
   const market = useMarketplace(live);
   const { store, setStore } = market;
   const messageDrafts = useMessageDrafts(
@@ -538,11 +547,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   useEffect(() => {
     if (Platform.OS === "web") return;
     const listener = BackHandler.addEventListener("hardwareBackPress", () => {
-      if (modal) {
-        setModal("");
-        return true;
-      }
-      if (history.current.length || !rootScreens.includes(screen)) {
+      if (
+        localBack?.has() ||
+        modal ||
+        history.current.length ||
+        !rootScreens.includes(screen)
+      ) {
         back();
         return true;
       }
@@ -683,11 +693,12 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
     setCoachTab("agenda");
   }
   function back() {
+    if (busy || (live && market.pending > 0)) return;
+    if (localBack?.consume()) return;
     if (modal) {
       setModal("");
       return;
     }
-    if (busy || (live && market.pending > 0)) return;
     if (screen === "completeAccount") {
       leaveToMain();
       return;

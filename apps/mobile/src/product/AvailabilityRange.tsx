@@ -187,6 +187,11 @@ function RangeDetails({
       }
       open
       onClose={onClose}
+      onBack={() =>
+        selection.range && selection.fromDayList
+          ? onSelect({ coach: selection.coach, day: selection.day })
+          : onClose()
+      }
     >
       <P small muted>
         {dayLabel(selection.day)}
@@ -202,7 +207,9 @@ function RangeDetails({
               key={i}
               store={store}
               selection={{ ...selection, range }}
-              onPress={() => onSelect({ ...selection, range })}
+              onPress={() =>
+                onSelect({ ...selection, range, fromDayList: true })
+              }
             />
           ))}
           {!ranges.length && (

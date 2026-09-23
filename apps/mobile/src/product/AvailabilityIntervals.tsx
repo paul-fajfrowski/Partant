@@ -167,6 +167,12 @@ export function AvailabilityIntervals({
         Ajouter une plage
       </Button>
       <Dialog
+        onBack={() => {
+          if (discard) setDiscard(false);
+          else if (removing) setRemoving(false);
+          else if (stage !== "range") setStage("range");
+          else close();
+        }}
         open={!!editor}
         title={
           discard

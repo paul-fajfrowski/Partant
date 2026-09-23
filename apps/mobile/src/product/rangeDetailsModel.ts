@@ -26,7 +26,12 @@ export function locationPresentationKey(p: CoachLocation) {
   ]);
 }
 
-export type RangeSelection = { coach: string; day: string; range?: Interval };
+export type RangeSelection = {
+  coach: string;
+  day: string;
+  range?: Interval;
+  fromDayList?: boolean;
+};
 
 /** Read-only presentation. The booking engine remains the authority for departures. */
 export function availabilityRangeView(store: Store, selection: RangeSelection) {

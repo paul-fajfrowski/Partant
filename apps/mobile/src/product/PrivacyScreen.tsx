@@ -1,3 +1,4 @@
+import { useLocalBack } from "./BackNavigation";
 import React, { useState } from "react";
 import { Linking, Pressable, View } from "react-native";
 import {
@@ -75,6 +76,13 @@ export function PrivacyScreen(
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  useLocalBack(
+    confirmDelete,
+    () => {
+      if (!busy) setConfirmDelete(false);
+    },
+    20,
+  );
   const coach = (s.account?.role ?? p.focus) === "coach";
   const run = async (fn: () => Promise<void>) => {
     if (busy) return;

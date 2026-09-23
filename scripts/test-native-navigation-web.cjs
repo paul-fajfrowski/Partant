@@ -205,7 +205,7 @@ const selected = (label) =>
   );
   await click("Compte & notifications");
   ok(
-    d.body.textContent.includes("Rappels avant mes séances"),
+    d.body.textContent.includes("Rappels de séance"),
     "Account settings and reminders retained",
   );
   await click("Retour");

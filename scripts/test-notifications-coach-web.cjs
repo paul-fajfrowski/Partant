@@ -68,11 +68,11 @@ const row = (id) => d.querySelector(`[data-testid="notification-${id}"]`);
     row("dossier-test").click();
     await wait();
     ok(
-      d.body.textContent.includes("Correction demandée"),
+      d.body.textContent.includes("À corriger"),
       "Dossier action opens actual correction",
     );
     ok(
-      d.body.textContent.includes("se construit."),
+      d.body.textContent.includes("Votre dossier coach."),
       "Correct document editor reached",
     );
     await click("Retour");

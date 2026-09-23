@@ -1,3 +1,4 @@
+import { useLocalBack } from "./BackNavigation";
 import React, { useEffect, useState } from "react";
 import { Platform, View, AppState } from "react-native";
 import * as WebBrowser from "expo-web-browser";
@@ -24,6 +25,13 @@ export function CalendarConnections({ live }: { live: boolean }) {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [confirm, setConfirm] = useState(false);
+  useLocalBack(
+    confirm,
+    () => {
+      if (!busy) setConfirm(false);
+    },
+    20,
+  );
   async function refresh() {
     const s = await calendarCall("status");
     setStatus(s);

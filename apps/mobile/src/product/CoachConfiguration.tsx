@@ -1,3 +1,4 @@
+import { useLocalBack } from "./BackNavigation";
 import { AvailabilityWeekEditor } from "./AvailabilityWeekEditor";
 import { CoachVerification } from "./CoachVerification";
 import { selectedPractices } from "./verification";
@@ -114,6 +115,7 @@ export function CoachConfiguration(
   const key = `${coachAccountId(props.store)}:${props.section}`;
   const [revision, setRevision] = useState(0),
     [discard, setDiscard] = useState(false);
+  useLocalBack(discard, () => setDiscard(false), 20);
   useEffect(() => setDiscard(false), [key]);
   return (
     <>
@@ -183,6 +185,7 @@ function ConfigurationEditor({
   const [profile, setProfile] = useState<Coach>(savedDraft?.profile ?? c);
   const [error, setError] = useState("");
   const [deleteException, setDeleteException] = useState(false);
+  useLocalBack(deleteException, () => setDeleteException(false), 20);
   const [exceptionDay, setExceptionDay] = useState(
     initialDate ?? savedDraft?.form?.exceptionDay ?? addDays(today(), 1),
   );

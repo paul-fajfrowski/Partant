@@ -1,3 +1,4 @@
+import { useLocalBack } from "./BackNavigation";
 import { AddressPicker } from "./AddressPicker";
 import React, { useState } from "react";
 import { View } from "react-native";
@@ -30,6 +31,7 @@ export function CoachPlacesEditor({
   const [selected, setSelected] = useState(Object.keys(locations)[0] ?? ""),
     [type, setType] = useState(suggestedPlaces(sport)[0]),
     [removing, setRemoving] = useState(false);
+  useLocalBack(removing, () => setRemoving(false), 20);
   const p = locations[selected];
   const update = (patch: Partial<CoachLocation>) =>
     onChange({ ...locations, [selected]: { ...p, ...patch } });

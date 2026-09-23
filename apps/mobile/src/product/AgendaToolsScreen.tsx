@@ -1,3 +1,4 @@
+import { useLocalBack } from "./BackNavigation";
 import React, { useState } from "react";
 import { View } from "react-native";
 import { FlowProps, euro } from "./CoachConfiguration";
@@ -58,6 +59,8 @@ export function AgendaTools({
     [cancelId, setCancelId] = useState("");
   const [dates, setDates] = useState<string[]>([]),
     [preview, setPreview] = useState(false);
+  useLocalBack(!!cancelId, () => setCancelId(""), 20);
+  useLocalBack(preview, () => setPreview(false));
   const g = store.groups?.find(
     (g) => g.id === focus && g.offer.coach === coachId,
   );

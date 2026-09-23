@@ -1,3 +1,4 @@
+import { useLocalBack } from "./BackNavigation";
 import React, { useState } from "react";
 import { Platform, Pressable, View, useWindowDimensions } from "react-native";
 import type { Offer } from "./model";
@@ -59,6 +60,7 @@ export function AvailabilityWeekEditor({
     [targets, setTargets] = useState<number[]>([]),
     [confirm, setConfirm] = useState(false),
     [error, setError] = useState("");
+  useLocalBack(selected !== null && !wide, () => setSelected(null));
   const week = (
     <View
       style={
@@ -177,6 +179,7 @@ export function AvailabilityWeekEditor({
         }
         open={copy}
         onClose={() => setCopy(false)}
+        onBack={() => (confirm ? setConfirm(false) : setCopy(false))}
       >
         {confirm ? (
           <>

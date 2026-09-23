@@ -572,6 +572,11 @@ export function CoachVerification({ store, setStore, go, message }: FlowProps) {
                   : proofKinds[editor.kind]
               }
               open
+              onBack={() => {
+                if (busy) return;
+                if (remove) setRemove(false);
+                else setEditor(null);
+              }}
               onClose={() => {
                 if (!busy) {
                   setEditor(null);

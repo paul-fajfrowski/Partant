@@ -1,3 +1,4 @@
+import { useLocalBack } from "./BackNavigation";
 import React, { useState, useContext, useEffect, useRef } from "react";
 import {
   Image,
@@ -708,71 +709,85 @@ export function Rule() {
     />
   );
 }
+const DialogDepthContext = React.createContext(0);
 export function Dialog({
   title,
   open,
   onClose,
+  onBack,
   children,
 }: {
   title: string;
   open: boolean;
   onClose: () => void;
+  onBack?: () => void;
   children: React.ReactNode;
 }) {
   const { width, height } = useWindowDimensions();
+  const depth = useContext(DialogDepthContext);
+  useLocalBack(open, onBack ?? onClose, 100 + depth);
   return (
-    <Modal
-      visible={open}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#0008",
-          justifyContent: width > 740 ? "center" : "flex-end",
-          alignItems: "center",
-          padding: 12,
-        }}
+    <DialogDepthContext.Provider value={depth + 1}>
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={onBack ?? onClose}
       >
-        <Pressable
-          accessibilityLabel="Fermer"
-          onPress={onClose}
-          style={StyleSheet.absoluteFill}
-        />
         <View
-          accessibilityViewIsModal
           style={{
-            backgroundColor: "#fff",
-            borderRadius: 24,
-            width: "100%",
-            maxWidth: width > 740 ? 410 : 480,
-            maxHeight: height * 0.85,
-            overflow: "hidden",
+            flex: 1,
+            backgroundColor: "#0008",
+            justifyContent: width > 740 ? "center" : "flex-end",
+            alignItems: "center",
+            padding: 12,
           }}
         >
-          <Row
-            between
+          <Pressable
+            accessibilityLabel="Fermer"
+            onPress={onClose}
+            style={StyleSheet.absoluteFill}
+          />
+          <View
+            accessibilityViewIsModal
             style={{
-              paddingLeft: 24,
-              paddingRight: 14,
-              paddingTop: 12,
-              paddingBottom: 4,
+              backgroundColor: "#fff",
+              borderRadius: 24,
+              width: "100%",
+              maxWidth: width > 740 ? 410 : 480,
+              maxHeight: height * 0.85,
+              overflow: "hidden",
             }}
           >
-            <H2 style={{ flex: 1 }}>{title}</H2>
-            <IconButton name="close" onPress={onClose} label="Fermer" />
-          </Row>
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ padding: 24, paddingTop: 12 }}
-          >
-            {children}
-          </ScrollView>
+            <Row
+              between
+              style={{
+                paddingLeft: 24,
+                paddingRight: 14,
+                paddingTop: 12,
+                paddingBottom: 4,
+              }}
+            >
+              {onBack && (
+                <IconButton
+                  name="back"
+                  label="Retour dans la fenêtre"
+                  onPress={onBack}
+                />
+              )}
+              <H2 style={{ flex: 1 }}>{title}</H2>
+              <IconButton name="close" onPress={onClose} label="Fermer" />
+            </Row>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ padding: 24, paddingTop: 12 }}
+            >
+              {children}
+            </ScrollView>
+          </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+    </DialogDepthContext.Provider>
   );
 }
 export const s = StyleSheet.create({

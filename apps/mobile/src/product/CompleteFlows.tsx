@@ -1,3 +1,4 @@
+import { useLocalBack } from "./BackNavigation";
 import { PracticeReviewPanel } from "./PracticeReviewPanel";
 import { pendingPractices } from "./verification";
 import { SectorPicker } from "./SectorPicker";
@@ -68,6 +69,7 @@ export function CompleteFlows(
   const [form, setForm] = useState<Record<string, string>>({});
   const [flag, setFlag] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  useLocalBack(confirm, () => setConfirm(false), 20);
   const [decision, setDecision] = useState("Répondre");
   const [selection, setSelection] = useState("");
   const [quoted, setQuoted] = useState<{
@@ -1321,6 +1323,7 @@ export function BookingExtras(p: FlowProps) {
     b = s.bookings.find((b) => b.id === bookingId);
   const [reason, setReason] = useState(""),
     [confirm, setConfirm] = useState(false);
+  useLocalBack(confirm, () => setConfirm(false), 20);
   if (!b || !W.canRead(s, b)) return null;
   const coach = s.account?.role === "coach",
     future = b.status === "confirmed" && instant(b.day, b.time) > now();
