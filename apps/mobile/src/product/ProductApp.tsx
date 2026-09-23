@@ -1,9 +1,9 @@
+import { MobileAgendaAppointments } from "./MobileAgendaAppointments";
 import {
-  AvailabilityRangeButton,
+  AvailabilityRangeList,
   AvailabilityRangeDetails,
 } from "./AvailabilityRange";
 import type { RangeSelection } from "./rangeDetailsModel";
-import { agendaDay } from "./web-agenda/agendaView";
 import { approvedPractices } from "./verification";
 import {
   DesktopShell,
@@ -82,7 +82,6 @@ import {
   initialPreferences,
   initialStore,
   configFor,
-  intervalsFor,
   coachAccountId,
   allCoaches,
   now,
@@ -317,6 +316,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
   const [code, setCode] = useState("");
   const [step, setStep] = useState(0);
   const [day, setDay] = useState(today());
+  const [agendaToolsOpen, setAgendaToolsOpen] = useState(false);
   const [selectedRange, setSelectedRange] = useState<RangeSelection | null>(
     null,
   );
@@ -3783,14 +3783,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   + Indisponibilité
                 </TextButton>
               </Row>
-              <TextButton
-                onPress={() => {
-                  go("config-native", "dates");
-                  setFocus(day);
-                }}
-              >
-                Modifier une seule date
-              </TextButton>
+
               {coachSelf && !configFor(store, coachSelf.id).published && (
                 <Note style={{ marginBottom: 20 }}>
                   <P bold>Préparons votre première réservation.</P>
@@ -3821,107 +3814,37 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                       Configurer
                     </TextButton>
                   </Row>
-                  {intervalsFor(configFor(store, coachSelf.id), day).map(
-                    (range, index) => (
-                      <AvailabilityRangeButton
-                        key={index}
-                        store={store}
-                        selection={{ coach: coachSelf.id, day, range }}
-                        onPress={() =>
-                          setSelectedRange({ coach: coachSelf.id, day, range })
-                        }
-                      />
-                    ),
-                  )}
-                  {!intervalsFor(configFor(store, coachSelf.id), day)
-                    .length && (
-                    <P small muted>
-                      Aucune disponibilité définie pour cette date.
-                    </P>
-                  )}
+                  <AvailabilityRangeList
+                    store={store}
+                    coach={coachSelf.id}
+                    day={day}
+                    onSelect={setSelectedRange}
+                  />
                 </View>
               )}
               <H2 style={{ fontSize: 18, marginTop: 24 }}>Mes rendez-vous</H2>
-              {activeCoach &&
-                !agendaDay(store, activeCoach, day).appointments && (
-                  <P small muted style={{ marginTop: 8 }}>
-                    Aucune réservation pour le moment.
-                  </P>
-                )}
-              {
-                <TextButton onPress={() => go("external-session-native")}>
-                  + Rendez-vous pris directement
-                </TextButton>
-              }
-              {(store.externalSessions ?? [])
-                .filter(
-                  (b) =>
-                    b.coach === activeCoach && b.day === day && !b.cancelled,
-                )
-                .sort((a, b) => a.time.localeCompare(b.time))
-                .map((b) => (
-                  <Setting
-                    key={b.id}
-                    title={`${b.time} · ${b.name}`}
-                    description={`${b.serviceName} · Hors Partant · ${b.address}`}
-                    onPress={() => go("external-session-native", b.id)}
-                  />
-                ))}
-              {(store.groups ?? [])
-                .filter(
-                  (g) =>
-                    g.offer.coach === activeCoach &&
-                    g.day === day &&
-                    !g.cancelled,
-                )
-                .sort((a, b) => a.time.localeCompare(b.time))
-                .map((g) => (
-                  <Setting
-                    key={g.id}
-                    title={`${g.time} · ${g.offer.name}`}
-                    description={`${g.offer.capacity - remaining(g.offer, g.day, g.time, store)} / ${g.offer.capacity} places réservées · ${g.address}`}
-                    onPress={() => go("group-manage", g.id)}
-                  />
-                ))}
-              {todayBookings
-                .filter((b) => b.kind !== "Groupe")
-                .map((b) => (
-                  <Pressable
-                    accessibilityRole="button"
-                    key={b.id}
-                    onPress={() => {
-                      setSelectedBooking(b.id);
+              {activeCoach && (
+                <MobileAgendaAppointments
+                  store={store}
+                  coach={activeCoach}
+                  day={day}
+                  onOpen={(item) => {
+                    if (item.kind === "booking") {
+                      setSelectedBooking(item.id);
                       go("bookingDetail");
-                    }}
-                    style={{
-                      backgroundColor: t.ink,
-                      borderRadius: 12,
-                      padding: 16,
-                      marginTop: 12,
-                    }}
-                  >
-                    <Row>
-                      <P bold style={{ color: "#fff" }}>
-                        {b.time}
-                      </P>
-                      <View style={{ flex: 1 }}>
-                        <P bold style={{ color: "#fff" }}>
-                          {b.clientName}
-                        </P>
-                        <P small style={{ color: "#ccc" }}>
-                          {b.serviceName} ·{" "}
-                          {b.locationName ??
-                            locationLabel(
-                              store,
-                              coaches.find((c) => c.id === b.coach)!,
-                              b.format,
-                            )}
-                        </P>
-                      </View>
-                      <Icon name="chevron" color="#fff" />
-                    </Row>
-                  </Pressable>
-                ))}
+                    } else if (item.kind === "group")
+                      go("group-manage", item.id);
+                    else if (item.kind === "external")
+                      go("external-session-native", item.id);
+                    else if (item.kind === "block")
+                      go("config-native", "blocks");
+                    else if (item.kind === "closed") setAgendaToolsOpen(true);
+                  }}
+                />
+              )}
+              <TextButton onPress={() => go("external-session-native")}>
+                + Rendez-vous pris directement
+              </TextButton>
               <Setting
                 title="Mes cours en groupe"
                 description="Dates, inscriptions et places disponibles"
@@ -3931,87 +3854,101 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
                   go("config");
                 }}
               />
-              <H2 style={{ fontSize: 18, marginTop: 24, marginBottom: 14 }}>
-                Départs réservables
-              </H2>
+              <Setting
+                title="Gérer les départs réservables"
+                description={
+                  agendaToolsOpen
+                    ? "Masquer les horaires détaillés"
+                    : "Fermer ou rouvrir un départ"
+                }
+                onPress={() => setAgendaToolsOpen((v) => !v)}
+              />
+              {agendaToolsOpen && (
+                <>
+                  <H2 style={{ fontSize: 18, marginTop: 24, marginBottom: 14 }}>
+                    Départs réservables
+                  </H2>
 
-              {agendaOffer && (
-                <Select
-                  label="Voir les créneaux de"
-                  value={agendaOffer.id}
-                  items={ownOffers
-                    .filter((o) => o.active)
-                    .map((o) => [
-                      o.id,
-                      `${o.name} · ${o.duration} min · ${euro(o.price)}${o.kind === "Groupe" ? "/pers." : ""}`,
-                    ])}
-                  onChange={setAgendaOfferId}
-                />
-              )}
-              {coachSelf && agendaOffer ? (
-                <Row wrap>
-                  {market.times(coachSelf, day, agendaOffer).map((time) => (
-                    <Pressable
-                      accessibilityRole="button"
-                      key={time}
-                      onPress={() =>
-                        agendaOffer.kind === "Groupe"
-                          ? setNotice(
-                              "Gérez ce cours dans Mes cours en groupe.",
-                            )
-                          : setStore((s) => ({
-                              ...s,
-                              closed: [
-                                ...s.closed,
-                                `${activeCoach}|${day}|${time}`,
-                              ],
-                            }))
-                      }
-                      style={styles.slot}
-                    >
-                      <P>{time}</P>
-                    </Pressable>
-                  ))}
-                  {store.closed
-                    .filter((k) => k.startsWith(`${activeCoach}|${day}|`))
-                    .map((key) => (
-                      <Pressable
-                        accessibilityRole="button"
-                        key={key}
-                        onPress={() =>
-                          setStore((s) => ({
-                            ...s,
-                            closed: s.closed.filter((k) => k !== key),
-                          }))
-                        }
-                        style={styles.slot}
-                      >
-                        <P muted>{key.split("|")[2]} ×</P>
-                      </Pressable>
-                    ))}
-                </Row>
-              ) : (
-                <Note>
-                  Complétez votre profil avant d’ouvrir votre planning.
-                </Note>
-              )}
-              <P small muted style={{ marginTop: 24 }}>
-                Fermer une heure bloque ce départ pour toutes vos offres. Les
-                réservations confirmées sont conservées. Gérez les cours
-                collectifs dans « Mes cours en groupe ».
-              </P>
-              <Note style={{ marginTop: 24 }}>
-                <Row>
-                  <Icon name="clock" />
-                  <P style={{ fontSize: 14, flex: 1 }}>
-                    {agendaOffer
-                      ? `${agendaOffer.duration} min · ${euro(agendaOffer.price)}${agendaOffer.kind === "Groupe" ? "/personne" : "/séance"}`
-                      : "Créez votre première séance"}{" "}
-                    · réservation {configFor(store, activeCoach ?? "0").notice}{" "}
-                    h minimum à l’avance.
+                  {agendaOffer && (
+                    <Select
+                      label="Voir les créneaux de"
+                      value={agendaOffer.id}
+                      items={ownOffers
+                        .filter((o) => o.active)
+                        .map((o) => [
+                          o.id,
+                          `${o.name} · ${o.duration} min · ${euro(o.price)}${o.kind === "Groupe" ? "/pers." : ""}`,
+                        ])}
+                      onChange={setAgendaOfferId}
+                    />
+                  )}
+                  {coachSelf && agendaOffer ? (
+                    <Row wrap>
+                      {market.times(coachSelf, day, agendaOffer).map((time) => (
+                        <Pressable
+                          accessibilityRole="button"
+                          key={time}
+                          onPress={() =>
+                            agendaOffer.kind === "Groupe"
+                              ? setNotice(
+                                  "Gérez ce cours dans Mes cours en groupe.",
+                                )
+                              : setStore((s) => ({
+                                  ...s,
+                                  closed: [
+                                    ...s.closed,
+                                    `${activeCoach}|${day}|${time}`,
+                                  ],
+                                }))
+                          }
+                          style={styles.slot}
+                        >
+                          <P>{time}</P>
+                        </Pressable>
+                      ))}
+                      {store.closed
+                        .filter((k) => k.startsWith(`${activeCoach}|${day}|`))
+                        .map((key) => (
+                          <Pressable
+                            accessibilityRole="button"
+                            key={key}
+                            onPress={() =>
+                              setStore((s) => ({
+                                ...s,
+                                closed: s.closed.filter((k) => k !== key),
+                              }))
+                            }
+                            style={styles.slot}
+                          >
+                            <P muted>{key.split("|")[2]} ×</P>
+                          </Pressable>
+                        ))}
+                    </Row>
+                  ) : (
+                    <Note>
+                      Complétez votre profil avant d’ouvrir votre planning.
+                    </Note>
+                  )}
+                  <P small muted style={{ marginTop: 24 }}>
+                    Fermer une heure bloque ce départ pour toutes vos offres.
+                    Les réservations confirmées sont conservées. Gérez les cours
+                    collectifs dans « Mes cours en groupe ».
                   </P>
-                </Row>
-              </Note>
+                  <Note style={{ marginTop: 24 }}>
+                    <Row>
+                      <Icon name="clock" />
+                      <P style={{ fontSize: 14, flex: 1 }}>
+                        {agendaOffer
+                          ? `${agendaOffer.duration} min · ${euro(agendaOffer.price)}${agendaOffer.kind === "Groupe" ? "/personne" : "/séance"}`
+                          : "Créez votre première séance"}{" "}
+                        · réservation{" "}
+                        {configFor(store, activeCoach ?? "0").notice} h minimum
+                        à l’avance.
+                      </P>
+                    </Row>
+                  </Note>
+                </>
+              )}
             </>
           ) : coachTab === "clients" ? (
             <>
@@ -6022,6 +5959,7 @@ export default function ProductApp({ live = false }: { live?: boolean }) {
       )}
       <AvailabilityRangeDetails
         store={store}
+        onSelect={setSelectedRange}
         selection={
           store.account?.role === "coach" &&
           selectedRange?.coach === activeCoach

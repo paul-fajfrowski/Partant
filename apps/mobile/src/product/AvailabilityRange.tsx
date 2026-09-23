@@ -1,8 +1,13 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Pressable, View } from "react-native";
-import { Store, dayLabel, remaining } from "./model";
+import { Store, dayLabel, remaining, configFor, intervalsFor } from "./model";
+import type { Interval } from "./extendedTypes";
 import { Dialog, P, H2, Button, TextButton, Icon, Row, Setting } from "./ui";
-import { availabilityRangeView, RangeSelection } from "./rangeDetailsModel";
+import {
+  availabilityRangeView,
+  RangeSelection,
+  locationPresentationKey,
+} from "./rangeDetailsModel";
 import { euro } from "./CoachConfiguration";
 
 export function AvailabilityRangeButton({
@@ -12,7 +17,7 @@ export function AvailabilityRangeButton({
   compact = false,
 }: {
   store: Store;
-  selection: RangeSelection;
+  selection: RangeSelection & { range: Interval };
   onPress: () => void;
   compact?: boolean;
 }) {
@@ -31,79 +36,202 @@ export function AvailabilityRangeButton({
       onPress={onPress}
       style={({ pressed }) => ({
         minHeight: 48,
-        borderWidth: 1,
-        borderColor: "#dedede",
-        borderRadius: compact ? 12 : 18,
-        padding: compact ? 8 : 14,
-        marginVertical: 4,
-        backgroundColor: "#fff",
+        justifyContent: "center",
+        paddingVertical: 8,
         opacity: pressed ? 0.65 : 1,
       })}
     >
       <Row between style={{ gap: 3 }}>
-        <P bold style={{ fontSize: compact ? 12 : 16 }}>
-          {selection.range[0]}–{selection.range[1]}
-        </P>
+        <View style={{ flex: 1 }}>
+          <P bold style={{ fontSize: compact ? 12 : 16 }}>
+            {selection.range[0]}–{selection.range[1]}
+          </P>
+          {!compact && (
+            <P small muted numberOfLines={1}>
+              {offers.length === 1
+                ? offers[0].name
+                : `${offers.length} offres associées`}
+            </P>
+          )}
+        </View>
         <Icon name="chevron" size={compact ? 12 : 18} />
       </Row>
-      <P
-        small
-        muted
-        numberOfLines={2}
-        style={{
-          fontSize: compact ? 11 : 13,
-          lineHeight: compact ? 15 : 19,
-          marginTop: 4,
-        }}
-      >
-        {offers.length === 1
-          ? offers[0].name
-          : offers.length
-            ? `${offers.length} offres associées`
-            : "Aucune offre associée"}
-      </P>
     </Pressable>
   );
 }
 
-export function AvailabilityRangeDetails({
+/** Bounded summary; all ranges remain reachable through a single shared dialog. */
+export function AvailabilityRangeList({
+  store,
+  coach,
+  day,
+  onSelect,
+  compact = false,
+}: {
+  store: Store;
+  coach: string;
+  day: string;
+  onSelect: (value: RangeSelection) => void;
+  compact?: boolean;
+}) {
+  const ranges = intervalsFor(configFor(store, coach), day);
+  return (
+    <View>
+      {ranges.slice(0, 2).map((range, i) => (
+        <AvailabilityRangeButton
+          key={i}
+          store={store}
+          compact={compact}
+          selection={{ coach, day, range }}
+          onPress={() => onSelect({ coach, day, range })}
+        />
+      ))}
+      {ranges.length > 2 && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Voir les ${ranges.length} plages du ${dayLabel(day)}`}
+          onPress={() => onSelect({ coach, day })}
+          style={{ minHeight: 44, justifyContent: "center" }}
+        >
+          <P small bold style={{ fontSize: compact ? 11 : 14 }}>
+            + {ranges.length - 2} autres plages ›
+          </P>
+        </Pressable>
+      )}
+      {!ranges.length && (
+        <P small muted>
+          {compact ? "Non définies" : "Aucune disponibilité définie."}
+        </P>
+      )}
+    </View>
+  );
+}
+
+export function AvailabilityRangeDetails(props: {
+  store: Store;
+  selection: RangeSelection | null;
+  onClose: () => void;
+  onSelect: (value: RangeSelection) => void;
+  onDate: (day: string) => void;
+  onOffers: () => void;
+  onGroup: (id: string) => void;
+}) {
+  if (!props.selection) return null;
+  return <RangeDetails {...props} selection={props.selection} />;
+}
+function RangeDetails({
   store,
   selection,
   onClose,
+  onSelect,
   onDate,
   onOffers,
   onGroup,
 }: {
   store: Store;
-  selection: RangeSelection | null;
+  selection: RangeSelection;
   onClose: () => void;
+  onSelect: (value: RangeSelection) => void;
   onDate: (day: string) => void;
   onOffers: () => void;
   onGroup: (id: string) => void;
 }) {
-  if (!selection) return null;
   const view = availabilityRangeView(store, selection);
+  const [expanded, setExpanded] = useState<string | null>(
+    view?.offers.length === 1 ? view.offers[0].offer.id : null,
+  );
+  const selectionKey = JSON.stringify(selection);
+  useEffect(() => {
+    setExpanded(view?.offers.length === 1 ? view.offers[0].offer.id : null);
+  }, [selectionKey]);
+  const ranges = intervalsFor(configFor(store, selection.coach), selection.day);
+  const signature = (
+    places: NonNullable<typeof view>["offers"][number]["locations"],
+  ) => places.map(locationPresentationKey).sort().join("|");
+  const common =
+    view &&
+    view.offers.length > 1 &&
+    view.offers.every(
+      (o) => signature(o.locations) === signature(view.offers[0].locations),
+    )
+      ? view.offers[0].locations
+      : null;
+  const places = (
+    locations: NonNullable<typeof view>["offers"][number]["locations"],
+  ) =>
+    locations.map((place) => (
+      <View key={place.id} style={{ marginTop: 8 }}>
+        <P small bold>
+          {place.name}
+        </P>
+        <P small muted>
+          {place.type === "Domicile"
+            ? `${place.sector || "Secteur à préciser"}${place.radius ? ` · rayon de ${place.radius} km` : ""}${place.travelFee ? ` · déplacement +${euro(place.travelFee)}` : ""}`
+            : place.type === "Visio"
+              ? "À distance"
+              : place.address || "Adresse à compléter"}
+        </P>
+        {!!place.instructions && (
+          <P small muted>
+            {place.instructions}
+          </P>
+        )}
+      </View>
+    ));
   return (
-    <Dialog title="Détail de la disponibilité" open onClose={onClose}>
-      {!view ? (
+    <Dialog
+      title={
+        selection.range
+          ? "Détail de la disponibilité"
+          : "Disponibilités du jour"
+      }
+      open
+      onClose={onClose}
+    >
+      <P small muted>
+        {dayLabel(selection.day)}
+      </P>
+      {!selection.range ? (
+        <>
+          <P small muted style={{ marginVertical: 12 }}>
+            {ranges.length} plages · sélectionnez un horaire pour voir ses
+            offres.
+          </P>
+          {ranges.map((range, i) => (
+            <AvailabilityRangeButton
+              key={i}
+              store={store}
+              selection={{ ...selection, range }}
+              onPress={() => onSelect({ ...selection, range })}
+            />
+          ))}
+          {!ranges.length && (
+            <P>Aucune disponibilité définie pour cette date.</P>
+          )}
+        </>
+      ) : !view ? (
         <P>
           Cette plage a été modifiée. Retrouvez ses nouveaux horaires dans votre
           agenda.
         </P>
       ) : (
         <>
-          <P small muted>
-            {dayLabel(selection.day)}
-          </P>
           <H2 style={{ marginTop: 6 }}>
             {view.from}–{view.to}
           </H2>
           <P small muted style={{ marginTop: 8 }}>
             {view.specificDate
-              ? "Horaires propres à cette date"
-              : "Horaires de votre semaine habituelle"}{" "}
-            · Cette plage est une disponibilité, pas une réservation.
+              ? "Disponibilité pour cette date"
+              : "Disponibilité hebdomadaire"}
           </P>
+          {!!common?.length && (
+            <View style={{ marginTop: 20 }}>
+              <P small muted>
+                LIEUX COMMUNS AUX OFFRES
+              </P>
+              {places(common)}
+            </View>
+          )}
           <H2 style={{ marginTop: 24, fontSize: 18 }}>Offres associées</H2>
           {!view.offers.length && (
             <P muted style={{ marginTop: 12 }}>
@@ -111,77 +239,87 @@ export function AvailabilityRangeDetails({
             </P>
           )}
           {view.offers.map(
-            ({ offer, locations, departures, groups, status }) => (
-              <View
-                key={offer.id}
-                style={{
-                  paddingVertical: 18,
-                  borderBottomWidth: 1,
-                  borderColor: "#e7e7e7",
-                }}
-              >
-                <P bold>{offer.name}</P>
-                <P small style={{ marginTop: 5 }}>
-                  {offer.kind} · {offer.duration} min · {euro(offer.price)}
-                  {offer.kind === "Groupe" ? " / personne" : " / séance"}
-                </P>
-                {offer.kind === "Groupe" && (
-                  <P small muted>
-                    {offer.capacity} personnes maximum
-                  </P>
-                )}
-                {locations.map((place) => (
-                  <View key={place.id} style={{ marginTop: 10 }}>
-                    <P small bold>
-                      {place.name}
-                    </P>
-                    <P small muted>
-                      {place.type === "Domicile"
-                        ? `${place.sector || "Secteur à préciser"}${place.radius ? ` · rayon de ${place.radius} km` : ""}${place.travelFee ? ` · déplacement +${euro(place.travelFee)}` : ""}`
-                        : place.type === "Visio"
-                          ? "À distance"
-                          : place.address || "Adresse à compléter"}
-                    </P>
-                  </View>
-                ))}
+            ({ offer, locations, departures, groups, status }) => {
+              const open = expanded === offer.id;
+              return (
                 <View
-                  style={{
-                    backgroundColor: "#f5f5f3",
-                    borderRadius: 12,
-                    padding: 12,
-                    marginTop: 12,
-                  }}
+                  key={offer.id}
+                  style={{ borderBottomWidth: 1, borderColor: "#e7e7e7" }}
                 >
-                  <P small bold>
-                    {status}
-                  </P>
-                  {!!departures.length && (
-                    <P small muted style={{ marginTop: 4 }}>
-                      {departures.join(" · ")}
-                    </P>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Détails de ${offer.name}`}
+                    accessibilityState={{ expanded: open }}
+                    aria-expanded={open}
+                    onPress={() => setExpanded(open ? null : offer.id)}
+                    style={{ paddingVertical: 16, minHeight: 48 }}
+                  >
+                    <Row between>
+                      <View style={{ flex: 1 }}>
+                        <P bold>{offer.name}</P>
+                        <P small style={{ marginTop: 5 }}>
+                          {offer.kind} · {offer.duration} min ·{" "}
+                          {euro(offer.price)}
+                          {offer.kind === "Groupe"
+                            ? " / personne"
+                            : " / séance"}
+                        </P>
+                        {!open && (
+                          <P small muted style={{ marginTop: 4 }}>
+                            {status}
+                          </P>
+                        )}
+                      </View>
+                      <Icon name="chevron" size={16} />
+                    </Row>
+                  </Pressable>
+                  {open && (
+                    <View style={{ paddingBottom: 16 }}>
+                      {offer.kind === "Groupe" && (
+                        <P small muted>
+                          {offer.capacity} personnes maximum
+                        </P>
+                      )}
+                      {!common && places(locations)}
+                      <P small bold style={{ marginTop: 12 }}>
+                        {status}
+                      </P>
+                      {!!departures.length && (
+                        <P small muted style={{ marginTop: 4 }}>
+                          {departures.join(" · ")}
+                        </P>
+                      )}
+                      {groups.map((g) => (
+                        <Setting
+                          key={g.id}
+                          title={`${g.time} · Voir le cours`}
+                          description={`${g.offer.capacity - remaining(g.offer, g.day, g.time, store)} / ${g.offer.capacity} places réservées · ${euro(g.offer.price)} / personne`}
+                          onPress={() => onGroup(g.id)}
+                        />
+                      ))}
+                    </View>
                   )}
                 </View>
-                {groups.map((g) => (
-                  <Setting
-                    key={g.id}
-                    title={`${g.time} · Voir le cours`}
-                    description={`${g.offer.capacity - remaining(g.offer, g.day, g.time, store)} / ${g.offer.capacity} places réservées · ${euro(g.offer.price)} / personne`}
-                    onPress={() => onGroup(g.id)}
-                  />
-                ))}
-              </View>
-            ),
+              );
+            },
           )}
-          <P small muted style={{ marginVertical: 16 }}>
-            Les départs tiennent compte de votre publication, de vos
-            réservations et des règles de votre agenda.
-          </P>
-          <Button onPress={() => onDate(selection.day)}>
-            Modifier les horaires de cette date
-          </Button>
-          <TextButton onPress={onOffers}>Gérer mes offres</TextButton>
         </>
       )}
+      <View style={{ marginTop: 24 }}>
+        <Button onPress={() => onDate(selection.day)}>
+          Modifier les horaires de cette date
+        </Button>
+        {selection.range && ranges.length > 1 && (
+          <TextButton
+            onPress={() =>
+              onSelect({ coach: selection.coach, day: selection.day })
+            }
+          >
+            Toutes les plages du jour
+          </TextButton>
+        )}
+        <TextButton onPress={onOffers}>Gérer mes offres</TextButton>
+      </View>
     </Dialog>
   );
 }

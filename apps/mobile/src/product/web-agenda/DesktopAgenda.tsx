@@ -1,4 +1,4 @@
-import { AvailabilityRangeButton } from "../AvailabilityRange";
+import { AvailabilityRangeList } from "../AvailabilityRange";
 import type { RangeSelection } from "../rangeDetailsModel";
 import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -229,23 +229,17 @@ function CoachAgenda({
               </Pressable>
               <View style={s.ranges}>
                 <Text style={s.rangeLabel}>MES DISPONIBILITÉS</Text>
-                {day.ranges.length ? (
-                  day.ranges.map((range, i) => (
-                    <AvailabilityRangeButton
-                      key={i}
-                      compact
-                      store={store}
-                      selection={{ coach: coachId, day: day.day, range }}
-                      onPress={() => {
-                        setSelected(day.day);
-                        onSelectedDate?.(day.day);
-                        onRange({ coach: coachId, day: day.day, range });
-                      }}
-                    />
-                  ))
-                ) : (
-                  <Text style={s.mutedSmall}>Non définies</Text>
-                )}
+                <AvailabilityRangeList
+                  store={store}
+                  coach={coachId}
+                  day={day.day}
+                  compact
+                  onSelect={(selection) => {
+                    setSelected(day.day);
+                    onSelectedDate?.(day.day);
+                    onRange(selection);
+                  }}
+                />
               </View>
               <View style={s.events}>
                 <Text style={s.rangeLabel}>MES RENDEZ-VOUS</Text>
@@ -457,7 +451,7 @@ const s = StyleSheet.create({
   dayCount: { fontFamily: t.font, color: t.muted, fontSize: 11 },
   ranges: {
     padding: 10,
-    minHeight: 79,
+    height: 180,
     gap: 4,
     borderBottomWidth: 1,
     borderColor: t.border,

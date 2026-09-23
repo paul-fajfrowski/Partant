@@ -8,13 +8,29 @@ import {
   mins,
   Store,
 } from "./model";
+import type { CoachLocation, Interval } from "./extendedTypes";
 import { canOffer } from "./verification";
-import type { Interval } from "./extendedTypes";
 
-export type RangeSelection = { coach: string; day: string; range: Interval };
+/** Merge legacy aliases for the same venue, without hiding distinct access/fees. */
+export function locationPresentationKey(p: CoachLocation) {
+  const normalize = (s = "") =>
+    s.trim().replace(/\s+/g, " ").toLocaleLowerCase("fr");
+  return JSON.stringify([
+    p.type === "Domicile" || p.type === "Visio" ? p.type : "venue",
+    normalize(p.name),
+    normalize(p.address),
+    normalize(p.instructions),
+    normalize(p.sector),
+    p.radius ?? 0,
+    p.travelFee ?? 0,
+  ]);
+}
+
+export type RangeSelection = { coach: string; day: string; range?: Interval };
 
 /** Read-only presentation. The booking engine remains the authority for departures. */
 export function availabilityRangeView(store: Store, selection: RangeSelection) {
+  if (!selection.range) return null;
   const coach = allCoaches(store).find((c) => c.id === selection.coach);
   if (!coach) return null;
   const cfg = configFor(store, coach.id);
@@ -34,7 +50,13 @@ export function availabilityRangeView(store: Store, selection: RangeSelection) {
       const locations = offerFormats(coach, offer)
         .filter((id) => placeIds == null || placeIds.includes(id))
         .map((id) => ({ id, ...places[id] }))
-        .filter((p) => !!p.name);
+        .filter((p) => !!p.name)
+        .filter(
+          (p, i, all) =>
+            all.findIndex(
+              (v) => locationPresentationKey(v) === locationPresentationKey(p),
+            ) === i,
+        );
       const groups = (store.groups ?? []).filter(
         (g) =>
           !g.cancelled &&

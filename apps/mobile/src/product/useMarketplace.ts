@@ -1,3 +1,4 @@
+import { coachAgendaPreview } from "./coachAgendaPreview";
 import { unregisterPushDevice, clearLocalPushDevice } from "./pushDevice";
 import * as Messaging from "./messaging";
 import { report, deleteAccount } from "./workflows";
@@ -50,7 +51,11 @@ export function useMarketplace(live: boolean) {
     })(),
   ).current;
   const [store, update] = useState<Store>(() =>
-    live ? connectedInitial() : newPreviewStore(),
+    live
+      ? connectedInitial()
+      : previewKey === "partant-native-recette-coach-realiste-30"
+        ? coachAgendaPreview()
+        : newPreviewStore(),
   );
   const current = useRef(store);
   current.current = store;
