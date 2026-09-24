@@ -1,5 +1,7 @@
 # Partant
 
+**Pour reprendre le projet — 24 septembre 2026 :** [réalisé, intégrations, tests et priorités restantes](ETAT_DU_PROJET.md). Ce récapitulatif couvre les livraisons jusqu’à la 32 ; les sections plus anciennes ci-dessous conservent leur contexte historique.
+
 **WebApp — livraison 27 :** [parcours ordinateur, architecture partagée et recette](docs/webapp-27.md). [Construire et ouvrir la WebApp localement](apps/web/README.md).
 
 **Documents & vérifications — livraison 26 :** [dossier par pratique, justificatifs réutilisables et décisions équipe](docs/documents-verifications-26.md).
