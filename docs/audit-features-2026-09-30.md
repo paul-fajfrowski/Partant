@@ -2,6 +2,8 @@
 
 Audit du 30 septembre 2026, après la livraison UX/UI 34, sur les sources du commit `6869b07`. Cet audit n’applique aucun correctif produit.
 
+**Suivi : les six points F-01 à F-06 ont reçu leurs correctifs dans la [livraison 35](corrections-features-35.md).** Ce rapport conserve les observations antérieures et leurs reproductions. Le script de reproduction doit être exécuté sur son commit historique, pas considéré comme un test de non-régression des sources corrigées.
+
 ## Conclusion
 
 **Le cœur de la marketplace existe. Il faut maintenant fermer les parcours incomplets et valider les services réels, plutôt qu’ajouter de nouveaux écrans.** Client, coach et équipe partagent le même moteur métier ; les écarts ci-dessous concernent donc l’app et la WebApp, sauf mention contraire.

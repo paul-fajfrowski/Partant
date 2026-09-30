@@ -1,0 +1,39 @@
+{
+  "date": "2026-09-30",
+  "baseCommit": "49f753a",
+  "scope": "Six functional corrections in shared app/web and deployed development backend",
+  "local": {
+    "unitDomSuites": 43,
+    "initialPassed": 42,
+    "rerun": "Location field label updated; 13 checks pass; no product assertion removed",
+    "consolidatedPassed": 43,
+    "newFeatureAssertions": 57,
+    "browserSuitesPassed": 10,
+    "newBrowserChecks": 10,
+    "typecheck": "passed",
+    "webExport": "passed",
+    "iosHermesExport": "passed"
+  },
+  "remote": {
+    "project": "jhhsysjdeyqsuztjtgea",
+    "existingApiChecksPassed": 36,
+    "newFeatureApiChecksPassed": 20,
+    "activeFunctions": {
+      "product-api": 23,
+      "google-calendar": 18,
+      "push-dispatch": 11
+    },
+    "remainingQaUsers": 0,
+    "permanentTeamAccounts": 0,
+    "testAccountsOnly": true,
+    "providerTransactions": "IGN address resolution only; no payment, live Calendar consent or APNs delivery"
+  },
+  "notExecuted": [
+    "signed Xcode build for this delivery",
+    "physical iPhone or Android recipe",
+    "VoiceOver",
+    "load test",
+    "commercial payment"
+  ],
+  "evidenceNote": "Remote counts are recorded from successful command outputs and final read-only server verification; no temporary account credentials or SQL setup files copied into Git."
+}

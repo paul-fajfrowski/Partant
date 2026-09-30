@@ -1,6 +1,8 @@
 # Partant
 
-**Audit des fonctionnalités — 30 septembre 2026 :** [inventaire client/coach/équipe, quatre anomalies reproduites, parcours incomplets et prochaines priorités](docs/audit-features-2026-09-30.md). Audit postérieur à UX34 ; constats ouverts, aucun correctif produit dans cette livraison documentaire.
+**Corrections fonctionnelles — livraison 35 :** [les six points corrigés, la recette et les validations restantes](docs/corrections-features-35.md). App native, WebApp et serveur de développement mis à jour.
+
+**Audit des fonctionnalités — 30 septembre 2026 :** [inventaire client/coach/équipe, quatre anomalies reproduites, parcours incomplets et prochaines priorités](docs/audit-features-2026-09-30.md). Constat historique après UX34 ; lire la livraison 35 pour les corrections.
 
 **Améliorations UX/UI — livraison 34 :** [les dix corrections, leur recette et les limites natives](docs/corrections-ux-ui-34.md). Sources communes à l’app et à la WebApp.
 
@@ -12,7 +14,7 @@
 
 **Audit — 30 septembre 2026 :** [App, WebApp, serveur, anomalies reproduites et plan de correction](docs/audit-app-webapp-2026-09-30.md). Audit réalisé sur la livraison 32 ; aucune correction produit incluse dans ce rapport.
 
-**Pour reprendre le projet — 30 septembre 2026 :** [réalisé, corrections d’audit, preuves de tests, installation Xcode/WebApp et MVP restant](ETAT_DU_PROJET.md). Point d’entrée à jour jusqu’à la livraison 34 et la configuration Xcode `326eb1a` ; les sections plus anciennes ci-dessous conservent leur contexte historique.
+**Pour reprendre le projet — 30 septembre 2026 :** [réalisé, corrections d’audit, preuves de tests, installation Xcode/WebApp et MVP restant](ETAT_DU_PROJET.md). Point d’entrée à jour jusqu’à la livraison 35 et la configuration Xcode `326eb1a` ; les sections plus anciennes ci-dessous conservent leur contexte historique.
 
 **WebApp — livraison 27 :** [parcours ordinateur, architecture partagée et recette](docs/webapp-27.md). [Construire et ouvrir la WebApp localement](apps/web/README.md).
 

@@ -7,8 +7,12 @@ export function AddressPicker({
   value,
   onChange,
   onSelect,
+  error: validationError,
+  focusRequest,
 }: {
   label: string;
+  error?: string;
+  focusRequest?: number;
   value: string;
   onChange: (v: string) => void;
   onSelect: (p: Place) => void;
@@ -45,6 +49,8 @@ export function AddressPicker({
       </P>
       <Field
         label={label}
+        error={validationError}
+        focusRequest={focusRequest}
         value={value}
         onChange={(v) => {
           onChange(v);

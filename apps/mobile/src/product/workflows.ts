@@ -1,3 +1,4 @@
+import { alertPlaceMatches } from "./geoPolicy";
 import { eraseAccountData } from "./accountErasure";
 import {
   toVerification,
@@ -430,7 +431,10 @@ function _reviewPractice(
 
 function _saveSettings(s: Store, id: string, cfg: CoachSettings): Store {
   // Legacy timing preferences no longer influence public availability.
-  cfg = { ...cfg, buffer: 0, departureStep: null };
+  cfg = { ...cfg, buffer: 0, departureStep: null,
+    suspension: configFor(s, id).suspension };
+  if (cfg.published && cfg.suspension?.active)
+    throw Error("Votre profil est suspendu. Contactez l’équipe depuis Aide & mes demandes.");
   if (s.account?.role !== "coach" || coachAccountId(s) !== id)
     throw Error("Connectez-vous à ce compte coach.");
   if (cfg.locations) validateLocations(cfg.locations);
@@ -472,6 +476,18 @@ function _saveSettings(s: Store, id: string, cfg: CoachSettings): Store {
     ...(id === "0" ? { published: cfg.published } : {}),
   };
 }
+export function hasBookableOpening(s: Store, id: string) {
+  const c = allCoaches(s).find(c => c.id === id);
+  if (!c) return false;
+  const cfg = configFor(s, id);
+  const preview = { ...s, settings: { ...s.settings, [id]: { ...cfg, published: true } } };
+  const offers = s.offers.filter(o => o.coach === id && o.active);
+  for (let n = 0; n < cfg.horizon; n++) {
+    const day = addDays(today(), n);
+    if (offers.some(o => slotsFor(c, day, preview, o).length > 0)) return true;
+  }
+  return false;
+}
 export function publicationIssues(s: Store, id: string) {
   const c = allCoaches(s).find((c) => c.id === id),
     cfg = configFor(s, id);
@@ -487,7 +503,8 @@ export function publicationIssues(s: Store, id: string) {
       ? "Créez au moins une offre active."
       : "",
     !locationsReady(s, c) ? "Précisez vos lieux." : "",
-    !cfg.week.some((day) => day.length) ? "Ouvrez votre planning." : "",
+    !hasBookableOpening(s, id) ? "Ouvrez au moins un créneau réservable, sur une date ou dans votre semaine." : "",
+    cfg.suspension?.active ? "Votre profil est suspendu par l’équipe Partant." : "",
     !c || !canOffer(cfg.dossier, c, undefined, today())
       ? "Votre dossier doit être validé et à jour."
       : "",
@@ -1144,6 +1161,9 @@ function _resolveTicket(
   const ticket = s.tickets?.find((t) => t.id === id && t.status === "open");
   if (!ticket || !response.trim()) throw Error("Indiquez une réponse motivée.");
   let next = s;
+  if (["Autoriser le passage coach", "Refuser la candidature"].includes(decision) &&
+      !ticket.body.startsWith("Candidature coach :"))
+    throw Error("Cette demande n’est pas une candidature client en cours.");
   if (decision === "Rembourser la séance" && ticket.booking) {
     const b = s.bookings.find((b) => b.id === ticket.booking);
     if (b) {
@@ -1170,15 +1190,24 @@ function _resolveTicket(
       ...next,
       settings: {
         ...next.settings,
-        [ticket.coach]: { ...cfg, published: false },
+        [ticket.coach]: { ...cfg, published: false, suspension: {
+          active: true, reason: response.trim(), by: s.account!.id, at: new Date(now()).toISOString(),
+          history: [...(cfg.suspension?.history ?? []), {
+            active: true, reason: response.trim(), by: s.account!.id, at: new Date(now()).toISOString(),
+          }],
+        } },
       },
     };
+    next = notify(next, coachRecipient(s, ticket.coach), `Votre profil est suspendu : ${response.trim()}. Vos rendez-vous existants restent accessibles.`, "", uid(), { event: "dossier" });
   }
   return notify(
     {
       ...next,
       tickets: next.tickets?.map((t) =>
-        t.id === id ? { ...t, status: "resolved", response, decision } : t,
+        t.id === id ? { ...t, status: "resolved", response, decision,
+          decidedBy: s.account!.id, decidedAt: new Date(now()).toISOString(),
+          ...(decision === "Autoriser le passage coach" ? { application: "approved" as const } :
+            decision === "Refuser la candidature" ? { application: "declined" as const } : {}) } : t,
       ),
     },
     ticket.owner,
@@ -1188,6 +1217,40 @@ function _resolveTicket(
     { event: "support", ticketId: ticket.id },
   );
 }
+export function coachApplicationTicket(s: Store) {
+  return [...(s.tickets ?? [])].reverse().find(t => t.owner === s.account?.id && t.body.startsWith("Candidature coach :"));
+}
+function _liftSuspension(s: Store, id: string, reason: string) {
+  if ((!s.staff && !s.testMode) || !reason.trim()) throw Error("Une décision motivée de l’équipe est nécessaire.");
+  const cfg = configFor(s, id);
+  if (!cfg.suspension?.active) throw Error("Ce profil n’est pas suspendu.");
+  const event = { active: false, reason: reason.trim(), by: s.account!.id, at: new Date(now()).toISOString() };
+  return notify({ ...s, settings: { ...s.settings, [id]: { ...cfg, published: false,
+    suspension: { ...event, history: [...cfg.suspension.history, event] } } } },
+    coachRecipient(s, id), "Votre suspension est levée. Vérifiez votre profil puis republiez-le.", "", uid(), { event: "dossier" });
+}
+function _activateCoachRole(s: Store, ticketId: string): Store {
+  const account = s.account;
+  const ticket = s.tickets?.find(t => t.id === ticketId && t.owner === account?.id);
+  if (account?.role !== "client" || ticket?.application !== "approved" || ticket.status !== "resolved")
+    throw Error("Le passage coach nécessite une candidature approuvée par l’équipe.");
+  if (s.bookings.some(b => b.clientId === account.id && b.status === "confirmed" && instant(b.day, b.time) + b.duration * 60000 > now()))
+    throw Error("Terminez ou annulez vos séances client à venir avant de passer coach. Votre accord reste disponible.");
+  const coach: Coach = { id: account.id, name: account.name, photo: null, sport: "Coaching sportif", tags: [],
+    price: 0, rating: null, reviews: 0, sessions: 0, years: 0, area: "", dist: null, formats: [],
+    place: "", address: "", cert: "", langs: "Français", quote: "", bio: "", method: "", verified: false };
+  const nextAccount = { ...account, role: "coach" as const, coachId: account.id };
+  const next = { ...s, account: nextAccount,
+    identities: [...(s.identities ?? []).filter(x => x.id !== account.id), nextAccount],
+    extraCoaches: [...(s.extraCoaches ?? []).filter(c => c.id !== account.id), coach],
+    alerts: s.alerts?.map(a => a.owner === account.id ? { ...a, active: false } : a),
+    tickets: s.tickets?.map(t => t.id === ticketId ? { ...t, application: "activated" as const } : t) };
+  return { ...next, settings: { ...next.settings, [account.id]: { ...configFor(next, account.id),
+    published: false, week: Array.from({ length: 7 }, () => []), exceptions: {}, weeklyConfigured: true,
+    payoutReady: false, dossier: { status: "draft", documents: [], expires: "", reason: "Complétez votre dossier professionnel.", history: [] } } } };
+}
+export const liftSuspension = recorded("liftSuspension", _liftSuspension);
+export const activateCoachRole = recorded("activateCoachRole", _activateCoachRole);
 function _reviewDossier(
   s: Store,
   id: string,
@@ -1236,19 +1299,22 @@ export function alertMatches(s: Store, a: AvailabilityAlert) {
     day: string;
     time: string;
     price: number;
+    format: string;
   }[] = [];
   for (const c of allCoaches(s)) {
     if (
       (a.coach && c.id !== a.coach) ||
-      (a.sport !== "Tout" && ![c.sport, ...c.tags].includes(a.sport)) ||
+      (a.sport !== "Tout" && ![c.sport, ...(c.disciplines ?? []), ...c.tags].includes(a.sport)) ||
       !matchesLocation(s, c, undefined, a.format)
     )
       continue;
     for (const o of s.offers.filter(
       (o) =>
-        o.coach === c.id && o.active && (!a.groupOnly || o.kind === "Groupe"),
+        o.coach === c.id && o.active && (!a.groupOnly || o.kind === "Groupe") &&
+        (a.sport === "Tout" || (o.discipline ?? c.sport) === a.sport),
     )) {
-      if (a.seats > 1 && o.kind !== "Groupe") continue;
+      if ((o.kind === "Individuel" && a.seats !== 1) ||
+          (o.kind === "Duo" && a.seats !== 2)) continue;
       if (!matchesLocation(s, c, o, a.format)) continue;
       for (const time of slotsFor(c, a.day, s, o)) {
         const g = s.groups?.find(
@@ -1261,7 +1327,8 @@ export function alertMatches(s: Store, a: AvailabilityAlert) {
         if (
           time < a.from ||
           time > a.to ||
-          price * a.seats > a.budget ||
+          !places.some(format => alertPlaceMatches(s, c, format, a) && matchesLocation(s, c, { ...o, formats: [format] }, a.format) &&
+            quotePrice(s, { coach: c.id, format, seats: a.seats } as Booking, g?.offer ?? o) <= a.budget) ||
           remaining(o, a.day, time, s) < a.seats ||
           s.bookings.some(
             (b) =>
@@ -1272,12 +1339,16 @@ export function alertMatches(s: Store, a: AvailabilityAlert) {
           )
         )
           continue;
+        const format = places.find(format => alertPlaceMatches(s, c, format, a) &&
+          matchesLocation(s, c, { ...o, formats: [format] }, a.format) &&
+          quotePrice(s, { coach: c.id, format, seats: a.seats } as Booking, g?.offer ?? o) <= a.budget)!;
         result.push({
           coach: c,
           offer: g?.offer ?? o,
           day: a.day,
           time,
-          price,
+          format,
+          price: quotePrice(s, { coach: c.id, format, seats: a.seats } as Booking, g?.offer ?? o),
         });
       }
     }

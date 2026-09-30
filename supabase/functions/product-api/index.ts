@@ -1,3 +1,5 @@
+import { resolveGeo } from "../_shared/geoResolver.ts";
+import { geoQueries } from "./domain.js";
 import { runAccountDeletions } from "../_shared/accountDeletion.ts";
 import { readJson, HttpError } from "../_shared/http.ts";
 import { syncGoogle } from "../_shared/calendarSync.ts";
@@ -87,6 +89,7 @@ Deno.serve(async (req) => {
       .map((x) => x.toString(16).padStart(2, "0"))
       .join("");
     let calendarChecked = false;
+    const geoCache: Record<string, any> = {};
     for (let attempt = 0; attempt < 6; attempt++) {
       const loaded = await admin.rpc("product_load", {
         p_actor: actor?.id ?? null,
@@ -212,7 +215,12 @@ Deno.serve(async (req) => {
         );
       if (actor)
         for (const cmd of commands) {
-          state = applyCommand(state, actor, cmd);
+          const geo: Record<string, any> = {};
+          for (const { query, street } of geoQueries(state, cmd, actor.id)) {
+            const key = `${street ? "address" : "area"}:${query}`;
+            geo[query] = geoCache[key] ??= await resolveGeo(query, street);
+          }
+          state = applyCommand(state, actor, cmd, geo);
           if (
             cmd.name === "saveVerification" ||
             (cmd.name === "reviewPractice" && cmd.args[2] === "approved")

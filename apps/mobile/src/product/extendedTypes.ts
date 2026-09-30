@@ -29,6 +29,7 @@ export type Dossier = {
 };
 export type CoachLocation = {
   coordinates?: { latitude: number; longitude: number; label: string };
+  areaCenter?: { latitude: number; longitude: number; label: string };
   type: string;
   name: string;
   address: string;
@@ -38,6 +39,8 @@ export type CoachLocation = {
   travelFee?: number;
 };
 export type CoachSettings = {
+  suspension?: { active: boolean; reason: string; by: string; at: string;
+    history: { active: boolean; reason: string; by: string; at: string }[] };
   locations?: Record<string, CoachLocation>;
   published: boolean;
   weeklyConfigured: boolean;
@@ -101,6 +104,9 @@ export type Ticket = {
   status: "open" | "resolved";
   response: string;
   decision?: string;
+  application?: "approved" | "declined" | "activated";
+  decidedBy?: string;
+  decidedAt?: string;
 };
 export type Proposal = {
   id: string;
@@ -111,6 +117,7 @@ export type Proposal = {
   status: "pending" | "accepted" | "declined" | "withdrawn" | "expired";
 };
 export type AvailabilityAlert = {
+  area?: { label: string; latitude: number; longitude: number; radius: number };
   id: string;
   owner: string;
   coach: string;

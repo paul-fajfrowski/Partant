@@ -81,7 +81,7 @@ async function toggle(label) {
     "Multiple gyms supported independently",
   );
   await click("Chez le client");
-  await field("Secteur de déplacement", "Paris 11e et 12e");
+  await field("Centre de votre zone de déplacement", "Place de la Nation, Paris");
   await field("Rayon de déplacement à domicile (km)", "8");
   await field("Supplément déplacement à domicile (€)", "7");
   await click("Enregistrer les lieux");

@@ -42,6 +42,7 @@ exports.asActor = asActor;
 exports.applyCommand = applyCommand;
 exports.project = project;
 exports.documents = documents;
+const geoPolicy_1 = load("geoPolicy.ts");
 const verification_1 = load("verification.ts");
 const Messaging = __importStar(load("messaging.ts"));
 const noticeEvents_1 = load("noticeEvents.ts");
@@ -159,7 +160,7 @@ function updateAccountPreferences(s) {
         },
     };
 }
-function applyCommand(source, actor, cmd) {
+function applyCommand(source, actor, cmd, geo = {}) {
     let s = asActor(source, actor);
     me(s);
     const a = cmd.args;
@@ -227,8 +228,16 @@ function applyCommand(source, actor, cmd) {
             const old = M.configFor(s, a[0]);
             const cfg = {
                 ...old,
-                ...pick(a[1], Object.keys(old).concat("locations")),
+                ...pick(a[1], Object.keys(old).filter(k => k !== "suspension").concat("locations")),
             };
+            if (cfg.locations?.Domicile) {
+                const place = cfg.locations.Domicile;
+                const previous = old.locations?.Domicile;
+                const point = geo[place.sector ?? ""] ?? (previous?.sector === place.sector ? previous?.areaCenter : undefined);
+                if (!(0, geoPolicy_1.validPoint)(point))
+                    throw Error("Sélectionnez le centre de votre zone de déplacement parmi les suggestions.");
+                cfg.locations = { ...cfg.locations, Domicile: { ...place, areaCenter: { ...point, label: place.sector } } };
+            }
             if (JSON.stringify(cfg.dossier) !== JSON.stringify(old.dossier) &&
                 (old.dossier.verification ||
                     cfg.dossier.verification ||
@@ -477,6 +486,9 @@ function applyCommand(source, actor, cmd) {
             n = W.replyReview(s, a[0], string(a[1], 3000));
             break;
         case "report":
+            if (String(a[0]?.body ?? "").startsWith("Candidature coach :") &&
+                (me(s).role !== "client" || s.tickets?.some(t => t.owner === actor.id && t.body.startsWith("Candidature coach :") && (t.status === "open" || t.application === "approved"))))
+                throw Error("Une candidature est déjà en cours ou votre compte est déjà professionnel.");
             n = W.report(s, pick(a[0], ["kind", "body", "coach", "booking", "review"]));
             break;
         case "message":
@@ -557,6 +569,7 @@ function applyCommand(source, actor, cmd) {
                     "groupOnly",
                     "format",
                     "active",
+                    "area",
                 ]),
                 owner: actor.id,
                 seen: old?.seen ?? [],
@@ -567,6 +580,14 @@ function applyCommand(source, actor, cmd) {
                 alert.seats < 1 ||
                 alert.seats > 20)
                 throw Error("Alerte invalide.");
+            if (alert.active && !alert.coach && alert.format !== "Visio" && !alert.area)
+                throw Error("Choisissez le secteur de votre alerte.");
+            if (alert.area) {
+                const center = geo[alert.area.label] ?? (old?.area?.label === alert.area.label ? old?.area : undefined);
+                if (!(0, geoPolicy_1.validPoint)(center) || !Number.isFinite(alert.area.radius) || alert.area.radius < 1 || alert.area.radius > 100)
+                    throw Error("Précisez un secteur et un rayon de 1 à 100 km.");
+                alert.area = { ...center, label: alert.area.label, radius: alert.area.radius };
+            }
             n = {
                 ...s,
                 alerts: [...(s.alerts ?? []).filter((x) => x.id !== alert.id), alert],
@@ -598,14 +619,28 @@ function applyCommand(source, actor, cmd) {
                 throw Error("Un autre membre de l’équipe doit vérifier votre dossier.");
             n = W.reviewDossier({ ...s, testMode: true }, a[0], a[1], string(a[2], 1000));
             break;
+        case "activateCoachRole":
+            n = W.activateCoachRole(s, a[0]);
+            break;
+        case "liftSuspension":
+            if (!actor.staff)
+                throw Error("Accès équipe requis.");
+            n = W.liftSuspension({ ...s, staff: true }, a[0], string(a[1], 3000));
+            break;
         case "resolveTicket":
             if (!actor.staff)
                 throw Error("Accès équipe requis.");
+            if (["Autoriser le passage coach", "Refuser la candidature"].includes(a[2])) {
+                const ticket = s.tickets?.find(t => t.id === a[0]);
+                if (!s.identities?.some(x => x.id === ticket?.owner && x.role === "client"))
+                    throw Error("Ce compte n’est plus un compte client.");
+            }
             n = W.resolveTicket({ ...s, testMode: true }, a[0], string(a[1], 3000), a[2]);
             break;
         default:
             throw Error("Action serveur non reconnue.");
     }
+    (0, geoPolicy_1.validateGeoChanges)(s, n, geo);
     // All paths that occupy a time (including coach proposals and direct sessions) respect Google.
     const occupied = (state) => [
         ...state.bookings
@@ -667,7 +702,7 @@ function project(source, actor) {
     const coaches = M.allCoaches(s).filter((c) => actor?.staff ||
         own(c.id) ||
         related.has(c.id) ||
-        M.configFor(s, c.id).published);
+        (M.configFor(s, c.id).published && !M.configFor(s, c.id).suspension?.active));
     const ids = new Set(coaches.map((c) => c.id));
     const settings = Object.fromEntries(coaches.map((c) => {
         const cfg = M.configFor(s, c.id);
@@ -695,7 +730,7 @@ function project(source, actor) {
                 locations: cfg.locations && Object.fromEntries(Object.entries(cfg.locations).map(([key, place]) => [key, {
                         type: place.type, name: place.name, address: place.address,
                         sector: place.sector, radius: place.radius, travelFee: place.travelFee,
-                        coordinates: place.coordinates, instructions: "",
+                        coordinates: place.coordinates, areaCenter: place.areaCenter, instructions: "",
                     }])),
                 clientNotes: {},
                 business: { name: "", status: "", email: "", address: "" },
@@ -820,6 +855,153 @@ function documents(s) {
         "testMode",
         "clockHours",
     ].includes(k)));
+}
+
+},
+"geoPolicy.ts":(module,exports,load)=>{
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.validPoint = validPoint;
+exports.assertHomeZone = assertHomeZone;
+exports.geoQueries = geoQueries;
+exports.validateGeoChanges = validateGeoChanges;
+exports.alertPlaceMatches = alertPlaceMatches;
+const geo_1 = load("../lib/geo.ts");
+function validPoint(p) {
+    return !!p && !!p.label?.trim() && Number.isFinite(p.latitude) && Number.isFinite(p.longitude)
+        && Math.abs(p.latitude) <= 90 && Math.abs(p.longitude) <= 180;
+}
+function assertHomeZone(location, address, geo) {
+    if (!location?.sector || !Number.isFinite(location.radius) || !location.radius)
+        throw Error("Le coach doit préciser sa zone de déplacement avant une réservation à domicile.");
+    const center = geo[location.sector], point = geo[address];
+    if (!validPoint(center) || !validPoint(point))
+        throw Error("Sélectionnez une adresse proposée pour vérifier la zone de déplacement.");
+    if ((0, geo_1.distanceKm)(center, point) > location.radius)
+        throw Error(`Cette adresse est hors de la zone de déplacement du coach (${location.radius} km autour de ${location.sector}). Choisissez un autre lieu ou un autre coach.`);
+}
+function geoQueries(s, cmd, actorId) {
+    const out = [];
+    const add = (query, street = false) => {
+        if (typeof query === "string" && query.trim())
+            out.push({ query, street });
+    };
+    const home = (coach, address) => {
+        add(s.settings?.[coach]?.locations?.Domicile?.sector);
+        add(address, true);
+    };
+    const a = cmd.args;
+    if (cmd.name === "saveSettings" && a[0] === actorId) {
+        const current = s.settings?.[actorId]?.locations?.Domicile;
+        const incoming = a[1]?.locations?.Domicile;
+        if (incoming?.sector !== current?.sector || !validPoint(current?.areaCenter))
+            add(incoming?.sector);
+    }
+    if (cmd.name === "alert") {
+        const old = s.alerts?.find(x => x.id === a[0]?.id && x.owner === actorId);
+        if (a[0]?.area?.label !== old?.area?.label || !validPoint(old?.area))
+            add(a[0]?.area?.label);
+    }
+    if (cmd.name === "reserve" && a[0]?.format === "Domicile")
+        home(a[0].coach, a[0].address);
+    if (["reschedule", "addProposal"].includes(cmd.name)) {
+        const b = s.bookings.find(b => b.id === a[0]);
+        if (b?.format === "Domicile" && (cmd.name === "reschedule" ? b.clientId === actorId : b.coach === actorId))
+            home(b.coach, cmd.name === "reschedule" ? (a[3] ?? b.address) : a[1]?.address);
+    }
+    if (cmd.name === "answerProposal" && a[1] === "accepted") {
+        const p = s.proposals?.find(p => p.id === a[0]);
+        const b = s.bookings.find(b => b.id === p?.booking);
+        if (b?.clientId === actorId) {
+            const g = s.groups?.find(g => g.offer.id === p?.target.offerId && g.day === p.target.day && g.time === p.target.time);
+            if (g?.format === "Domicile")
+                home(g.offer.coach, g.address);
+            else if (b.format === "Domicile")
+                home(b.coach, p.target.address);
+        }
+    }
+    if (cmd.name === "openGroup" && a[0]?.format === "Domicile")
+        home(a[0].offer?.coach, a[0].address);
+    if (cmd.name === "repeatGroup") {
+        const g = s.groups?.find(g => g.id === a[0]);
+        if (g?.format === "Domicile" && g.offer.coach === actorId)
+            home(g.offer.coach, g.address);
+    }
+    if (cmd.name === "transfer") {
+        const b = s.bookings.find(b => b.id === a[0] && b.clientId === actorId);
+        const g = s.groups?.find(g => g.id === a[1]);
+        if (b && g?.format === "Domicile")
+            home(g.offer.coach, g.address);
+    }
+    return out;
+}
+function validateGeoChanges(before, after, geo = {}) {
+    for (const b of after.bookings) {
+        if (b.status !== "confirmed" || b.format !== "Domicile")
+            continue;
+        const old = before.bookings.find(x => x.id === b.id);
+        if (!old || old.address !== b.address || old.day !== b.day || old.time !== b.time)
+            assertHomeZone(after.settings?.[b.coach]?.locations?.Domicile, b.address, geo);
+    }
+    for (const p of after.proposals ?? []) {
+        if (before.proposals?.some(x => x.id === p.id))
+            continue;
+        const b = after.bookings.find(b => b.id === p.booking);
+        if (b?.format === "Domicile")
+            assertHomeZone(after.settings?.[b.coach]?.locations?.Domicile, p.target.address, geo);
+    }
+    for (const g of after.groups ?? []) {
+        if (g.format === "Domicile" && !before.groups?.some(x => x.id === g.id))
+            assertHomeZone(after.settings?.[g.offer.coach]?.locations?.Domicile, g.address, geo);
+    }
+}
+function alertPlaceMatches(s, c, format, a) {
+    const place = s.settings?.[c.id]?.locations?.[format];
+    if (format === "Visio" || place?.type === "Visio")
+        return true;
+    if (!a.area)
+        return !!a.coach; // Old global alerts must be updated, not silently worldwide.
+    if (!validPoint(a.area))
+        return false;
+    if (format === "Domicile" || place?.type === "Domicile")
+        return validPoint(place?.areaCenter) && (0, geo_1.distanceKm)(a.area, place.areaCenter) <= a.area.radius + (place.radius ?? 0);
+    return validPoint(place?.coordinates) && (0, geo_1.distanceKm)(a.area, place.coordinates) <= a.area.radius;
+}
+
+},
+"../lib/geo.ts":(module,exports,load)=>{
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.searchAddresses = searchAddresses;
+exports.distanceKm = distanceKm;
+exports.osmUrl = osmUrl;
+async function searchAddresses(query, signal) {
+    if (query.trim().length < 3)
+        return [];
+    const response = await fetch(`https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(query.trim())}&limit=5`, { signal });
+    if (!response.ok)
+        throw new Error("La recherche d’adresses est indisponible. Réessayez.");
+    const data = await response.json();
+    return (data.features ?? [])
+        .filter((f) => f.geometry?.type === "Point")
+        .map((f) => ({
+        label: f.properties.label,
+        city: f.properties.city,
+        postcode: f.properties.postcode,
+        longitude: f.geometry.coordinates[0],
+        latitude: f.geometry.coordinates[1],
+    }));
+}
+function distanceKm(a, b) {
+    const r = Math.PI / 180;
+    const x = Math.sin(((b.latitude - a.latitude) * r) / 2) ** 2 +
+        Math.cos(a.latitude * r) *
+            Math.cos(b.latitude * r) *
+            Math.sin(((b.longitude - a.longitude) * r) / 2) ** 2;
+    return 6371 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(Math.max(0, 1 - x)));
+}
+function osmUrl(p) {
+    return `https://www.openstreetmap.org/export/embed.html?bbox=${p.longitude - 0.015},${p.latitude - 0.008},${p.longitude + 0.015},${p.latitude + 0.008}&layer=mapnik&marker=${p.latitude},${p.longitude}`;
 }
 
 },
@@ -1951,7 +2133,7 @@ function conversations(s) {
     }
     return [...buckets]
         .map(([id, bookings]) => {
-        const coach = (0, model_1.allCoaches)(s).find((c) => c.id === bookings[0].coach), isCoach = s.account.role === "coach";
+        const coach = (0, model_1.allCoaches)(s).find((c) => c.id === bookings[0].coach), isCoach = bookings[0].clientId !== s.account.id;
         const sorted = [...bookings].sort((a, b) => (a.day + a.time).localeCompare(b.day + b.time));
         const upcoming = sorted.find((b) => b.status === "confirmed" && Date.parse(b.day + "T23:59:59Z") >= (0, model_1.now)());
         const messages = bookings
@@ -2215,7 +2397,7 @@ function slotsFor(c, day, store, offer) {
         return [];
     if (offer && offer.kind !== "Groupe" && !offerFormats(c, offer).length)
         return [];
-    if (!cfg.published ||
+    if (!cfg.published || cfg.suspension?.active ||
         !(0, verification_1.canOffer)(cfg.dossier, c, offer, day) ||
         day < (0, exports.today)() ||
         day >= (0, exports.addDays)((0, exports.today)(), cfg.horizon))
@@ -2856,22 +3038,25 @@ function commandsFrom(before, after) {
 "workflows.ts":(module,exports,load)=>{
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.reviewPractice = exports.saveVerification = exports.resolveTicket = exports.reviewDossier = exports.deleteAccount = exports.report = exports.replyReview = exports.saveReview = exports.answerProposal = exports.addProposal = exports.closeGroup = exports.reschedule = exports.transfer = exports.partialCancel = exports.cancelSession = exports.saveOffer = exports.saveCoach = exports.publish = exports.saveSettings = exports.infoFor = exports.fingerprint = exports.net = exports.money = exports.uid = void 0;
+exports.reviewPractice = exports.saveVerification = exports.resolveTicket = exports.reviewDossier = exports.deleteAccount = exports.report = exports.replyReview = exports.saveReview = exports.answerProposal = exports.addProposal = exports.closeGroup = exports.reschedule = exports.transfer = exports.partialCancel = exports.cancelSession = exports.saveOffer = exports.saveCoach = exports.publish = exports.saveSettings = exports.activateCoachRole = exports.liftSuspension = exports.infoFor = exports.fingerprint = exports.net = exports.money = exports.uid = void 0;
 exports.identities = identities;
 exports.loginDemo = loginDemo;
 exports.notify = notify;
 exports.canRead = canRead;
 exports.owned = owned;
+exports.hasBookableOpening = hasBookableOpening;
 exports.publicationIssues = publicationIssues;
 exports.clientConflict = clientConflict;
 exports.transferCandidates = transferCandidates;
 exports.beginPayment = beginPayment;
 exports.paymentResult = paymentResult;
 exports.effectiveProposalStatus = effectiveProposalStatus;
+exports.coachApplicationTicket = coachApplicationTicket;
 exports.alertMatches = alertMatches;
 exports.maintain = maintain;
 exports.accountExport = accountExport;
 exports.sessionICS = sessionICS;
+const geoPolicy_1 = load("geoPolicy.ts");
 const accountErasure_1 = load("accountErasure.ts");
 const verification_1 = load("verification.ts");
 const noticeEvents_1 = load("noticeEvents.ts");
@@ -3166,7 +3351,10 @@ function _reviewPractice(s, id, practice, status, reason, expected) {
 }
 function _saveSettings(s, id, cfg) {
     // Legacy timing preferences no longer influence public availability.
-    cfg = { ...cfg, buffer: 0, departureStep: null };
+    cfg = { ...cfg, buffer: 0, departureStep: null,
+        suspension: (0, model_1.configFor)(s, id).suspension };
+    if (cfg.published && cfg.suspension?.active)
+        throw Error("Votre profil est suspendu. Contactez l’équipe depuis Aide & mes demandes.");
     if (s.account?.role !== "coach" || (0, model_1.coachAccountId)(s) !== id)
         throw Error("Connectez-vous à ce compte coach.");
     if (cfg.locations)
@@ -3199,6 +3387,20 @@ function _saveSettings(s, id, cfg) {
         ...(id === "0" ? { published: cfg.published } : {}),
     };
 }
+function hasBookableOpening(s, id) {
+    const c = (0, model_1.allCoaches)(s).find(c => c.id === id);
+    if (!c)
+        return false;
+    const cfg = (0, model_1.configFor)(s, id);
+    const preview = { ...s, settings: { ...s.settings, [id]: { ...cfg, published: true } } };
+    const offers = s.offers.filter(o => o.coach === id && o.active);
+    for (let n = 0; n < cfg.horizon; n++) {
+        const day = (0, model_1.addDays)((0, model_1.today)(), n);
+        if (offers.some(o => (0, model_1.slotsFor)(c, day, preview, o).length > 0))
+            return true;
+    }
+    return false;
+}
 function publicationIssues(s, id) {
     const c = (0, model_1.allCoaches)(s).find((c) => c.id === id), cfg = (0, model_1.configFor)(s, id);
     return [
@@ -3210,7 +3412,8 @@ function publicationIssues(s, id) {
             ? "Créez au moins une offre active."
             : "",
         !(0, model_1.locationsReady)(s, c) ? "Précisez vos lieux." : "",
-        !cfg.week.some((day) => day.length) ? "Ouvrez votre planning." : "",
+        !hasBookableOpening(s, id) ? "Ouvrez au moins un créneau réservable, sur une date ou dans votre semaine." : "",
+        cfg.suspension?.active ? "Votre profil est suspendu par l’équipe Partant." : "",
         !c || !(0, verification_1.canOffer)(cfg.dossier, c, undefined, (0, model_1.today)())
             ? "Votre dossier doit être validé et à jour."
             : "",
@@ -3697,6 +3900,9 @@ function _resolveTicket(s, id, response, decision) {
     if (!ticket || !response.trim())
         throw Error("Indiquez une réponse motivée.");
     let next = s;
+    if (["Autoriser le passage coach", "Refuser la candidature"].includes(decision) &&
+        !ticket.body.startsWith("Candidature coach :"))
+        throw Error("Cette demande n’est pas une candidature client en cours.");
     if (decision === "Rembourser la séance" && ticket.booking) {
         const b = s.bookings.find((b) => b.id === ticket.booking);
         if (b) {
@@ -3719,15 +3925,59 @@ function _resolveTicket(s, id, response, decision) {
             ...next,
             settings: {
                 ...next.settings,
-                [ticket.coach]: { ...cfg, published: false },
+                [ticket.coach]: { ...cfg, published: false, suspension: {
+                        active: true, reason: response.trim(), by: s.account.id, at: new Date((0, model_1.now)()).toISOString(),
+                        history: [...(cfg.suspension?.history ?? []), {
+                                active: true, reason: response.trim(), by: s.account.id, at: new Date((0, model_1.now)()).toISOString(),
+                            }],
+                    } },
             },
         };
+        next = notify(next, (0, model_1.coachRecipient)(s, ticket.coach), `Votre profil est suspendu : ${response.trim()}. Vos rendez-vous existants restent accessibles.`, "", (0, exports.uid)(), { event: "dossier" });
     }
     return notify({
         ...next,
-        tickets: next.tickets?.map((t) => t.id === id ? { ...t, status: "resolved", response, decision } : t),
+        tickets: next.tickets?.map((t) => t.id === id ? { ...t, status: "resolved", response, decision,
+            decidedBy: s.account.id, decidedAt: new Date((0, model_1.now)()).toISOString(),
+            ...(decision === "Autoriser le passage coach" ? { application: "approved" } :
+                decision === "Refuser la candidature" ? { application: "declined" } : {}) } : t),
     }, ticket.owner, "Votre demande a reçu une réponse.", ticket.booking, (0, exports.uid)(), { event: "support", ticketId: ticket.id });
 }
+function coachApplicationTicket(s) {
+    return [...(s.tickets ?? [])].reverse().find(t => t.owner === s.account?.id && t.body.startsWith("Candidature coach :"));
+}
+function _liftSuspension(s, id, reason) {
+    if ((!s.staff && !s.testMode) || !reason.trim())
+        throw Error("Une décision motivée de l’équipe est nécessaire.");
+    const cfg = (0, model_1.configFor)(s, id);
+    if (!cfg.suspension?.active)
+        throw Error("Ce profil n’est pas suspendu.");
+    const event = { active: false, reason: reason.trim(), by: s.account.id, at: new Date((0, model_1.now)()).toISOString() };
+    return notify({ ...s, settings: { ...s.settings, [id]: { ...cfg, published: false,
+                suspension: { ...event, history: [...cfg.suspension.history, event] } } } }, (0, model_1.coachRecipient)(s, id), "Votre suspension est levée. Vérifiez votre profil puis republiez-le.", "", (0, exports.uid)(), { event: "dossier" });
+}
+function _activateCoachRole(s, ticketId) {
+    const account = s.account;
+    const ticket = s.tickets?.find(t => t.id === ticketId && t.owner === account?.id);
+    if (account?.role !== "client" || ticket?.application !== "approved" || ticket.status !== "resolved")
+        throw Error("Le passage coach nécessite une candidature approuvée par l’équipe.");
+    if (s.bookings.some(b => b.clientId === account.id && b.status === "confirmed" && (0, model_1.instant)(b.day, b.time) + b.duration * 60000 > (0, model_1.now)()))
+        throw Error("Terminez ou annulez vos séances client à venir avant de passer coach. Votre accord reste disponible.");
+    const coach = { id: account.id, name: account.name, photo: null, sport: "Coaching sportif", tags: [],
+        price: 0, rating: null, reviews: 0, sessions: 0, years: 0, area: "", dist: null, formats: [],
+        place: "", address: "", cert: "", langs: "Français", quote: "", bio: "", method: "", verified: false };
+    const nextAccount = { ...account, role: "coach", coachId: account.id };
+    const next = { ...s, account: nextAccount,
+        identities: [...(s.identities ?? []).filter(x => x.id !== account.id), nextAccount],
+        extraCoaches: [...(s.extraCoaches ?? []).filter(c => c.id !== account.id), coach],
+        alerts: s.alerts?.map(a => a.owner === account.id ? { ...a, active: false } : a),
+        tickets: s.tickets?.map(t => t.id === ticketId ? { ...t, application: "activated" } : t) };
+    return { ...next, settings: { ...next.settings, [account.id]: { ...(0, model_1.configFor)(next, account.id),
+                published: false, week: Array.from({ length: 7 }, () => []), exceptions: {}, weeklyConfigured: true,
+                payoutReady: false, dossier: { status: "draft", documents: [], expires: "", reason: "Complétez votre dossier professionnel.", history: [] } } } };
+}
+exports.liftSuspension = (0, commands_1.recorded)("liftSuspension", _liftSuspension);
+exports.activateCoachRole = (0, commands_1.recorded)("activateCoachRole", _activateCoachRole);
 function _reviewDossier(s, id, status, reason) {
     if ((!s.testMode && !s.staff) || !reason.trim())
         throw Error("L’équipe doit indiquer le motif de sa décision.");
@@ -3762,11 +4012,13 @@ function alertMatches(s, a) {
     const result = [];
     for (const c of (0, model_1.allCoaches)(s)) {
         if ((a.coach && c.id !== a.coach) ||
-            (a.sport !== "Tout" && ![c.sport, ...c.tags].includes(a.sport)) ||
+            (a.sport !== "Tout" && ![c.sport, ...(c.disciplines ?? []), ...c.tags].includes(a.sport)) ||
             !(0, model_1.matchesLocation)(s, c, undefined, a.format))
             continue;
-        for (const o of s.offers.filter((o) => o.coach === c.id && o.active && (!a.groupOnly || o.kind === "Groupe"))) {
-            if (a.seats > 1 && o.kind !== "Groupe")
+        for (const o of s.offers.filter((o) => o.coach === c.id && o.active && (!a.groupOnly || o.kind === "Groupe") &&
+            (a.sport === "Tout" || (o.discipline ?? c.sport) === a.sport))) {
+            if ((o.kind === "Individuel" && a.seats !== 1) ||
+                (o.kind === "Duo" && a.seats !== 2))
                 continue;
             if (!(0, model_1.matchesLocation)(s, c, o, a.format))
                 continue;
@@ -3777,19 +4029,24 @@ function alertMatches(s, a) {
                     continue;
                 if (time < a.from ||
                     time > a.to ||
-                    price * a.seats > a.budget ||
+                    !places.some(format => (0, geoPolicy_1.alertPlaceMatches)(s, c, format, a) && (0, model_1.matchesLocation)(s, c, { ...o, formats: [format] }, a.format) &&
+                        (0, model_1.quotePrice)(s, { coach: c.id, format, seats: a.seats }, g?.offer ?? o) <= a.budget) ||
                     (0, model_1.remaining)(o, a.day, time, s) < a.seats ||
                     s.bookings.some((b) => b.clientId === a.owner &&
                         b.status === "confirmed" &&
                         b.day === a.day &&
                         (0, model_1.overlap)(b.time, b.duration, time, o.duration)))
                     continue;
+                const format = places.find(format => (0, geoPolicy_1.alertPlaceMatches)(s, c, format, a) &&
+                    (0, model_1.matchesLocation)(s, c, { ...o, formats: [format] }, a.format) &&
+                    (0, model_1.quotePrice)(s, { coach: c.id, format, seats: a.seats }, g?.offer ?? o) <= a.budget);
                 result.push({
                     coach: c,
                     offer: g?.offer ?? o,
                     day: a.day,
                     time,
-                    price,
+                    format,
+                    price: (0, model_1.quotePrice)(s, { coach: c.id, format, seats: a.seats }, g?.offer ?? o),
                 });
             }
         }
@@ -4395,3 +4652,4 @@ const d=load('connectedDomain.ts');
 export const {emptyConnected,register,applyCommand,project,documents}=d;
 export const {maintain}=load('workflows.ts');
 export const {instant}=load('model.ts');
+export const {geoQueries}=load('geoPolicy.ts');

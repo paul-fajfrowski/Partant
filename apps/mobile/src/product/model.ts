@@ -337,7 +337,7 @@ export function slotsFor(
   if (offer && offer.kind !== "Groupe" && !offerFormats(c, offer).length)
     return [];
   if (
-    !cfg.published ||
+    !cfg.published || cfg.suspension?.active ||
     !canOffer(cfg.dossier, c, offer, day) ||
     day < today() ||
     day >= addDays(today(), cfg.horizon)

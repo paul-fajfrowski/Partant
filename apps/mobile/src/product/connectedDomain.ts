@@ -1,3 +1,4 @@
+import { validateGeoChanges, validPoint, type GeoContext } from "./geoPolicy";
 import {
   publicVerification,
   canOffer,
@@ -130,6 +131,7 @@ export function applyCommand(
   source: M.Store,
   actor: Actor,
   cmd: Command,
+  geo: GeoContext = {},
 ): M.Store {
   let s = asActor(source, actor);
   me(s);
@@ -215,8 +217,15 @@ export function applyCommand(
       const old = M.configFor(s, a[0]);
       const cfg = {
         ...old,
-        ...pick(a[1], Object.keys(old).concat("locations")),
+        ...pick(a[1], Object.keys(old).filter(k => k !== "suspension").concat("locations")),
       } as CoachSettings;
+      if (cfg.locations?.Domicile) {
+        const place = cfg.locations.Domicile;
+        const previous = old.locations?.Domicile;
+        const point = geo[place.sector ?? ""] ?? (previous?.sector === place.sector ? previous?.areaCenter : undefined);
+        if (!validPoint(point)) throw Error("Sélectionnez le centre de votre zone de déplacement parmi les suggestions.");
+        cfg.locations = { ...cfg.locations, Domicile: { ...place, areaCenter: { ...point, label: place.sector! } } };
+      }
       if (
         JSON.stringify(cfg.dossier) !== JSON.stringify(old.dossier) &&
         (old.dossier.verification ||
@@ -527,6 +536,9 @@ export function applyCommand(
       n = W.replyReview(s, a[0], string(a[1], 3000));
       break;
     case "report":
+      if (String(a[0]?.body ?? "").startsWith("Candidature coach :") &&
+          (me(s).role !== "client" || s.tickets?.some(t => t.owner === actor.id && t.body.startsWith("Candidature coach :") && (t.status === "open" || t.application === "approved"))))
+        throw Error("Une candidature est déjà en cours ou votre compte est déjà professionnel.");
       n = W.report(
         s,
         pick(a[0], ["kind", "body", "coach", "booking", "review"]),
@@ -617,6 +629,7 @@ export function applyCommand(
           "groupOnly",
           "format",
           "active",
+          "area",
         ]),
         owner: actor.id,
         seen: old?.seen ?? [],
@@ -629,6 +642,14 @@ export function applyCommand(
         alert.seats > 20
       )
         throw Error("Alerte invalide.");
+      if (alert.active && !alert.coach && alert.format !== "Visio" && !alert.area)
+        throw Error("Choisissez le secteur de votre alerte.");
+      if (alert.area) {
+        const center = geo[alert.area.label] ?? (old?.area?.label === alert.area.label ? old?.area : undefined);
+        if (!validPoint(center) || !Number.isFinite(alert.area.radius) || alert.area.radius < 1 || alert.area.radius > 100)
+          throw Error("Précisez un secteur et un rayon de 1 à 100 km.");
+        alert.area = { ...center, label: alert.area.label, radius: alert.area.radius };
+      }
       n = {
         ...s,
         alerts: [...(s.alerts ?? []).filter((x) => x.id !== alert.id), alert],
@@ -671,8 +692,19 @@ export function applyCommand(
         string(a[2], 1000),
       );
       break;
+    case "activateCoachRole":
+      n = W.activateCoachRole(s, a[0]);
+      break;
+    case "liftSuspension":
+      if (!actor.staff) throw Error("Accès équipe requis.");
+      n = W.liftSuspension({ ...s, staff: true }, a[0], string(a[1], 3000));
+      break;
     case "resolveTicket":
       if (!actor.staff) throw Error("Accès équipe requis.");
+      if (["Autoriser le passage coach", "Refuser la candidature"].includes(a[2])) {
+        const ticket = s.tickets?.find(t => t.id === a[0]);
+        if (!s.identities?.some(x => x.id === ticket?.owner && x.role === "client")) throw Error("Ce compte n’est plus un compte client.");
+      }
       n = W.resolveTicket(
         { ...s, testMode: true },
         a[0],
@@ -683,6 +715,7 @@ export function applyCommand(
     default:
       throw Error("Action serveur non reconnue.");
   }
+  validateGeoChanges(s, n, geo);
   // All paths that occupy a time (including coach proposals and direct sessions) respect Google.
   const occupied = (state: M.Store) => [
     ...state.bookings
@@ -754,7 +787,7 @@ export function project(source: M.Store, actor?: Actor): M.Store {
       actor?.staff ||
       own(c.id) ||
       related.has(c.id) ||
-      M.configFor(s, c.id).published,
+      (M.configFor(s, c.id).published && !M.configFor(s, c.id).suspension?.active),
   );
   const ids = new Set(coaches.map((c) => c.id));
   const settings = Object.fromEntries(
@@ -784,7 +817,7 @@ export function project(source: M.Store, actor?: Actor): M.Store {
             Object.entries(cfg.locations).map(([key, place]) => [key, {
               type: place.type, name: place.name, address: place.address,
               sector: place.sector, radius: place.radius, travelFee: place.travelFee,
-              coordinates: place.coordinates, instructions: "",
+              coordinates: place.coordinates, areaCenter: place.areaCenter, instructions: "",
             }]),
           ),
           clientNotes: {},

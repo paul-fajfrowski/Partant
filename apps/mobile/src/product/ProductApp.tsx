@@ -29,6 +29,8 @@ import { useMessageDrafts } from "./useMessageDrafts";
 import * as Messaging from "./messaging";
 import { NotificationsScreen } from "./NotificationsScreen";
 import { notificationInboxNotices, notificationRows } from "./notifications";
+import { assertHomeZone } from "./geoPolicy";
+import { AddressPicker } from "./AddressPicker";
 import { searchAddresses, distanceKm } from "../lib/geo";
 import CoachMap from "../components/CoachMap";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -184,11 +186,10 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
   }, [live, store.preferences.city]);
   const coaches = market.coaches.map((c) => {
     if (!live || !sectorPosition) return c;
-    const points = Object.values(coachLocations(store, c)).filter(
-      (p) =>
-        p.coordinates &&
-        !["Domicile", "Visio", "Chez le coach"].includes(p.type),
-    );
+    const points = Object.values(coachLocations(store, c))
+      .filter(p => p.type !== "Visio")
+      .map(p => ({ coordinates: p.type === "Domicile" ? p.areaCenter : p.coordinates }))
+      .filter(p => p.coordinates);
     return {
       ...c,
       dist: points.length
@@ -859,7 +860,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           fold(query),
         ) &&
         (primary(c)?.price ?? c.price) <= budget &&
-        (format === "Visio" || c.dist === null || c.dist <= distance) &&
+        (format === "Visio" || (c.dist !== null && c.dist <= distance)) &&
         matchesLocation(store, c, undefined, format) &&
         available(c).length,
     )
@@ -874,7 +875,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
               parseFloat((a.rating ?? "0").replace(",", "."))
             : (a.dist ?? 999) - (b.dist ?? 999),
     );
-  function chooseTime(c: Coach, time: string, o?: Offer, selectedDay = day) {
+  function chooseTime(c: Coach, time: string, o?: Offer, selectedDay = day, preferredFormat = format, seats?: number) {
     const selected =
       o ??
       store.offers.find(
@@ -906,7 +907,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
     const chosenFormat =
       group?.format ??
       formatsAt(store, c, selected, selectedDay, time).find(
-        (id) => id === format || coachLocations(store, c)[id]?.type === format,
+        (id) => id === preferredFormat || coachLocations(store, c)[id]?.type === preferredFormat,
       ) ??
       formatsAt(store, c, selected, selectedDay, time)[0] ??
       "";
@@ -928,7 +929,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         group?.locationInstructions ??
         coachLocations(store, c)[chosenFormat]?.instructions ??
         "",
-      seats: selected.kind === "Duo" ? 2 : 1,
+      seats: seats ?? (selected.kind === "Duo" ? 2 : 1),
       price: group?.offer.price ?? selected.price,
       goal: pref.goal,
       address:
@@ -1003,8 +1004,16 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             g.offer.id === o.id && g.day === draft.day && g.time === draft.time,
         );
         const cfg = configFor(store, draft.coach);
-        if (draft.format === "Domicile" && !draft.address.trim())
-          throw Error("Indiquez votre adresse de rendez-vous.");
+        if (draft.format === "Domicile") {
+          if (!draft.address.trim()) throw Error("Indiquez votre adresse de rendez-vous.");
+          const place = cfg.locations?.Domicile;
+          if (!place?.sector) throw Error("Le coach doit préciser sa zone de déplacement.");
+          const [addresses, centers] = await Promise.all([
+            searchAddresses(draft.address), place.areaCenter ? Promise.resolve([place.areaCenter]) : searchAddresses(place.sector),
+          ]);
+          if (!addresses.length || !centers.length) throw Error("Sélectionnez une adresse reconnue pour vérifier la zone de déplacement.");
+          assertHomeZone(place, draft.address, { [draft.address]: addresses[0], [place.sector]: centers[0] });
+        }
         setDraft({
           ...draft,
           price: quotePrice(store, draft, g?.offer ?? o),
@@ -1364,6 +1373,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
     code: "Connexion",
     completeAccount: "Créer mon espace",
     "become-coach": "Devenir coach",
+    "client-history": "Mes anciennes séances client",
     confirmation: "Séance confirmée",
     onboarding: "Votre rythme",
     profile: "Votre coach",
@@ -2290,8 +2300,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
                           [c.name, c.sport, c.area, ...c.tags].join(" "),
                         ).includes(fold(query)) &&
                         (format === "Visio" ||
-                          c.dist === null ||
-                          c.dist <= distance) &&
+                          (c.dist !== null && c.dist <= distance)) &&
                         store.offers.some(
                           (o) =>
                             o.coach === c.id &&
@@ -2735,20 +2744,13 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           />
         ))}
         {draft.format === "Domicile" && (
-          <Field
-            label={
-              live ? "Adresse du rendez-vous" : "Adresse fictive du rendez-vous"
-            }
+          <AddressPicker
+            label={live ? "Adresse du rendez-vous" : "Adresse fictive du rendez-vous"}
             value={draft.address}
-            error={
-              addressAttempts && !draft.address.trim()
-                ? "Indiquez l’adresse du rendez-vous."
-                : undefined
-            }
-            focusRequest={
-              addressAttempts && !draft.address.trim() ? addressAttempts : 0
-            }
+            error={addressAttempts && !draft.address.trim() ? "Indiquez l’adresse du rendez-vous." : undefined}
+            focusRequest={addressAttempts && !draft.address.trim() ? addressAttempts : 0}
             onChange={(address) => setDraft({ ...draft, address })}
+            onSelect={(point) => setDraft({ ...draft, address: point.label })}
           />
         )}{" "}
         {draft.kind === "Groupe" && (
@@ -3343,7 +3345,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           <P bold>{euro(b.price)}</P>
         </Row>
         <Button icon="message" onPress={() => go("chat")}>
-          {store.account?.role === "coach"
+          {b.clientId !== store.account?.id
             ? "Contacter le participant"
             : "Contacter mon coach"}
         </Button>
@@ -3606,6 +3608,24 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         </P>
       </Section>
     );
+  if (screen === "become-coach" && W.coachApplicationTicket(store)?.status === "open") {
+    content = <Section><H1>Votre candidature est en cours.</H1><P muted style={{ marginVertical: 20 }}>Votre espace client reste disponible. L’équipe vous répondra dans vos demandes.</P><Button onPress={() => go("support-native", W.coachApplicationTicket(store)!.id)}>Voir ma candidature</Button><TextButton onPress={() => go("account")}>Revenir à mon espace</TextButton></Section>;
+  }
+  if (screen === "become-coach" && W.coachApplicationTicket(store)?.application === "approved") {
+    const application = W.coachApplicationTicket(store)!;
+    content = <Section><Eyebrow>CANDIDATURE ACCEPTÉE</Eyebrow><H1>Votre espace coach vous attend.</H1>
+      <P muted style={{ marginVertical: 20 }}>{application.response}</P>
+      <Note>Vous passez à un compte professionnel, sans bascule vers l’espace client. Vos séances passées et vos échanges restent conservés. Terminez ou annulez vos séances client à venir avant de continuer.</Note>
+      <P style={{ marginVertical: 20 }}>Vous commencerez par vos documents et qualifications. L’équipe devra valider ce dossier avant toute publication.</P>
+      <Button disabled={busy || market.pending > 0} onPress={() => run(async () => {
+        await market.commitStore(s => W.activateCoachRole(s, application.id));
+        history.current = [];
+        setCoachId(store.account!.id);
+        setConfig("documents"); setFocus("documents"); setScreen("config"); setModal("");
+      })}>Confirmer et préparer mon dossier coach</Button>
+      <TextButton onPress={() => go("account")}>Rester client pour le moment</TextButton>
+    </Section>;
+  }
   if (screen === "notifications")
     content = (
       <Section>
@@ -3929,10 +3949,16 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
               ))}
               {
                 <>
+                  {configFor(store, activeCoach ?? "0").suspension?.active && <Note>
+                    Profil suspendu · {configFor(store, activeCoach ?? "0").suspension?.reason}. Vos réservations existantes restent accessibles. Contactez l’équipe depuis Aide & mes demandes.
+                  </Note>}
                   <Setting
                     title="Mon compte"
                     onPress={() => go("account-native")}
                   />
+                  {store.bookings.some(b => b.clientId === store.account?.id) && <Setting
+                    title="Mes anciennes séances client" description="Historique et conversations conservés"
+                    onPress={() => go("client-history")} /> }
                   <Setting
                     title="Confidentialité"
                     description="Mes données et mes choix"
@@ -5211,6 +5237,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
   const flowProps = {
     store,
     setStore,
+    commitStore: market.commitStore,
     coachId,
     bookingId: selectedBooking,
     focus,
@@ -5222,12 +5249,13 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
       const c = coaches.find((c) => c.id === id);
       if (c) openProfile(c);
     },
-    choose: (c: Coach, d: string, time: string, o: Offer) => {
+    choose: (c: Coach, d: string, time: string, o: Offer, f?: string, seats?: number) => {
       setDay(d);
-      chooseTime(c, time, o, d);
+      chooseTime(c, time, o, d, f, seats);
     },
   };
   const nativeScreens = [
+    "client-history",
     "tools",
     "accounts",
     "account-native",
@@ -5262,6 +5290,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         tools: "Simulation Partant",
         accounts: "Comptes de démonstration",
         "account-native": "Mon compte",
+        "client-history": "Mes anciennes séances client",
         "client-native": "Fiche client",
         "repeat-native": "Garder le rythme",
         "review-native": "Votre avis",

@@ -1,7 +1,7 @@
 # Partant — réalisé, reste à faire et reprise du projet
 
 **Mis à jour le 30 septembre 2026 — point d’entrée pour reprendre le projet.**
-Couvre les corrections techniques (livraison 33), les dix améliorations UX/UI (livraison 34), la configuration Xcode `326eb1a` et l’audit fonctionnel postérieur. L’[audit des fonctionnalités](docs/audit-features-2026-09-30.md) ajoute quatre anomalies reproduites encore ouvertes, 167 assertions locales rejouées et une observation serveur en lecture seule. Il ne constitue pas une nouvelle recette appareil ou de transaction fournisseur.
+Couvre les corrections techniques 33, les améliorations UX/UI 34 et les six corrections fonctionnelles 35, ainsi que la configuration Xcode `326eb1a`. Lire le [suivi fonctionnel 35](docs/corrections-features-35.md) avant l’audit historique : serveur déployé, recettes métier/API/navigateur exécutées, dernier binaire iPhone toujours à revalider.
 
 Lire ce document en premier, puis le [détail des corrections et limites](docs/corrections-audit-33.md). L’[audit initial](docs/audit-app-webapp-2026-09-30.md) conserve volontairement les défauts observés avant correction : ne pas les considérer tous comme encore ouverts.
 
@@ -11,7 +11,7 @@ Lire ce document en premier, puis le [détail des corrections et limites](docs/c
 - **Les défauts de confidentialité, de stockage de session natif, d’accessibilité web et de navigation des notifications identifiés dans l’audit ont reçu leurs correctifs.** Les changements serveur correspondants sont déployés sur le projet de développement.
 - **Les tests automatisés sont concluants dans leur périmètre**, mais le dernier build natif signé n’est pas validé : la compilation locale a manqué d’espace disque.
 - **Le MVP commercial reste ouvert** : habilitation équipe, recette réelle iPhone/agenda/push, paiement, confidentialité opérationnelle et préparation de la distribution.
-- **Nouveaux défauts fonctionnels ouverts :** suspension contournable par republication, rayon domicile non contrôlé à la réservation, publication bloquée avec uniquement des dates ponctuelles, alertes excluant le duo. Voir F-01 à F-04 ; ils ne sont pas corrigés par la livraison UX34.
+- **Six points fonctionnels corrigés :** suspension protégée, rayon domicile vérifié côté serveur, dates ponctuelles publiables, alertes duo au prix total, alertes locales et candidature client vers coach avec décision équipe puis confirmation du client. Le dossier professionnel reste obligatoire.
 - **Première action du collègue :** récupérer `main`, préparer son environnement (section 6), compiler puis exécuter la recette à deux comptes. Ne pas utiliser les anciens dossiers ou binaires comme preuve de mise à jour.
 
 Partant est une marketplace locale de coachs sportifs, centrée sur leurs disponibilités et la réservation. Le cœur fonctionnel existe dans une application React Native et une WebApp partageant leur code. Un serveur de développement est raccordé. **L’application n’est pas encore prête pour un lancement commercial : le paiement reste simulé et plusieurs validations réelles sont à terminer.**
@@ -82,7 +82,7 @@ Détails : [WebApp](docs/webapp-27.md), [dossiers](docs/documents-verifications-
 
 | Service | Ce qui existe | Ce qu’il reste à valider ou réaliser |
 | --- | --- | --- |
-| Supabase | API métier, droits par compte, documents privés, protections de concurrence/idempotence, maintenance, file de push et purge durable de compte. Correctifs serveur 33 déployés. | Recette complète entre appareils, maintenance du moteur, évolution du stockage et tests de charge. |
+| Supabase | API métier, droits par compte, documents privés, protections de concurrence/idempotence, maintenance, file de push et purge durable de compte. Correctifs serveur 33 et 35 déployés. | Recette complète entre appareils, maintenance du moteur, évolution du stockage et tests de charge. |
 | Apple — connexion | Connexion web et module natif iOS ; fonctionnement confirmé par le propriétaire. | Refaire une recette des cas secondaires après les dernières modifications. Renouvellement du secret web documenté pour mars 2027. |
 | Google — connexion | Connexion confirmée avec le compte ajouté aux utilisateurs de test. | Recette native complète et préparation de l’accès aux futurs utilisateurs hors liste de test. |
 | Connexion par e-mail | Envoi via le fournisseur standard ; parcours adapté au lien reçu, code possible si présent dans l’e-mail. | Expéditeur personnalisé, réception réelle et activation du modèle français à code. Ne pas annoncer que l’OTP demandé remplace déjà le lien. |
@@ -123,7 +123,7 @@ Les dix recommandations de l’[audit UX/UI avec captures](docs/audit-ux-ui-2026
 
 Le socle fonctionnel permet de poursuivre les essais sans ajouter de nouvelles fonctionnalités. Les lignes ci-dessous séparent les validations manquantes des intégrations volontairement reportées.
 
-**Priorités ajoutées par l’audit fonctionnel :** corriger d’abord la suspension, le contrôle de zone à domicile et la publication sur dates ponctuelles (F-01 à F-03), puis compléter les alertes duo/localisation (F-04/F-05). Définir aussi l’issue de la candidature « Devenir coach » (F-06), actuellement transmise à l’assistance sans procédure complète d’accès au dossier professionnel. Aucun de ces constats n’est marqué résolu ; [preuves et critères de fin](docs/audit-features-2026-09-30.md).
+**Audit fonctionnel traité :** F-01 à F-06 sont corrigés dans les sources partagées et le domaine déployé. Voir les [preuves et limites de la livraison 35](docs/corrections-features-35.md). L’habilitation de l’opérateur et la recette sur appareils restent les prochaines étapes ; elles ne sont pas remplacées par des comptes QA temporaires.
 
 | Priorité / statut | Travail restant | Dépendance / responsable | Critère de fin |
 | --- | --- | --- | --- |

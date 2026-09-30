@@ -40,7 +40,7 @@ export function conversations(s: Store): Conversation[] {
   return [...buckets]
     .map(([id, bookings]) => {
       const coach = allCoaches(s).find((c) => c.id === bookings[0].coach),
-        isCoach = s.account!.role === "coach";
+        isCoach = bookings[0].clientId !== s.account!.id;
       const sorted = [...bookings].sort((a, b) =>
         (a.day + a.time).localeCompare(b.day + b.time),
       );

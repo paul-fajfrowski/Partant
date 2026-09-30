@@ -86,6 +86,7 @@ export function Toggle({
 export type FlowProps = {
   store: Store;
   setStore: React.Dispatch<React.SetStateAction<Store>>;
+  commitStore?: (update: React.SetStateAction<Store>) => Promise<void>;
   coachId: string;
   bookingId: string;
   go: (s: string, focus?: string) => void;
@@ -94,7 +95,7 @@ export type FlowProps = {
   refresh?: () => Promise<unknown>;
   selectBooking: (id: string) => void;
   openCoach: (id: string) => void;
-  choose: (coach: Coach, day: string, time: string, offer: Offer) => void;
+  choose: (coach: Coach, day: string, time: string, offer: Offer, format?: string, seats?: number) => void;
 };
 const sectionFields: Record<string, (keyof CoachSettings)[]> = {
   schedule: ["week", "weeklyConfigured"],

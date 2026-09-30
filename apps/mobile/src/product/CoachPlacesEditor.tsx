@@ -96,12 +96,13 @@ export function CoachPlacesEditor({
           />
           {p.type === "Domicile" ? (
             <>
-              <Field
-                label="Secteur de déplacement"
-                placeholder="Paris 11e et communes voisines"
+              <AddressPicker
+                label="Centre de votre zone de déplacement"
                 value={p.sector ?? ""}
-                onChange={(sector) => update({ sector })}
+                onChange={(sector) => update({ sector, areaCenter: undefined })}
+                onSelect={(point) => update({ sector: point.label, areaCenter: point })}
               />
+              <P small muted>Choisissez un quartier, une commune ou un lieu public comme centre. N’indiquez pas une adresse privée : ce repère est visible sur votre profil.</P>
               <Field
                 label="Rayon de déplacement à domicile (km)"
                 numeric
@@ -120,8 +121,8 @@ export function CoachPlacesEditor({
               />
               <P small muted>
                 Le client renseignera son adresse pendant la réservation. Le
-                supplément apparaîtra avant confirmation. Le rayon est indicatif
-                dans la simulation.
+                supplément apparaîtra avant confirmation. L’adresse sera vérifiée
+                dans votre rayon de déplacement.
               </P>
             </>
           ) : p.type === "Visio" ? (

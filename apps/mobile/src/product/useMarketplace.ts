@@ -603,6 +603,26 @@ export function useMarketplace(live: boolean) {
     queue.current = job.catch(() => {});
     await job;
   }
+  async function commitStore(update: React.SetStateAction<Store>) {
+    const token = epoch.current, generation = queueGeneration.current;
+    const owner = current.current.account?.id;
+    jobs.current++; setPending(jobs.current);
+    const job = queue.current.then(async () => {
+      if (token !== epoch.current || current.current.account?.id !== owner) throw Error("Le compte actif a changé.");
+      const before = current.current;
+      const after = typeof update === "function" ? update(before) : update;
+      if (!live) { assign(after); return; }
+      const commands = commandsFrom(before, after);
+      if (!commands.length) return;
+      const saved = await execute(commands);
+      if (token !== epoch.current || current.current.account?.id !== owner) throw Error("Le compte actif a changé.");
+      assign(saved);
+    }).finally(() => {
+      if (generation === queueGeneration.current) { jobs.current = Math.max(0, jobs.current - 1); setPending(jobs.current); }
+    });
+    queue.current = job.catch(() => {});
+    await job;
+  }
   async function book(draft: Booking) {
     await queue.current;
     const saved = await execute([{ name: "reserve", args: [draft] }]);
@@ -695,6 +715,7 @@ export function useMarketplace(live: boolean) {
     profileError,
     authReturning,
     submitCoachApplication,
+    commitStore,
     submitPrivacyRequest,
     deleteOwnAccount,
     sendMessage,
