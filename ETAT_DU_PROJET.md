@@ -1,11 +1,17 @@
 # Partant — réalisé, reste à faire et reprise du projet
 
-**Corrections — livraison 33 :** [correctifs, preuves de recette et points encore ouverts](docs/corrections-audit-33.md). Consulter ce suivi avant le constat initial de l’audit.
+**Mis à jour le 30 septembre 2026 — point d’entrée pour reprendre le projet.**
+Couvre les corrections de l’audit (livraison 33, jusqu’au commit `6b681b3`) et la configuration Xcode `326eb1a`. Les résultats ci-dessous sont ceux des recettes documentées ; cette mise à jour documentaire ne constitue pas une nouvelle recette appareil ou serveur.
 
-**Complément au 30 septembre :** le [nouvel audit App et WebApp](docs/audit-app-webapp-2026-09-30.md) apporte une vérification du code, des parcours et du serveur. Consulter ses anomalies et priorités avant de reprendre le plan ci-dessous, qui conserve son état historique du 24 septembre.
+Lire ce document en premier, puis le [détail des corrections et limites](docs/corrections-audit-33.md). L’[audit initial](docs/audit-app-webapp-2026-09-30.md) conserve volontairement les défauts observés avant correction : ne pas les considérer tous comme encore ouverts.
 
-**Point de situation au 24 septembre 2026 · destiné à la reprise par un collègue.**  
-État du code jusqu’à la livraison 32, commit `676c28b`. Ce document synthétise les sources, les recettes documentées et les validations du propriétaire ; ce n’est pas un nouvel audit des services déployés.
+## À retenir pour reprendre
+
+- **Une seule source produit** pour l’app native et la WebApp, avec modes connecté et démonstration. Pas de seconde application à recopier ; le HTML reste une archive.
+- **Les défauts de confidentialité, de stockage de session natif, d’accessibilité web et de navigation des notifications identifiés dans l’audit ont reçu leurs correctifs.** Les changements serveur correspondants sont déployés sur le projet de développement.
+- **Les tests automatisés sont concluants dans leur périmètre**, mais le dernier build natif signé n’est pas validé : la compilation locale a manqué d’espace disque.
+- **Le MVP commercial reste ouvert** : habilitation équipe, recette réelle iPhone/agenda/push, paiement, confidentialité opérationnelle et préparation de la distribution.
+- **Première action du collègue :** récupérer `main`, préparer son environnement (section 6), compiler puis exécuter la recette à deux comptes. Ne pas utiliser les anciens dossiers ou binaires comme preuve de mise à jour.
 
 Partant est une marketplace locale de coachs sportifs, centrée sur leurs disponibilités et la réservation. Le cœur fonctionnel existe dans une application React Native et une WebApp partageant leur code. Un serveur de développement est raccordé. **L’application n’est pas encore prête pour un lancement commercial : le paiement reste simulé et plusieurs validations réelles sont à terminer.**
 
@@ -16,7 +22,7 @@ Partant est une marketplace locale de coachs sportifs, centrée sur leurs dispon
 | Application de référence pour le développement | `apps/mobile` : React Native, TypeScript, Expo SDK 57. Les évolutions produit se font ici. |
 | WebApp ordinateur | React Native Web, composants desktop dans `apps/mobile/src/product/web` et `web-agenda`. `apps/web` contient les commandes de construction et de prévisualisation. |
 | Backend de développement | Supabase : authentification, stockage privé, API métier, tâches planifiées et fonctions d’intégration. Sources dans `supabase`, scripts dans `scripts`. |
-| Projet iPhone | Workspace versionné : `apps/mobile/ios/Partant.xcworkspace`. Préserver les correctifs de compilation et le postinstall existants. |
+| Projet iPhone | `Ouvrir Partant.command` ouvre le workspace de sa propre copie : `apps/mobile/ios/Partant.xcworkspace`. Schéma Partant en Release, données connectées par défaut. Préserver les correctifs de compilation et le postinstall existants. |
 | Prototype HTML | `outputs/partant.html`, archive autonome et référence visuelle validée. Ne pas poursuivre les évolutions produit dans cette copie. |
 | Documentation | `docs` : livraisons techniques et recettes ; `outputs/*.md` : benchmark et historique produit. Lire aussi `AGENTS.md`. |
 
@@ -59,6 +65,12 @@ La direction artistique reste monochrome, Hanken Grotesk, boutons pilules, surfa
 
 ### Dernières corrections transversales
 
+- Projection publique limitée aux champs autorisés : consignes privées réservées aux participants d’une réservation.
+- Suppression de compte : anonymisation/effacement métier, révocation des appareils/agendas, file privée persistante de purge des fichiers puis du compte Auth, avec reprise sur échec et refus des anciens accès.
+- Sessions natives migrées vers SecureStore ; traitement des interruptions et retrait de l’ancienne copie AsyncStorage après migration. Stockage web inchangé.
+- Accessibilité : séparation profil/favori, structure d’onglets, curseur du budget, focus des fenêtres ; libellés de lieux dédupliqués.
+- Disponibilités : état de brouillon unique ; lecture des notifications sans attente globale inutile, retour au chapitre et à sa pagination.
+- Dépendances Expo actualisées, recette locale reproductible, intégration continue GitHub et contrôles d’exploitation/sauvegarde ajoutés.
 - Déconnexion et transitions de connexion améliorées ; séparation des espaces réels et exploration protégée.
 - Dossier simplifié autour des pièces communes, des pratiques et de la prochaine action.
 - Retours de navigation : journée → semaine → origine ; sous-fenêtre → étape précédente ; confirmation refermée avant de quitter la page. Conservation des brouillons de disponibilités et aucun retour au paiement après une confirmation.
@@ -69,7 +81,7 @@ Détails : [WebApp](docs/webapp-27.md), [dossiers](docs/documents-verifications-
 
 | Service | Ce qui existe | Ce qu’il reste à valider ou réaliser |
 | --- | --- | --- |
-| Supabase | API métier, droits par compte, documents privés, protections de concurrence/idempotence, maintenance planifiée et file de push. | Recette complète entre appareils, évolution du stockage et tests de charge. |
+| Supabase | API métier, droits par compte, documents privés, protections de concurrence/idempotence, maintenance, file de push et purge durable de compte. Correctifs serveur 33 déployés. | Recette complète entre appareils, maintenance du moteur, évolution du stockage et tests de charge. |
 | Apple — connexion | Connexion web et module natif iOS ; fonctionnement confirmé par le propriétaire. | Refaire une recette des cas secondaires après les dernières modifications. Renouvellement du secret web documenté pour mars 2027. |
 | Google — connexion | Connexion confirmée avec le compte ajouté aux utilisateurs de test. | Recette native complète et préparation de l’accès aux futurs utilisateurs hors liste de test. |
 | Connexion par e-mail | Envoi via le fournisseur standard ; parcours adapté au lien reçu, code possible si présent dans l’e-mail. | Expéditeur personnalisé, réception réelle et activation du modèle français à code. Ne pas annoncer que l’OTP demandé remplace déjà le lien. |
@@ -82,41 +94,108 @@ Détails : [WebApp](docs/webapp-27.md), [dossiers](docs/documents-verifications-
 
 Aucun domaine Partant n’a été acheté dans ce travail. Les secrets, `.env`, clés Apple/Google, caches et exports ne sont pas versionnés. **Git ne sauvegarde pas les données ni les réglages des consoles externes.**
 
-## 4. Ce qui a été testé — et ce qui ne l’a pas encore été
+## 4. Ce qui a été testé — et les limites
 
-- Suites de règles métier, tests DOM, tests navigateur et recettes serveur documentées par livraison. Les essais connectés QA antérieurs sont distincts de la démonstration locale.
-- Dernière livraison navigation : **328 contrôles réussis**, dont tests Chromium aux largeurs 390, 1280 et 1440 px, régressions de l’éditeur et des parcours client/coach. TypeScript et export web/iOS Hermes réussis.
-- Le propriétaire a déjà réussi un build iPhone, validé Apple natif et testé plusieurs parcours. **Cela ne valide pas automatiquement le dernier code livré.**
-- Un export Hermes n’est pas un build Xcode signé ; une simulation web n’est pas un simulateur iOS natif. Un paiement simulé n’est pas un test bancaire.
-- Restent notamment : recette connectée complète avec deux comptes, derniers changements sur iPhone, push réels, Google Calendar réel, Safari/Firefox, accessibilité et essais de charge. Android n’a pas de validation appareil complète documentée.
-
-Le nombre de contrôles est une preuve sur les scénarios listés, pas un pourcentage d’achèvement du MVP ni une garantie d’absence de bugs.
-
-## 5. Prochaines étapes, dans l’ordre recommandé
-
-| Priorité | Travail | Critère de fin |
+| Vérification après corrections | Résultat documenté | Limite |
 | --- | --- | --- |
-| **1 — Exploiter les dossiers** | Le propriétaire désigne un compte confirmé distinct du coach examiné ; habilitation explicite, puis dépôt/correction/validation/publication. | Un vrai compte équipe peut traiter un dossier de test et seules les pratiques autorisées ouvrent la réservation. |
-| **2 — Recette connectée complète** | Coach sur ordinateur, client sur iPhone : individuel/groupe, dernière place simultanée, modifications, annulations, messages, reconnexion et coupure réseau. | Pas de blocage ; état cohérent des deux côtés ; aucun doublon de réservation. |
-| **3 — Valider les services déjà branchés** | Réception push et navigation associée ; échanges réels Google Calendar. | Résultats documentés sur appareils et agenda réels, y compris les erreurs et refus. |
-| **4 — Paiement marketplace** | D’abord en environnement de test : onboarding financier coach, paiement, commission, remboursement, versement, événements serveur et reprises. | Parcours financier complet, testé côté serveur avant tout encaissement réel. Cette intégration reste reportée jusqu’à reprise explicite. |
-| **5 — Préparer la bêta distribuée** | Expéditeur e-mail, domaine/hébergement, callbacks, environnement APNs Production, signature et TestFlight, suivi des erreurs et procédure de reprise. | Un testeur externe peut installer ou ouvrir l’app et terminer le parcours sans outils de démo. |
-| **Avant ouverture publique — Confidentialité et exploitation** | Informations juridiques/contact, règles de conservation, purges, export/effacement inter-systèmes, traitement des demandes, notice/conditions et déclarations de distribution. | Les engagements affichés correspondent à des procédures réellement opérationnelles et validées. |
-| **Avant un volume important — Données et charge** | Faire évoluer les documents JSON et la révision globale, réduire les conflits entre utilisateurs, paginer/rechercher côté serveur ; tester montée en charge et restauration. | Capacité mesurée sur un volume cible convenu, sans perte ni fuite de données. |
+| TypeScript, export web et bundle iOS Hermes | Réussis | Aucun de ces contrôles ne signe ni n’installe une application iPhone. |
+| Règles métier et composants DOM | 41/41 suites réussies | Scénarios automatisés, fournisseurs simulés selon le test. |
+| Navigateur Chromium | 8/8 suites : les 6 parcours existants, clavier/focus et retour des notifications | Ne remplace pas Safari, Firefox, VoiceOver ou le clavier iPhone. |
+| Accessibilité responsive | 20 états aux largeurs 320, 390, 820 et 1440 px ; aucune violation axe ni débordement détecté | Pas une certification d’accessibilité ; grandes polices et lecteur d’écran réels à tester. |
+| API de développement | 36 contrôles API/Auth/concurrence/Storage + 10 contrôles de confidentialité/effacement | Comptes et fichiers QA dédiés nettoyés ; aucun compte réel effacé. |
+| Intégration continue | [Exécution GitHub réussie sur `6b681b3`](https://github.com/paul-fajfrowski/Partant/actions/runs/36718480589) | Tests sans secrets serveur ; pas de déploiement ni de build Xcode dans cette CI. Consulter les exécutions suivantes pour les commits ultérieurs. |
+| Dépendances | Audit npm : zéro vulnérabilité remontée ; alignement Expo vérifié ; Doctor 20/21 | Avis conservé pour la synchronisation manuelle de la configuration native versionnée. |
+| Projet Xcode | Pods installés, fichiers de verrouillage cohérents et contrôles de configuration réussis | Deux builds simulateur arrêtés par « No space left on device » ; dernier build signé non validé. |
+| Sauvegarde | Reconstruction des données métier vérifiée dans une table temporaire isolée | Ne couvre pas la restauration complète Auth, Storage, secrets et paramètres externes. |
 
-L’espace Confidentialité existe, mais l’effacement actuel est partiel et **la conformité RGPD complète n’est pas déclarée**. Les qualifications des coachs restent à examiner humainement ; l’interface ne fournit pas une certification réglementaire automatique. Voir [les limites de confidentialité](docs/confidentialite-25.md).
+Preuves : [règles et DOM](docs/audits/2026-09-30-corrections/unit-dom.json), [navigateur](docs/audits/2026-09-30-corrections/browser.json), [accessibilité](docs/audits/2026-09-30-corrections/accessibility.json), [serveur, nettoyage et compilation](docs/audits/2026-09-30-corrections/verification.json).
 
-SMS, Outlook, synchronisation iCloud, push navigateur, abonnements professionnels et fonctionnalités commerciales supplémentaires ne sont pas nécessaires pour poursuivre la recette actuelle. Ne pas les ajouter implicitement au périmètre.
+Au contrôle serveur du 30 septembre : aucun appareil push, aucune connexion Calendar et aucun compte équipe enregistré. Aucun nettoyage de compte en attente ; fixtures QA nettoyées. **Ce sont des observations datées, pas une surveillance en temps réel.**
 
-## 6. Reprendre le projet sans confondre démo et connecté
+Le propriétaire avait validé Apple natif, Google et plusieurs parcours dans des versions précédentes. Ces validations ne couvrent pas automatiquement les derniers changements, notamment la migration SecureStore. Un test métier simulé, un export Hermes et un build iPhone sont trois niveaux distincts.
 
-1. Cloner le dépôt puis lire ce fichier et `AGENTS.md`. Certains documents plus anciens contiennent des états historiques désormais remplacés ; privilégier la livraison la plus récente sur le sujet.
-2. Installer les dépendances dans `apps/mobile` avec `npm ci`. Préparer le `.env` local à partir de `.env.example` si nécessaire ; obtenir la configuration de développement auprès du propriétaire. Aucune clé serveur dans `EXPO_PUBLIC_*`.
-3. Pour le web, depuis la racine : `npm --prefix apps/web run dev`. Ouvrir l’adresse affichée par le serveur ; éviter de démarrer un deuxième serveur sur un port occupé.
-4. `/?data=preview` = données fictives locales ; `/?data=connected` = comptes et données du serveur de développement. `simulation.html` affiche le parcours mobile dans un cadre, `web.html` ouvre la WebApp.
-5. Pour iOS, après installation des dépendances, suivre le guide local et exécuter `pod install` dans `apps/mobile/ios` si nécessaire ; ouvrir **`Partant.xcworkspace`** dans Xcode. Ne pas régénérer iOS avec `--clean` ni supprimer les correctifs existants pour une simple mise à jour TypeScript.
-6. Ne pas lancer de recette destructive ou injecter des données de démonstration sur le compte réel du propriétaire. Les exemples fictifs ne sont pas des identifiants Supabase.
+## 5. MVP restant, par ordre de priorité
 
-Guides : [WebApp](apps/web/README.md), [application mobile](apps/mobile/README.md), [configuration native](docs/native-auth-19.md), [dépendances/Xcode](docs/dependency-audit-22.md), [serveur et push](docs/backend-push-23.md).
+Le socle fonctionnel permet de poursuivre les essais sans ajouter de nouvelles fonctionnalités. Les lignes ci-dessous séparent les validations manquantes des intégrations volontairement reportées.
 
-**Prochaine action concrète : désigner le compte équipe, puis exécuter une recette complète coach/client avant d’ajouter de nouvelles fonctionnalités.**
+| Priorité / statut | Travail restant | Dépendance / responsable | Critère de fin |
+| --- | --- | --- | --- |
+| **P0 — Prochaine recette** | Construire la dernière app iOS ; Apple/Google succès et abandon, reconnexion, migration de session, déconnexion, clavier, retours, préférences et VoiceOver. | Développeur avec accès Apple/signature et iPhone ; espace disque suffisant. | Build signé installé et fiche de recette du commit exact, sans blocage sur ces parcours. |
+| **P0 — À habiliter** | Désigner le compte équipe, lui donner les droits puis tester dépôt → correction → validation/refus → publication par discipline. | Paul doit indiquer explicitement le compte ; aucun compte administrateur deviné. Script `scripts/configure-team-24.mjs`. | Un opérateur autorisé traite un dossier de test ; un coach ne peut pas s’auto-valider ni publier une pratique refusée. |
+| **P0 — À rejouer en réel** | Coach WebApp et client iPhone : individuel/duo/groupe, dernière place concurrente, modification, annulation, messages, favoris, reconnexion et coupure réseau. | Deux comptes de test séparés ; serveur de développement. | États cohérents entre appareils, pas de double réservation, récupération après erreur documentée. |
+| **P1 — Branché, à valider** | Push iPhone en premier plan/arrière-plan/app fermée, ouverture de la bonne séance, refus et déconnexion. Google Calendar : consentement, occupations, création/modification/annulation, conflit et expiration. | iPhone enregistré et agenda consenti ; aujourd’hui aucun résultat de réception/synchronisation réelle documenté. | Réception et échanges réels prouvés ; erreurs et reprises testées. |
+| **P1 — Avant publication** | Identité juridique/contact, durées de conservation par catégorie, demandes utilisateurs, périmètre des sauvegardes, procédure de purge et déclarations de distribution. | Informations du propriétaire et validation appropriée des engagements. | Notice et pratiques opérationnelles concordantes ; suppression technique testée et limites expliquées. |
+| **P1 — Reporté sur demande** | Paiement marketplace en test d’abord : Stripe Connect, onboarding financier coach, encaissement, commission, remboursement, versement, webhooks et reprises. | Reprise explicite par Paul, compte et configuration fournisseur. | Parcours financier complet testé côté serveur avant tout paiement réel. Aucun IBAN à collecter dans une solution provisoire. |
+| **P1 — Avant bêta externe** | Domaine/hébergement, expéditeur e-mail, code français réellement reçu, callbacks, accès OAuth testeurs, signature/TestFlight et APNs Production. | Décisions du propriétaire sur services, comptes et éventuels coûts ; ne rien acheter implicitement. | Un testeur externe termine le parcours sans outillage de démo ; mode connecté et environnement push cohérents. |
+| **P2 — Exploitation à compléter** | Maintenance Postgres hébergé après revue/sauvegarde, alertes actionnables, exercice de restauration Auth/fichiers/données/secrets sur environnement isolé. | Développeur/opérateur autorisé ; fenêtre de maintenance. | Version compatible et restauration mesurée, responsabilités et procédure d’incident documentées. |
+| **P2 — Avant volume important** | Mesurer la charge ; normaliser les domaines sollicités, limiter les conflits de révision globale, recherche/pagination serveur et attribution des dossiers entre examinateurs. | Volumétrie cible à convenir. | Capacité mesurée et traitement concurrent des dossiers sans perte de données ni décisions contradictoires. |
+
+**Confidentialité :** le défaut d’effacement partiel relevé dans l’audit a reçu un correctif métier + Storage + Auth, testé sur le serveur de développement. Il ne faut plus le présenter comme inchangé. En revanche, la conservation réglementaire, les sauvegardes et les données déjà exportées vers un tiers demandent des procédures distinctes ; la conformité complète n’est pas déclarée. Le [suivi 33](docs/corrections-audit-33.md) prévaut sur les limites techniques historiques de la livraison 25.
+
+**Hors de la prochaine itération :** Outlook, SMS, synchronisation iCloud bidirectionnelle, push navigateur/Android, abonnements professionnels et nouvelles fonctionnalités commerciales. Ils ne bloquent pas la recette iPhone/WebApp actuelle. Une distribution Android nécessiterait sa propre recette appareil.
+
+**Définition pratique de fin du MVP :** un coach vérifié configure une offre, un client réserve et paie, les deux retrouvent la même séance et ses modifications, l’équipe traite les incidents, et les droits/confidentialité sont opérationnels. Le paiement simulé suffit aux essais actuels, pas à cette validation commerciale.
+
+## 6. Installation sur l’ordinateur du collègue
+
+### Récupérer les sources
+
+Cloner `https://github.com/paul-fajfrowski/Partant.git` ou mettre à jour sa copie de `main` après avoir préservé ses propres modifications. Travailler de préférence hors des dossiers synchronisés iCloud. Lire `AGENTS.md` avant toute modification.
+
+Utiliser Node **24.19.0** (`.nvmrc`) puis, depuis la racine :
+
+```sh
+npm --prefix apps/mobile ci
+cp -n apps/mobile/.env.example apps/mobile/.env
+```
+
+Renseigner uniquement la configuration publique de développement fournie par Paul dans `.env`. Ne jamais y mettre une clé serveur dans une variable `EXPO_PUBLIC_*`. Aucun secret ou jeton personnel ne doit être commité.
+
+### Ouvrir Xcode
+
+```sh
+cd apps/mobile/ios
+pod install
+cd ../../..
+./"Ouvrir Partant.command"
+```
+
+- Le lanceur ouvre **le workspace de cette copie**, avec CocoaPods, et non une ancienne entrée de l’historique Xcode.
+- Le schéma partagé **Partant** utilise **Release** pour embarquer le JavaScript sans dépendre de Metro. `.xcode.env` fixe le mode **connecté** à la compilation ; Release ne signifie ni paiement réel ni publication App Store.
+- Sur son Mac, vérifier que Xcode trouve son Node. Si besoin, créer `apps/mobile/ios/.xcode.env.local` avec `export NODE_BINARY="/chemin/absolu/vers/son/node"` (chemin obtenu avec `command -v node`). Ce fichier reste local ; ne pas reprendre le chemin Node de l’ordinateur de Paul.
+- Sélectionner son iPhone et une équipe Apple autorisée pour le bundle `com.paulfajfrowski.partant`. Les droits Apple, certificats et profils de signature ne sont pas accordés par un clone Git.
+- Préserver les correctifs natifs et le postinstall. Ne pas lancer `prebuild --clean` ni supprimer `ios` pour actualiser les écrans.
+- SecureStore est une nouvelle dépendance native : **recompiler et réinstaller l’app** ; un simple rafraîchissement JavaScript ne suffit pas.
+- Sur le Mac de Paul, le dernier build a manqué d’espace ; prévoir au moins 10 Go de marge avant un nouvel essai, davantage si Xcode le demande.
+
+Pour une compilation native de démonstration, l’override local et sa remise à zéro sont documentés dans [apps/mobile/README.md](apps/mobile/README.md). Cette variante conserve le même bundle ID et remplace l’installation précédente : ce n’est pas une seconde app installable côte à côte.
+
+### Ouvrir la WebApp ou la simulation
+
+Depuis la racine : `npm --prefix apps/web run dev`, puis ouvrir l’adresse affichée. Éviter un deuxième serveur sur un port déjà utilisé.
+
+| URL relative | Usage |
+| --- | --- |
+| `/?data=connected&surface=web` | WebApp et comptes du serveur de développement. |
+| `/?data=preview&surface=web` | Même interface avec données fictives locales. |
+| `/?data=preview&recette=coach-realiste-30&surface=web` | Scénario de coach réaliste isolé. |
+| `/simulation.html?mode=connected` | Rendu mobile web encadré, connecté ; pas un simulateur iOS natif. |
+| `/simulation.html?mode=coach` | Démonstration mobile du coach réaliste. |
+
+La construction autonome web utilise `npm --prefix apps/web run build`. Les modifications partagées viennent de `apps/mobile` : ne pas dupliquer les écrans dans `apps/web` ou dans l’HTML archivé.
+
+### Rejouer la recette
+
+Installer aussi `npm --prefix tools/qa ci` et `npm --prefix services/calendar ci`, puis suivre les commandes de [reproduction de la livraison 33](docs/corrections-audit-33.md#reproduire-la-recette). Le workflow `.github/workflows/qa.yml` constitue la référence pour TypeScript, exports, tests DOM et navigateur.
+
+Les tests connectés avec écritures nécessitent l’accès opérateur et des fixtures isolées avec nettoyage. Ne pas injecter les scénarios de démonstration sur le compte réel de Paul. La CI ne déploie pas les fonctions serveur et ne réalise aucun paiement.
+
+## 7. Transfert et limites à ne pas oublier
+
+- Git contient le code et les migrations, **pas** les données, secrets, clés `.p8`, `.env`, habilitations ou réglages des consoles Apple/Google/Supabase. Demander les accès nécessaires séparément, jamais dans un commit.
+- La copie à jour de Paul est `/Users/paulf/Developer/Partant-audit-33`. L’ancienne copie sous Documents a renvoyé une erreur macOS d’authentification cloud ; elle n’est pas déclarée synchronisée. Le collègue doit cloner son propre dossier, sans reproduire ce chemin absolu.
+- Un changement des règles métier partagées nécessite de régénérer le domaine serveur et de maintenir `product-api`, `google-calendar` et `push-dispatch` synchronisés. Voir `AGENTS.md` ; un push Git seul ne déploie rien sur Supabase.
+- Le secret Apple web doit être renouvelé avant son expiration documentée du **17 mars 2027** ; suivre [le guide Apple](docs/configurer-apple.md). Ne pas exposer la clé privée.
+- Aucun achat, paiement réel, publication ou nouvelle intégration reportée n’est autorisé implicitement par ce récapitulatif.
+
+Guides : [WebApp](apps/web/README.md), [mobile/Xcode](apps/mobile/README.md), [corrections et recette](docs/corrections-audit-33.md), [serveur et push](docs/backend-push-23.md), [dossiers professionnels](docs/documents-verifications-26.md).

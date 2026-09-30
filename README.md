@@ -6,7 +6,7 @@
 
 **Audit — 30 septembre 2026 :** [App, WebApp, serveur, anomalies reproduites et plan de correction](docs/audit-app-webapp-2026-09-30.md). Audit réalisé sur la livraison 32 ; aucune correction produit incluse dans ce rapport.
 
-**Pour reprendre le projet — 24 septembre 2026 :** [réalisé, intégrations, tests et priorités restantes](ETAT_DU_PROJET.md). Ce récapitulatif couvre les livraisons jusqu’à la 32 ; les sections plus anciennes ci-dessous conservent leur contexte historique.
+**Pour reprendre le projet — 30 septembre 2026 :** [réalisé, corrections d’audit, preuves de tests, installation Xcode/WebApp et MVP restant](ETAT_DU_PROJET.md). Point d’entrée à jour jusqu’à la livraison 33 et la configuration Xcode `326eb1a` ; les sections plus anciennes ci-dessous conservent leur contexte historique.
 
 **WebApp — livraison 27 :** [parcours ordinateur, architecture partagée et recette](docs/webapp-27.md). [Construire et ouvrir la WebApp localement](apps/web/README.md).
 
