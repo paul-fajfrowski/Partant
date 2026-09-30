@@ -114,6 +114,10 @@ Au contrôle serveur du 30 septembre : aucun appareil push, aucune connexion Cal
 
 Le propriétaire avait validé Apple natif, Google et plusieurs parcours dans des versions précédentes. Ces validations ne couvrent pas automatiquement les derniers changements, notamment la migration SecureStore. Un test métier simulé, un export Hermes et un build iPhone sont trois niveaux distincts.
 
+## Revue UX/UI complémentaire du 30 septembre
+
+Un [audit UX/UI avec captures](docs/audit-ux-ui-2026-09-30.md) a été réalisé après les corrections techniques. Il identifie dix points **non corrigés dans cette revue**, dont deux prioritaires : conserver la date recherchée en ouvrant le profil et contextualiser les conditions d’annulation avant réservation. Viennent ensuite la hiérarchie de l’agenda coach, l’édition/validation des formulaires et la composition desktop. Cette liste complète le MVP ci-dessous ; elle ne remet pas les anciens défauts techniques corrigés au statut ouvert.
+
 ## 5. MVP restant, par ordre de priorité
 
 Le socle fonctionnel permet de poursuivre les essais sans ajouter de nouvelles fonctionnalités. Les lignes ci-dessous séparent les validations manquantes des intégrations volontairement reportées.

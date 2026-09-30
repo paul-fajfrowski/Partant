@@ -1,0 +1,16 @@
+{
+  "date": "2026-09-30",
+  "sourceCommit": "265fabe075763c1de09cc18333e0d35bbdd2585e",
+  "mode": "preview; isolated browser contexts",
+  "browser": "Chromium via installed Google Chrome, headless",
+  "nativeDeviceTested": false,
+  "productFilesChanged": false,
+  "screenshots": 55,
+  "automatedStates": 20,
+  "automatedViolations": 0,
+  "limitations": [
+    "No real OAuth login or financial operation",
+    "No new server or security audit",
+    "No physical iPhone, VoiceOver or Dynamic Type validation"
+  ]
+}

@@ -1,0 +1,20 @@
+Disponibilités
+Semaine habituelle
+Vos horaires se répètent chaque semaine. L’amplitude inclut les intervalles entre vos plages.
+Lundi
+6 plages · amplitude 07:30–20:30
+Mardi
+6 plages · amplitude 07:30–20:30
+Mercredi
+6 plages · amplitude 07:30–20:30
+Jeudi
+6 plages · amplitude 07:30–20:30
+Vendredi
+6 plages · amplitude 07:30–20:30
+Samedi
+2 plages · amplitude 07:30–11:00
+Dimanche
+Aucune disponibilité
+Modifier une seule date
+Un changement ponctuel sans modifier votre semaine habituelle.
+Enregistrer les modifications

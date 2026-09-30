@@ -1,0 +1,15 @@
+partant
+LE SPORT COMMENCE PAR UNE RENCONTRE.
+Un coach.
+Votre rythme.
+Bienvenue chez Partant.
+Comment voulez-vous nous rejoindre ?
+Je veux bouger
+Trouver un coach et réserver mes séances
+Je suis coach
+Développer mon activité, simplement
+Me connecter
+Créer mon compte
+Explorer sans compte
+Prototype · aucune authentification réelle
+À propos de la simulation

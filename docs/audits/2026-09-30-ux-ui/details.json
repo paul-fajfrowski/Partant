@@ -1,0 +1,22 @@
+[
+  {
+    "case": "Click modifier offre",
+    "width": 390,
+    "fieldBox": {
+      "x": 22,
+      "y": 706.8125,
+      "width": 346,
+      "height": 50
+    }
+  },
+  {
+    "case": "Click modifier offre",
+    "width": 1440,
+    "fieldBox": {
+      "x": 530,
+      "y": 830.8125,
+      "width": 812,
+      "height": 50
+    }
+  }
+]

@@ -1,5 +1,7 @@
 # Partant
 
+**Audit UX/UI — 30 septembre 2026 :** [constats reproduits, captures et dix améliorations priorisées](docs/audit-ux-ui-2026-09-30.md). Revue postérieure aux corrections techniques : recommandations à mettre en œuvre, aucune modification de l’interface dans cet audit.
+
 **Ouvrir dans Xcode :** double-cliquer sur `Ouvrir Partant.command` à la racine de cette copie. Le lanceur ouvre son propre `apps/mobile/ios/Partant.xcworkspace`, avec les dépendances CocoaPods. Le schéma partagé `Partant` lance une compilation Release en mode connecté par défaut ; la démo web reste accessible avec `?data=preview`. Cela utilise le serveur de développement, sans activer les paiements ni publier l’application.
 
 **Corrections — livraison 33 :** [correctifs, preuves de recette et points encore ouverts](docs/corrections-audit-33.md). Consulter ce suivi avant le constat initial de l’audit.
