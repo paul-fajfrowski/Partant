@@ -80,7 +80,7 @@ async function toggle(label) {
   await click("Configurer lundi");
   await click("Modifier la plage 09:10–22:00");
   await field("Début de plage", "09:25");
-  await click("Appliquer à la journée");
+  await click("Valider cette plage");
   await click("Retour à la semaine");
   for(let i=0;i<30&&!stored().coachDrafts?.["0:schedule"];i++) await wait();
   ok(
@@ -90,7 +90,7 @@ async function toggle(label) {
   await click("Retour");
   await click("Séances & tarifs");
   ok(
-    d.body.textContent.includes("Créer une séance"),
+    d.body.textContent.includes("Nouvelle offre"),
     "Schedule navigates to offers",
   );
   await click("Retour");
@@ -142,7 +142,7 @@ async function toggle(label) {
   await click("Retour");
   await click("Retour");
   await click("Séances & tarifs");
-  await click("Modifier Coaching individuel");
+  await click("Coaching individuel");
   await toggle("Domicile · Chez le client");
   await toggle("Studio · " + M.configFor(stored(), "0").studio);
   await click("Enregistrer l’offre");

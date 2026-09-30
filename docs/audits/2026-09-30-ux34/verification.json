@@ -1,0 +1,23 @@
+{
+  "date": "2026-09-30",
+  "sharedSource": "apps/mobile/src/product",
+  "unitDomSuites": {
+    "passed": 42,
+    "total": 42,
+    "method": "Initial suite plus targeted reruns recorded in unit-dom.json"
+  },
+  "browserSuites": {
+    "passed": 9,
+    "total": 9,
+    "method": "Initial suite plus targeted reruns recorded in browser.json"
+  },
+  "newUxBrowserChecks": 46,
+  "newUxRulesChecks": 20,
+  "typeScript": "passed",
+  "webAppExport": "passed",
+  "iosHermesExport": "passed",
+  "signedXcodeBuild": "not run in this delivery",
+  "physicalIPhone": "not tested",
+  "liveProviderCalls": "none in this UX recipe",
+  "notes": "No payments, real users, calendar events, emails or push sends created by these tests."
+}

@@ -32,7 +32,7 @@ export function dayAvailabilitySummary(ranges: Interval[]) {
   );
   if (valid.length !== ranges.length)
     return `${ranges.length} plage${ranges.length > 1 ? "s" : ""} · à compléter`;
-  return `${ranges.length} plage${ranges.length > 1 ? "s" : ""} · amplitude ${valid.map((r) => r[0]).sort()[0]}–${valid
+  return `${ranges.length} plage${ranges.length > 1 ? "s" : ""} · de ${valid.map((r) => r[0]).sort()[0]}–${valid
     .map((r) => r[1])
     .sort()
     .at(-1)}`;
@@ -148,8 +148,8 @@ export function AvailabilityWeekEditor({
     <View>
       <H2>Semaine habituelle</H2>
       <P muted small style={{ marginTop: 8, marginBottom: 20 }}>
-        Vos horaires se répètent chaque semaine. L’amplitude inclut les
-        intervalles entre vos plages.
+        Vos horaires se répètent chaque semaine. Choisissez un jour pour les
+        modifier.
       </P>
       <View
         style={

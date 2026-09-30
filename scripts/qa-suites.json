@@ -38,5 +38,6 @@
   "test-verification-web-26",
   "test-audit-privacy-33",
   "test-deletion-worker-33",
-  "test-secure-session-33"
+  "test-secure-session-33",
+  "test-experience-34"
 ]

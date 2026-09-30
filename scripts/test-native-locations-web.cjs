@@ -91,7 +91,7 @@ async function toggle(label) {
     "Home service has sector radius and surcharge",
   );
   await click("Associer mes lieux à mes séances");
-  await click("Modifier Coaching individuel");
+  await click("Coaching individuel");
   loc = stored().settings["0"].locations;
   for (const [id, p] of Object.entries(loc)) {
     if (id !== gymId) await toggle(`${p.type} · ${p.name}`);
@@ -112,7 +112,7 @@ async function toggle(label) {
     "Public profile lists named venues",
   );
   const next = [...d.querySelectorAll('[role="button"]')].find((e) =>
-    e.textContent.includes("Prochain départ"),
+    e.textContent.includes("Votre prochain créneau") || e.textContent.includes("Autre disponibilité"),
   );
   assert.ok(next);
   next.click();

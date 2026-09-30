@@ -49,9 +49,11 @@ export function P({
   bold = false,
   style,
   numberOfLines,
+  accessibilityLiveRegion,
 }: {
   children: React.ReactNode;
   numberOfLines?: number;
+  accessibilityLiveRegion?: "none" | "polite" | "assertive";
   muted?: boolean;
   small?: boolean;
   bold?: boolean;
@@ -59,6 +61,7 @@ export function P({
 }) {
   return (
     <Text
+      accessibilityLiveRegion={accessibilityLiveRegion}
       numberOfLines={numberOfLines}
       style={[
         s.text,
@@ -287,7 +290,12 @@ export function TextButton({
       accessibilityRole="button"
       onPress={onPress}
       style={[
-        { minHeight: 44, justifyContent: "center", alignItems: "center" },
+        {
+          minHeight: 44,
+          minWidth: 44,
+          justifyContent: "center",
+          alignItems: "center",
+        },
         style,
       ]}
     >
@@ -438,6 +446,8 @@ export function Field({
   multiline = false,
   numeric = false,
   secure = false,
+  error,
+  focusRequest = 0,
 }: {
   label: string;
   value: string;
@@ -446,7 +456,19 @@ export function Field({
   multiline?: boolean;
   numeric?: boolean;
   secure?: boolean;
+  error?: string;
+  focusRequest?: number;
 }) {
+  const input = useRef<TextInput>(null);
+  useEffect(() => {
+    if (!focusRequest) return;
+    input.current?.focus();
+    if (Platform.OS === "web")
+      (input.current as unknown as HTMLElement)?.scrollIntoView?.({
+        block: "center",
+        behavior: "smooth",
+      });
+  }, [focusRequest]);
   const [blurred, setBlurred] = React.useState(false);
   const expectsTime = placeholder?.toLowerCase() === "hh:mm";
   const invalidTime =
@@ -458,6 +480,9 @@ export function Field({
     <View style={{ gap: 8, marginBottom: 18 }}>
       <Text style={s.label}>{label}</Text>
       <TextInput
+        ref={input}
+        aria-invalid={!!error || invalidTime}
+        accessibilityHint={error}
         accessibilityLabel={label}
         placeholder={placeholder}
         value={value}
@@ -477,11 +502,20 @@ export function Field({
         }
         style={[
           s.input,
-          invalidTime && { borderWidth: 2, borderColor: t.ink },
+          (!!error || invalidTime) && { borderWidth: 2, borderColor: t.ink },
           multiline && { minHeight: 100, textAlignVertical: "top" },
         ]}
       />
-      {invalidTime && (
+      {!!error && (
+        <Text
+          accessibilityRole="alert"
+          accessibilityLiveRegion="polite"
+          style={s.label}
+        >
+          {error}
+        </Text>
+      )}
+      {!error && invalidTime && (
         <Text accessibilityLiveRegion="polite" style={s.label}>
           Saisissez une heure entre 00:00 et 23:59, au format HH:mm.
         </Text>
@@ -556,6 +590,7 @@ export function Photo({
   return (
     <View
       accessible
+      role={children ? "group" : "img"}
       accessibilityLabel={label}
       onLayout={(e) => {
         setWidth(e.nativeEvent.layout.width);
@@ -612,6 +647,7 @@ export function Pagebar({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Retour"
+        accessibilityHint="Revenir à l’étape précédente sans perdre votre saisie"
         disabled={disabled}
         onPress={onBack}
         style={[s.iconButton, { opacity: disabled ? 0.4 : 1 }]}

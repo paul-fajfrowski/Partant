@@ -130,7 +130,7 @@ function CoachAgenda({
         <View style={s.headingCopy}>
           <Text style={s.eyebrow}>VOTRE SEMAINE</Text>
           <Text accessibilityRole="header" style={s.title}>
-            Du temps pour chaque mouvement.
+            Vos rendez-vous de la semaine.
           </Text>
           <Text style={s.subtitle}>
             {count} rendez-vous · Horaires de Paris
@@ -227,20 +227,6 @@ function CoachAgenda({
                   {day.appointments ? `${day.appointments} RDV` : "Aucun RDV"}
                 </Text>
               </Pressable>
-              <View style={s.ranges}>
-                <Text style={s.rangeLabel}>MES DISPONIBILITÉS</Text>
-                <AvailabilityRangeList
-                  store={store}
-                  coach={coachId}
-                  day={day.day}
-                  compact
-                  onSelect={(selection) => {
-                    setSelected(day.day);
-                    onSelectedDate?.(day.day);
-                    onRange(selection);
-                  }}
-                />
-              </View>
               <View style={s.events}>
                 <Text style={s.rangeLabel}>MES RENDEZ-VOUS</Text>
                 {day.items.length ? (
@@ -305,6 +291,20 @@ function CoachAgenda({
                     Aucune réservation pour le moment.
                   </Text>
                 )}
+              </View>
+              <View style={s.ranges}>
+                <Text style={s.rangeLabel}>MES DISPONIBILITÉS</Text>
+                <AvailabilityRangeList
+                  store={store}
+                  coach={coachId}
+                  day={day.day}
+                  compact
+                  onSelect={(selection) => {
+                    setSelected(day.day);
+                    onSelectedDate?.(day.day);
+                    onRange(selection);
+                  }}
+                />
               </View>
             </View>
           ))}

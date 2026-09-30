@@ -421,7 +421,7 @@ export function AvailabilityIntervals({
                 disabled={!!issue}
                 onPress={apply}
               >
-                Appliquer à la journée
+                Valider cette plage
               </Button>
               <P small muted style={{ marginTop: 8 }}>
                 Enregistrez ensuite vos modifications pour les rendre

@@ -169,7 +169,7 @@ a();
       await p
         .getByRole("textbox", { name: "Début de plage", exact: true })
         .fill("09:15");
-      await btn("Appliquer à la journée").click();
+      await btn("Valider cette plage").click();
       if (width < 1360) await btn("Retour").click();
       await btn("Retour").click();
       await btn(width < 1080 ? "Configurer" : "Disponibilités").click();

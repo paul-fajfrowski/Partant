@@ -1,6 +1,8 @@
 # Partant
 
-**Audit UX/UI — 30 septembre 2026 :** [constats reproduits, captures et dix améliorations priorisées](docs/audit-ux-ui-2026-09-30.md). Revue postérieure aux corrections techniques : recommandations à mettre en œuvre, aucune modification de l’interface dans cet audit.
+**Améliorations UX/UI — livraison 34 :** [les dix corrections, leur recette et les limites natives](docs/corrections-ux-ui-34.md). Sources communes à l’app et à la WebApp.
+
+**Audit UX/UI — 30 septembre 2026 :** [constats reproduits, captures et dix améliorations priorisées](docs/audit-ux-ui-2026-09-30.md). Revue postérieure aux corrections techniques : constat historique avant les corrections de la livraison 34.
 
 **Ouvrir dans Xcode :** double-cliquer sur `Ouvrir Partant.command` à la racine de cette copie. Le lanceur ouvre son propre `apps/mobile/ios/Partant.xcworkspace`, avec les dépendances CocoaPods. Le schéma partagé `Partant` lance une compilation Release en mode connecté par défaut ; la démo web reste accessible avec `?data=preview`. Cela utilise le serveur de développement, sans activer les paiements ni publier l’application.
 
@@ -8,7 +10,7 @@
 
 **Audit — 30 septembre 2026 :** [App, WebApp, serveur, anomalies reproduites et plan de correction](docs/audit-app-webapp-2026-09-30.md). Audit réalisé sur la livraison 32 ; aucune correction produit incluse dans ce rapport.
 
-**Pour reprendre le projet — 30 septembre 2026 :** [réalisé, corrections d’audit, preuves de tests, installation Xcode/WebApp et MVP restant](ETAT_DU_PROJET.md). Point d’entrée à jour jusqu’à la livraison 33 et la configuration Xcode `326eb1a` ; les sections plus anciennes ci-dessous conservent leur contexte historique.
+**Pour reprendre le projet — 30 septembre 2026 :** [réalisé, corrections d’audit, preuves de tests, installation Xcode/WebApp et MVP restant](ETAT_DU_PROJET.md). Point d’entrée à jour jusqu’à la livraison 34 et la configuration Xcode `326eb1a` ; les sections plus anciennes ci-dessous conservent leur contexte historique.
 
 **WebApp — livraison 27 :** [parcours ordinateur, architecture partagée et recette](docs/webapp-27.md). [Construire et ouvrir la WebApp localement](apps/web/README.md).
 

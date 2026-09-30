@@ -1,7 +1,7 @@
 # Partant — réalisé, reste à faire et reprise du projet
 
 **Mis à jour le 30 septembre 2026 — point d’entrée pour reprendre le projet.**
-Couvre les corrections de l’audit (livraison 33, jusqu’au commit `6b681b3`) et la configuration Xcode `326eb1a`. Les résultats ci-dessous sont ceux des recettes documentées ; cette mise à jour documentaire ne constitue pas une nouvelle recette appareil ou serveur.
+Couvre les corrections techniques (livraison 33), les dix améliorations UX/UI (livraison 34) et la configuration Xcode `326eb1a`. Les résultats ci-dessous sont ceux des recettes documentées ; cette mise à jour documentaire ne constitue pas une nouvelle recette appareil ou serveur.
 
 Lire ce document en premier, puis le [détail des corrections et limites](docs/corrections-audit-33.md). L’[audit initial](docs/audit-app-webapp-2026-09-30.md) conserve volontairement les défauts observés avant correction : ne pas les considérer tous comme encore ouverts.
 
@@ -114,9 +114,9 @@ Au contrôle serveur du 30 septembre : aucun appareil push, aucune connexion Cal
 
 Le propriétaire avait validé Apple natif, Google et plusieurs parcours dans des versions précédentes. Ces validations ne couvrent pas automatiquement les derniers changements, notamment la migration SecureStore. Un test métier simulé, un export Hermes et un build iPhone sont trois niveaux distincts.
 
-## Revue UX/UI complémentaire du 30 septembre
+## Améliorations UX/UI — livraison 34
 
-Un [audit UX/UI avec captures](docs/audit-ux-ui-2026-09-30.md) a été réalisé après les corrections techniques. Il identifie dix points **non corrigés dans cette revue**, dont deux prioritaires : conserver la date recherchée en ouvrant le profil et contextualiser les conditions d’annulation avant réservation. Viennent ensuite la hiérarchie de l’agenda coach, l’édition/validation des formulaires et la composition desktop. Cette liste complète le MVP ci-dessous ; elle ne remet pas les anciens défauts techniques corrigés au statut ouvert.
+Les dix recommandations de l’[audit UX/UI avec captures](docs/audit-ux-ui-2026-09-30.md) ont été mises en œuvre dans la source partagée : recherche et date préservées, annulation contextualisée, agenda coach priorisé, offres dans un éditeur dédié, erreurs au niveau des champs, états de sauvegarde, états vides et composition desktop. Voir [la livraison 34 et ses preuves](docs/corrections-ux-ui-34.md). La recette 34 consolide 42 suites métier/DOM, 9 suites navigateur et les contrôles d’accessibilité des écrans modifiés. Les rapports historiques de la livraison 33 ci-dessus sont conservés. L’audit initial reste une photographie avant correction ; la validation physique du nouveau build iPhone reste à faire.
 
 ## 5. MVP restant, par ordre de priorité
 

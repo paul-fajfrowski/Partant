@@ -61,7 +61,7 @@ async function match(text) {
   ok(stored().coachOverrides["0"].photo === 3, "Portrait selection saved");
   await click("Retour");
   await click("Séances & tarifs");
-  await click("Modifier Coaching individuel");
+  await click("Coaching individuel");
   input("Prix de la séance (€)", "65");
   await wait();
   await click("Enregistrer l’offre");
@@ -94,7 +94,7 @@ async function match(text) {
   await click("Préparer vos clients");
   input("À apporter", "Une serviette et une bouteille d’eau.");
   await wait();
-  await click("Enregistrer les consignes");
+  await click("Enregistrer les réglages");
   ok(
     stored().settings["0"].preparation.bring ===
       "Une serviette et une bouteille d’eau.",

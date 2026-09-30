@@ -285,6 +285,7 @@ async function noOverflow(page, label) {
   await screenshot(coach, "coach-documents-1080");
   await noOverflow(coach, "Documents fit small desktop");
   await coach.setViewportSize({ width: 390, height: 844 });
+  await coach.getByTestId("desktop-shell").waitFor({ state: "detached" });
   await coach
     .getByText("1. Vos pièces communes", { exact: true })
     .waitFor();

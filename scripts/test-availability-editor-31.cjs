@@ -110,7 +110,7 @@ const ok = (v, msg) => {
         .waitFor();
       ok(
         await p
-          .getByRole("button", { name: "Appliquer à la journée", exact: true })
+          .getByRole("button", { name: "Valider cette plage", exact: true })
           .isDisabled(),
         "Overlapping interval cannot be applied",
       );
@@ -169,7 +169,7 @@ const ok = (v, msg) => {
       await p.waitForTimeout(400);
       await p.screenshot({ path: out + `/edit-${width}.png` });
       await p
-        .getByRole("button", { name: "Appliquer à la journée", exact: true })
+        .getByRole("button", { name: "Valider cette plage", exact: true })
         .click();
       await p
         .getByRole("button", {

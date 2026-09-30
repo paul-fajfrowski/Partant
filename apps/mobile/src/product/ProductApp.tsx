@@ -1,3 +1,4 @@
+import { cancellationSummary } from "./experience";
 import { BackNavigationProvider, useBackNavigation } from "./BackNavigation";
 import { MobileAgendaAppointments } from "./MobileAgendaAppointments";
 import {
@@ -320,12 +321,15 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
   const [role, setRole] = useState<"client" | "coach">("client");
   const [signup, setSignup] = useState(false);
   const [coachApplication, setCoachApplication] = useState("");
+  const [emailAttempts, setEmailAttempts] = useState(0);
+  const [addressAttempts, setAddressAttempts] = useState(0);
   const [email, setEmail] = useState(live ? "" : "alex@example.test");
   const [name, setName] = useState(live ? "" : "Alex");
   const [code, setCode] = useState("");
   const [step, setStep] = useState(0);
   const [day, setDay] = useState(today());
   const [agendaToolsOpen, setAgendaToolsOpen] = useState(false);
+  const [configDirty, setConfigDirty] = useState(false);
   const [selectedRange, setSelectedRange] = useState<RangeSelection | null>(
     null,
   );
@@ -782,7 +786,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
   }
   function openProfile(c: Coach) {
     setCoachId(c.id);
-    setOfferId("");
+    setOfferId(primary(c)?.id ?? "");
     go("profile");
   }
   function locationAt(c: Coach, o: Offer, day: string, time: string) {
@@ -933,6 +937,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         offerAddress(store, c, chosenFormat),
       status: "confirmed",
       slotId: real?.id,
+      cancelHours: group?.cancelHours ?? configFor(store, c.id).cancelHours,
     };
     nextDraft.price = quotePrice(store, nextDraft, group?.offer ?? selected);
     setDraft(nextDraft);
@@ -1003,7 +1008,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         setDraft({
           ...draft,
           price: quotePrice(store, draft, g?.offer ?? o),
-          cancelHours: cfg.cancelHours,
+          cancelHours: g?.cancelHours ?? cfg.cancelHours,
           preparation: { ...cfg.preparation },
         });
       }
@@ -1143,7 +1148,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
   function slots(c: Coach, o?: Offer) {
     return (
       <Row wrap style={{ gap: 7 }}>
-        {market.times(c, day, o).map((time) => (
+        {available(c, o).map((time) => (
           <Pressable
             accessibilityRole="button"
             key={time}
@@ -1153,8 +1158,11 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             <P style={{ fontFamily: t.medium, fontSize: 15 }}>{time}</P>
           </Pressable>
         ))}
-        {!market.times(c, day, o).length && (
-          <P muted>Pas de créneau ce jour. Choisissez une autre date.</P>
+        {!available(c, o).length && (
+          <P muted>
+            Aucun créneau correspondant. Choisissez une autre date ou ajustez
+            l’heure.
+          </P>
         )}
       </Row>
     );
@@ -1196,41 +1204,41 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         testID={webWide ? "desktop-coach-card" : undefined}
       >
         <View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Voir le profil de ${c.name}`}
-          onPress={() => openProfile(c)}
-        >
-          <Photo
-            uri={c.photoUri}
-            index={c.photo}
-            height={webWide ? 220 : (pageWidth - 48) / 2.6}
-            style={{ borderRadius: 12 }}
-            label={`Portrait de ${c.name}`}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Voir le profil de ${c.name}`}
+            onPress={() => openProfile(c)}
           >
-            {c.verified && (
-              <View style={styles.photoBadge}>
-                <Icon name="shield" size={17} />
-                <P small style={{ fontFamily: t.medium }}>
-                  Profil vérifié
-                </P>
-              </View>
-            )}
-          </Photo>
-        </Pressable>
-            <View style={{ position: "absolute", top: 10, right: 10 }}>
-              <IconButton
-                name="heart"
-                white
-                filled={store.favorites.includes(c.id)}
-                label={
-                  store.favorites.includes(c.id)
-                    ? `Retirer ${c.name} des favoris`
-                    : `Ajouter ${c.name} aux favoris`
-                }
-                onPress={() => favorite(c.id)}
-              />
-            </View>
+            <Photo
+              uri={c.photoUri}
+              index={c.photo}
+              height={webWide ? 220 : (pageWidth - 48) / 2.6}
+              style={{ borderRadius: 12 }}
+              label={`Portrait de ${c.name}`}
+            >
+              {c.verified && (
+                <View style={styles.photoBadge}>
+                  <Icon name="shield" size={17} />
+                  <P small style={{ fontFamily: t.medium }}>
+                    Profil vérifié
+                  </P>
+                </View>
+              )}
+            </Photo>
+          </Pressable>
+          <View style={{ position: "absolute", top: 10, right: 10 }}>
+            <IconButton
+              name="heart"
+              white
+              filled={store.favorites.includes(c.id)}
+              label={
+                store.favorites.includes(c.id)
+                  ? `Retirer ${c.name} des favoris`
+                  : `Ajouter ${c.name} aux favoris`
+              }
+              onPress={() => favorite(c.id)}
+            />
+          </View>
         </View>
         <Row between style={{ marginTop: 10 }}>
           <Pressable
@@ -1296,14 +1304,16 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             accessibilityRole="button"
             accessibilityLabel={`Toutes les disponibilités de ${c.name}`}
             onPress={() => openProfile(c)}
-            style={[styles.slot, { paddingHorizontal: 11 }]}
+            style={[styles.slot, { paddingHorizontal: 11, minWidth: 44 }]}
           >
             <Icon name="arrow" size={17} />
           </Pressable>
         </Row>
         <Row between style={{ marginTop: 10 }}>
           <P small muted>
-            {[...new Set(c.formats.map((f) => locationLabel(store, c, f)))].slice(0, 2).join(" · ")}{" "}
+            {[...new Set(c.formats.map((f) => locationLabel(store, c, f)))]
+              .slice(0, 2)
+              .join(" · ")}{" "}
             · Tout compris
           </P>
           <Pressable
@@ -1543,11 +1553,25 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           <Field
             label={live ? "Adresse e-mail" : "Adresse e-mail de démonstration"}
             value={email}
+            error={
+              emailAttempts && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+                ? "Saisissez une adresse e-mail valide."
+                : undefined
+            }
+            focusRequest={
+              emailAttempts && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+                ? emailAttempts
+                : 0
+            }
             onChange={setEmail}
           />
           <Button
             disabled={busy || (live && emailWait > 0)}
-            onPress={() => run(requestEmailLink)}
+            onPress={() => {
+              setEmailAttempts((n) => n + 1);
+              if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return;
+              run(requestEmailLink);
+            }}
           >
             {live && emailWait > 0
               ? `Patienter ${emailWait} s avant un nouvel essai`
@@ -1668,7 +1692,11 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             <Button
               light
               disabled={busy || emailWait > 0}
-              onPress={() => run(requestEmailLink)}
+              onPress={() => {
+                setEmailAttempts((n) => n + 1);
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return;
+                run(requestEmailLink);
+              }}
             >
               {emailWait > 0
                 ? `Renvoyer le lien dans ${emailWait} s`
@@ -2232,14 +2260,22 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           ) : (
             <Section>
               <H2>
-                {!pref.city.startsWith("Paris")
-                  ? "Pas encore de coach dans ce secteur"
-                  : "Aucun coach sur ce créneau"}
+                {query.trim()
+                  ? `Aucun résultat pour « ${query.trim()} »`
+                  : !pref.city.startsWith("Paris") && !live
+                    ? "Pas encore de coach dans ce secteur"
+                    : "Aucun coach pour ces critères"}
               </H2>
               <P muted style={{ marginVertical: 16 }}>
                 Gardez vos préférences et explorez une autre possibilité.
               </P>
-              {pref.city.startsWith("Paris") &&
+              {query.trim() ? (
+                <Button light onPress={() => setQuery("")}>
+                  Effacer le texte recherché
+                </Button>
+              ) : null}
+              {!query.trim() &&
+                pref.city.startsWith("Paris") &&
                 Array.from({ length: 7 }, (_, i) => addDays(day, i + 1))
                   .map((d) => {
                     const match = coaches.find(
@@ -2294,13 +2330,21 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
                   Chercher en visio
                 </Button>
               )}
-              {
-                <TextButton onPress={() => go("new-alert")}>
-                  Me prévenir d’une disponibilité
-                </TextButton>
-              }
+              {!query.trim() && (
+                <>
+                  <TextButton onPress={() => setModal("date")}>
+                    Choisir une autre date
+                  </TextButton>
+                  <TextButton onPress={() => setModal("filters")}>
+                    Ajuster mes filtres
+                  </TextButton>
+                  <TextButton onPress={() => go("new-alert")}>
+                    Me prévenir d’une disponibilité
+                  </TextButton>
+                </>
+              )}
               <TextButton onPress={resetFilters}>
-                Élargir ma recherche
+                Réinitialiser les filtres
               </TextButton>
             </Section>
           )}
@@ -2322,12 +2366,63 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
       </>
     );
   if (screen === "profile" && coach) {
+    const bookingPanel = (
+      <>
+        <H2 style={{ marginTop: 24 }}>Votre accompagnement</H2>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingVertical: 24 }}
+        >
+          {offers.map((o) => (
+            <Chip
+              key={o.id}
+              active={offer?.id === o.id}
+              onPress={() => setOfferId(o.id)}
+            >
+              {o.name} · {euro(o.price)}
+            </Chip>
+          ))}
+        </ScrollView>
+        {(store.groups ?? [])
+          .filter(
+            (g) =>
+              g.offer.coach === coach.id &&
+              !g.cancelled &&
+              instant(g.day, g.time) > now(),
+          )
+          .map((g) => (
+            <Setting
+              key={g.id}
+              title={g.offer.name}
+              description={`${dayLabel(g.day, true)} · ${g.time} · ${remaining(g.offer, g.day, g.time, store)} places restantes · ${euro(g.offer.price)}/pers.`}
+              onPress={() => go("group-details-native", g.id)}
+            />
+          ))}
+        <H2>Votre prochain moment</H2>
+        {(hour || period === "evening") && (
+          <TextButton
+            onPress={() => {
+              setHour("");
+              setPeriod("all");
+            }}
+          >
+            Voir toutes les heures de cette journée
+          </TextButton>
+        )}
+        <View style={{ marginTop: 22 }}>{dateStrip()}</View>
+        <P small muted style={{ marginTop: 16, marginBottom: 10 }}>
+          {dayLabel(day)} · {offer?.duration ?? 60} min · Heure de Paris
+        </P>
+        {slots(coach, offer)}
+      </>
+    );
     content = (
       <>
         <Photo
           uri={coach.photoUri}
           index={coach.photo}
-          height={webWide ? 360 : pageWidth / 1.5}
+          height={webWide ? 240 : pageWidth / 1.5}
           label={`Portrait de ${coach.name}`}
         />
         <Section style={styles.sheet}>
@@ -2356,19 +2451,45 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           </P>
           {offer &&
             (() => {
-              const next = Array.from(
-                { length: Math.min(14, configFor(store, coach.id).horizon) },
-                (_, i) => addDays(today(), i),
-              )
-                .map((d) => ({ d, time: market.times(coach, d, offer)[0] }))
-                .find((x) => x.time);
-              return next ? (
-                <Setting
-                  title={`Prochain départ · ${dayLabel(next.d, true)} à ${next.time}`}
-                  description={`${offer.name} · ${euro(offer.price)}${offer.kind === "Groupe" ? " / personne" : ""}`}
-                  onPress={() => chooseTime(coach, next.time, offer, next.d)}
-                />
-              ) : null;
+              const matching = available(coach, offer)[0];
+              const alternative =
+                !matching &&
+                Array.from(
+                  { length: Math.min(14, configFor(store, coach.id).horizon) },
+                  (_, i) => addDays(day, i),
+                )
+                  .flatMap((d) =>
+                    market
+                      .times(coach, d, offer)
+                      .filter((time) => locationAt(coach, offer, d, time))
+                      .map((time) => ({ d, time })),
+                  )
+                  .find((x) => x.d !== day || x.time !== hour);
+              const next = matching ? { d: day, time: matching } : alternative;
+              return (
+                <>
+                  {!matching && (
+                    <P small muted style={{ marginTop: 16 }}>
+                      Aucun créneau pour votre recherche : {dayLabel(day, true)}
+                      {hour
+                        ? ` à ${hour}`
+                        : period === "evening"
+                          ? " en soirée"
+                          : ""}
+                      .
+                    </P>
+                  )}
+                  {next && (
+                    <Setting
+                      title={`${matching ? "Votre prochain créneau" : "Autre disponibilité"} · ${dayLabel(next.d, true)} à ${next.time}`}
+                      description={`${offer.name} · ${euro(offer.price)}${offer.kind === "Groupe" ? " / personne" : ""}`}
+                      onPress={() =>
+                        chooseTime(coach, next.time, offer, next.d)
+                      }
+                    />
+                  )}
+                </>
+              );
             })()}
           {!!coach.quote && (
             <H2 style={{ fontSize: 22, marginTop: 22, marginBottom: 12 }}>
@@ -2417,43 +2538,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
               </P>
             </Row>
           </Note>
-          <H2 style={{ marginTop: 24 }}>Votre accompagnement</H2>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 8, paddingVertical: 24 }}
-          >
-            {offers.map((o) => (
-              <Chip
-                key={o.id}
-                active={offer?.id === o.id}
-                onPress={() => setOfferId(o.id)}
-              >
-                {o.name} · {euro(o.price)}
-              </Chip>
-            ))}
-          </ScrollView>
-          {(store.groups ?? [])
-            .filter(
-              (g) =>
-                g.offer.coach === coach.id &&
-                !g.cancelled &&
-                instant(g.day, g.time) > now(),
-            )
-            .map((g) => (
-              <Setting
-                key={g.id}
-                title={g.offer.name}
-                description={`${dayLabel(g.day, true)} · ${g.time} · ${remaining(g.offer, g.day, g.time, store)} places restantes · ${euro(g.offer.price)}/pers.`}
-                onPress={() => go("group-details-native", g.id)}
-              />
-            ))}
-          <H2>Votre prochain moment</H2>
-          <View style={{ marginTop: 22 }}>{dateStrip()}</View>
-          <P small muted style={{ marginTop: 16, marginBottom: 10 }}>
-            {dayLabel(day)} · {offer?.duration ?? 60} min · Heure de Paris
-          </P>
-          {slots(coach, offer)}
+          {!webWide && bookingPanel}
           <Rule />
           <H2 style={{ marginBottom: 14 }}>Faire connaissance</H2>
           <P>{coach.bio || "Ce coach complète sa présentation."}</P>
@@ -2471,6 +2556,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             <View key={key} style={{ marginBottom: 18 }}>
               <P bold>{locationLabel(store, coach, key)}</P>
               <P small muted>
+                {coachLocations(store, coach)[key]?.type ?? key} ·{" "}
                 {locationDescription(store, coach, key)}
               </P>
             </View>
@@ -2537,7 +2623,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         <Button
           style={{ flex: 1 }}
           onPress={() => {
-            const next = market.times(coach, day, offer)[0];
+            const next = available(coach, offer)[0];
             if (next) chooseTime(coach, next, offer);
             else setModal("date");
           }}
@@ -2546,6 +2632,46 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         </Button>
       </Row>
     );
+    if (webWide) {
+      content = (
+        <View
+          style={{ flexDirection: "row", alignItems: "flex-start", gap: 28 }}
+          testID="desktop-profile-layout"
+        >
+          <View style={{ flex: 1, minWidth: 0 }}>{content}</View>
+          <View
+            style={{
+              width: width < 1280 ? 300 : 360,
+              padding: 20,
+              backgroundColor: "#f5f5f3",
+              borderRadius: 24,
+              margin: 16,
+              marginLeft: 0,
+            }}
+          >
+            <H2>
+              {euro(offer?.price ?? coach.price)}{" "}
+              <P small>
+                /{" "}
+                {offer?.kind === "Groupe"
+                  ? "personne"
+                  : `${offer?.duration ?? 60} min`}
+              </P>
+            </H2>
+            <P small muted>
+              {[
+                ...new Set(
+                  coach.formats.map((f) => locationLabel(store, coach, f)),
+                ),
+              ].join(" · ")}
+            </P>
+            {bookingPanel}
+            {sticky}
+          </View>
+        </View>
+      );
+      sticky = null;
+    }
   }
   if (screen === "setup" && draft && coach) {
     content = (
@@ -2591,7 +2717,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             key={f}
             active={draft.format === f}
             title={locationLabel(store, coach, f)}
-            description={locationDescription(store, coach, f)}
+            description={`${coachLocations(store, coach)[f]?.type ?? f} · ${locationDescription(store, coach, f)}`}
             onPress={() => {
               const cfg = configFor(store, draft.coach);
               setDraft({
@@ -2614,6 +2740,14 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
               live ? "Adresse du rendez-vous" : "Adresse fictive du rendez-vous"
             }
             value={draft.address}
+            error={
+              addressAttempts && !draft.address.trim()
+                ? "Indiquez l’adresse du rendez-vous."
+                : undefined
+            }
+            focusRequest={
+              addressAttempts && !draft.address.trim() ? addressAttempts : 0
+            }
             onChange={(address) => setDraft({ ...draft, address })}
           />
         )}{" "}
@@ -2658,10 +2792,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           Quelques mots suffisent. Évitez les informations médicales ou
           sensibles.
         </P>
-        <Note style={{ marginTop: 24 }}>
-          Annulation gratuite jusqu’à{" "}
-          {configFor(store, draft.coach).cancelHours} h avant.
-        </Note>
+        <Note style={{ marginTop: 24 }}>{cancellationSummary(draft)}</Note>
       </Section>
     );
     sticky = (
@@ -2678,7 +2809,13 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           icon="arrow"
           style={{ flex: 1 }}
           disabled={!draft.time || busy}
-          onPress={() => run(toCheckout)}
+          onPress={() => {
+            if (draft.format === "Domicile" && !draft.address.trim()) {
+              setAddressAttempts((n) => n + 1);
+              return;
+            }
+            run(toCheckout);
+          }}
         >
           Continuer
         </Button>
@@ -2686,99 +2823,137 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
     );
   }
   if (screen === "checkout" && draft) {
-    content = (
-      <Section>
-        <Eyebrow>02 — CONFIRMATION & PAIEMENT</Eyebrow>
-        <H1 style={{ marginTop: 12, marginBottom: 24 }}>
-          Vous y êtes presque.
-        </H1>
-        {summary(draft)}
-        <Rule />
-        <Row>
-          <Icon name="calendar" />
-          <P>
-            {dayLabel(draft.day)}
-            {"\n"}
-            {draft.time} – {endTime(draft.time, draft.duration)}
-          </P>
-        </Row>
-        <Row style={{ marginTop: 16 }}>
-          <Icon name="pin" />
-          <View style={{ flex: 1 }}>
-            <P bold>{draft.locationName}</P>
-            <P>{draft.address}</P>
-            {!!draft.locationInstructions && (
-              <P small muted>
-                {draft.locationInstructions}
-              </P>
-            )}
-          </View>
-        </Row>
-        <View style={{ gap: 12, marginVertical: 24 }}>
-          <Row between>
-            <P>{draft.serviceName}</P>
-            <P bold>{euro(draft.price)}</P>
-          </Row>
-          <Row between>
-            <P>Frais de réservation</P>
-            <P bold>0 €</P>
-          </Row>
-          <Row
-            between
-            style={{ borderTopWidth: 1, borderColor: "#ddd", paddingTop: 16 }}
-          >
-            <H2>Total à payer</H2>
-            <H2>{euro(draft.price)}</H2>
-          </Row>
-        </View>
-        <H2 style={{ marginBottom: 14 }}>Votre moyen de paiement</H2>
-        {live ? (
-          <Choice
-            title="Réservation de développement"
-            description="Aucun paiement n’est encaissé"
-            active
-            onPress={() => {}}
-          />
-        ) : (
-          <>
-            {["Apple Pay", "Carte bancaire"].map((method) => (
-              <Choice
-                key={method}
-                title={method}
-                description={
-                  method === "Apple Pay"
-                    ? "Simulation en un geste"
-                    : "Carte de démonstration · •••• 4242"
-                }
-                active={paymentMethod === method}
-                onPress={() => setPaymentMethod(method)}
-              />
-            ))}
-          </>
-        )}
-        <Note style={{ marginTop: 24 }}>
-          {live
-            ? "Cette version de test n’effectue aucun paiement."
-            : "Paiement simulé : aucun débit ne sera effectué."}
-        </Note>
-        <P small muted style={{ marginTop: 24 }}>
-          Annulation gratuite jusqu’à {draft.cancelHours ?? 24} h avant votre
-          séance.
+    const confirmationAction = (
+      <View style={{ gap: 12 }}>
+        <P small accessibilityLiveRegion="polite">
+          {cancellationSummary(draft)}
         </P>
-      </Section>
-    );
-    sticky = (
-      <View style={styles.sticky}>
         <Button
           icon="shield"
           disabled={busy}
-          style={{ flex: 1 }}
           onPress={() => (live ? run(finish) : run(startAttempt))}
         >
           {live
             ? "Confirmer ma réservation de test"
             : `Réserver · ${euro(draft.price)}`}
         </Button>
+      </View>
+    );
+    content = (
+      <Section>
+        <Eyebrow>02 — CONFIRMATION & PAIEMENT</Eyebrow>
+        <H1 style={{ marginTop: 12, marginBottom: 24 }}>
+          Vous y êtes presque.
+        </H1>
+        <View
+          style={{
+            flexDirection: webWide ? "row" : "column",
+            gap: webWide ? 40 : 0,
+          }}
+        >
+          <View style={{ flex: webWide ? 1 : undefined }}>
+            {summary(draft)}
+            <Rule />
+            <Row>
+              <Icon name="calendar" />
+              <P>
+                {dayLabel(draft.day)}
+                {"\n"}
+                {draft.time} – {endTime(draft.time, draft.duration)}
+              </P>
+            </Row>
+            <Row style={{ marginTop: 16 }}>
+              <Icon name="pin" />
+              <View style={{ flex: 1 }}>
+                <P bold>{draft.locationName}</P>
+                <P>{draft.address}</P>
+                {!!draft.locationInstructions && (
+                  <P small muted>
+                    {draft.locationInstructions}
+                  </P>
+                )}
+              </View>
+            </Row>
+            <View style={{ gap: 12, marginVertical: 24 }}>
+              <Row between>
+                <P>{draft.serviceName}</P>
+                <P bold>{euro(draft.price)}</P>
+              </Row>
+              <Row between>
+                <P>Frais de réservation</P>
+                <P bold>0 €</P>
+              </Row>
+              <Row
+                between
+                style={{
+                  borderTopWidth: 1,
+                  borderColor: "#ddd",
+                  paddingTop: 16,
+                }}
+              >
+                <H2>Total à payer</H2>
+                <H2>{euro(draft.price)}</H2>
+              </Row>
+            </View>
+          </View>
+          <View
+            style={
+              webWide
+                ? {
+                    width: 380,
+                    padding: 24,
+                    borderRadius: 24,
+                    backgroundColor: "#f6f6f4",
+                    alignSelf: "flex-start",
+                  }
+                : undefined
+            }
+          >
+            <H2 style={{ marginBottom: 14 }}>Votre moyen de paiement</H2>
+            {live ? (
+              <Choice
+                title="Réservation de développement"
+                description="Aucun paiement n’est encaissé"
+                active
+                onPress={() => {}}
+              />
+            ) : (
+              <>
+                {["Apple Pay", "Carte bancaire"].map((method) => (
+                  <Choice
+                    key={method}
+                    title={method}
+                    description={
+                      method === "Apple Pay"
+                        ? "Simulation en un geste"
+                        : "Carte de démonstration · •••• 4242"
+                    }
+                    active={paymentMethod === method}
+                    onPress={() => setPaymentMethod(method)}
+                  />
+                ))}
+              </>
+            )}
+            <Note style={{ marginTop: 24 }}>
+              {live
+                ? "Cette version de test n’effectue aucun paiement."
+                : "Paiement simulé : aucun débit ne sera effectué."}
+            </Note>
+            {webWide && (
+              <View style={{ marginTop: 24 }}>{confirmationAction}</View>
+            )}
+          </View>
+        </View>
+      </Section>
+    );
+    sticky = webWide ? null : (
+      <View
+        style={[
+          styles.sticky,
+          { flexDirection: "column", alignItems: "stretch" },
+        ]}
+      >
+        {confirmationAction}
       </View>
     );
   }
@@ -3542,7 +3717,10 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         <View
           style={[
             styles.top,
-            { paddingBottom: 42, paddingTop: webWide ? 16 : 20 },
+            {
+              paddingBottom: coachTab === "agenda" ? 26 : 42,
+              paddingTop: webWide ? 16 : 20,
+            },
           ]}
         >
           <Row between>
@@ -3614,36 +3792,46 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
               </Pressable>
             ))}
           </Row>
-          <H1
-            style={{
-              color: "#fff",
-              marginTop: 22,
-              marginBottom: 10,
-              maxWidth: 340,
-            }}
-          >
-            {titles[coachTab]}
-          </H1>
-          <P style={{ fontSize: 14, color: "#bdbdbd" }}>{captions[coachTab]}</P>
+          {coachTab !== "agenda" && (
+            <H1
+              style={{
+                color: "#fff",
+                marginTop: 22,
+                marginBottom: 10,
+                maxWidth: 340,
+              }}
+            >
+              {titles[coachTab]}
+            </H1>
+          )}
+          {coachTab !== "agenda" && (
+            <P style={{ fontSize: 14, color: "#bdbdbd" }}>
+              {captions[coachTab]}
+            </P>
+          )}
         </View>
         <Section style={styles.sheet}>
-          {coachTab === "agenda" && unread > 0 && (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => go("notifications")}
-              style={{ marginBottom: 18 }}
-            >
-              <Note>
-                <Row between>
-                  <P bold style={{ fontSize: 14 }}>
-                    {unread} nouvelle{unread > 1 ? "s" : ""} notification
-                    {unread > 1 ? "s" : ""}
-                  </P>
-                  <Icon name="chevron" size={17} />
-                </Row>
-              </Note>
-            </Pressable>
-          )}
+          {coachTab === "agenda" &&
+            notificationRows(store).filter((r) => r.actionable).length > 0 && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => go("notifications")}
+                style={{ marginBottom: 18 }}
+              >
+                <Note>
+                  <Row between>
+                    <P bold style={{ fontSize: 14 }}>
+                      {
+                        notificationRows(store).filter((r) => r.actionable)
+                          .length
+                      }{" "}
+                      action(s) à traiter
+                    </P>
+                    <Icon name="chevron" size={17} />
+                  </Row>
+                </Note>
+              </Pressable>
+            )}
           {coachTab === "settings" ? (
             <>
               <Setting
@@ -3812,24 +4000,6 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
                 </Note>
               )}
               {dateStrip()}
-              {coachSelf && (
-                <View style={{ marginTop: 24 }}>
-                  <Row between>
-                    <H2 style={{ fontSize: 18, marginBottom: 8 }}>
-                      Mes disponibilités
-                    </H2>
-                    <TextButton onPress={() => go("config-native", "schedule")}>
-                      Configurer
-                    </TextButton>
-                  </Row>
-                  <AvailabilityRangeList
-                    store={store}
-                    coach={coachSelf.id}
-                    day={day}
-                    onSelect={setSelectedRange}
-                  />
-                </View>
-              )}
               <H2 style={{ fontSize: 18, marginTop: 24 }}>Mes rendez-vous</H2>
               {activeCoach && (
                 <MobileAgendaAppointments
@@ -3849,6 +4019,24 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
                     else if (item.kind === "closed") setAgendaToolsOpen(true);
                   }}
                 />
+              )}
+              {coachSelf && (
+                <View style={{ marginTop: 24 }}>
+                  <Row between>
+                    <H2 style={{ fontSize: 18, marginBottom: 8 }}>
+                      Mes disponibilités
+                    </H2>
+                    <TextButton onPress={() => go("config-native", "schedule")}>
+                      Configurer
+                    </TextButton>
+                  </Row>
+                  <AvailabilityRangeList
+                    store={store}
+                    coach={coachSelf.id}
+                    day={day}
+                    onSelect={setSelectedRange}
+                  />
+                </View>
               )}
               <TextButton onPress={() => go("external-session-native")}>
                 + Rendez-vous pris directement
@@ -5153,6 +5341,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
               : undefined
           }
           saveAction={configSave}
+          onDirtyChange={setConfigDirty}
         />
       </Section>
     );
@@ -5323,7 +5512,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         </Section>
       </>
     );
-  if (screen === "explore")
+  if (screen === "explore" && results.length > 0)
     content = (
       <>
         {content}
@@ -5340,7 +5529,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
   )
     sticky = (
       <View style={styles.sticky}>
-        <Button onPress={() => configSave.current?.()}>
+        <Button disabled={!configDirty} onPress={() => configSave.current?.()}>
           {config === "schedule"
             ? "Enregistrer les modifications"
             : "Enregistrer les réglages"}
@@ -5711,7 +5900,15 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             title={pageTitle}
             onBack={back}
             disabled={busy || (live && market.pending > 0)}
-            onHome={leaveToMain}
+            onHome={
+              screen === "confirmation" ||
+              screen === "payment" ||
+              (["profile", "login"].includes(screen) &&
+                history.current.at(-1)?.screen ===
+                  mainScreen(store.account?.role))
+                ? undefined
+                : leaveToMain
+            }
             homeLabel={
               store.account?.role === "coach"
                 ? "Revenir à mon agenda"
@@ -5763,7 +5960,13 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           {sticky}
         </KeyboardAvoidingView>
         {!authTransition && !webWide && (bottom || coachBottom) && (
-          <View style={styles.bottomNav} accessibilityRole="tablist" accessibilityLabel={coachBottom ? "Navigation coach" : "Navigation client"}>
+          <View
+            style={styles.bottomNav}
+            accessibilityRole="tablist"
+            accessibilityLabel={
+              coachBottom ? "Navigation coach" : "Navigation client"
+            }
+          >
             {(coachBottom ? coachTabs : navItems).map(([id, icon, title]) => (
               <Pressable
                 accessibilityRole="tab"
@@ -5916,9 +6119,16 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           }
           contentWidth={
             entryScreen ||
-            ["explore", "coach", "config", "messages", "chat", "team"].includes(
-              screen,
-            )
+            [
+              "explore",
+              "coach",
+              "config",
+              "messages",
+              "chat",
+              "team",
+              "profile",
+              "checkout",
+            ].includes(screen)
               ? "wide"
               : ["setup", "payment", "confirmation"].includes(screen)
                 ? "form"

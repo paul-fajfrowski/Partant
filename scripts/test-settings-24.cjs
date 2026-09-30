@@ -18,7 +18,29 @@ async function until(fn) {
     if (fn()) return;
     await wait();
   }
-  throw Error("Expected state not reached: " + JSON.stringify(control) + d.body.textContent.slice(-1400));
+  throw Error(
+    "Expected state not reached: " +
+      JSON.stringify(control) +
+      d.body.textContent.slice(-1400),
+  );
+}
+// jsdom has no CSS animation clock. Finish only a modal already fading out.
+function offerEditorClosed() {
+  let node = d.querySelector('[aria-label="Nom de la séance"]');
+  while (node) {
+    const css = w.getComputedStyle(node);
+    if (css.opacity === "0" && css.pointerEvents === "none") {
+      for (const type of [
+        "animationend",
+        "webkitAnimationEnd",
+        "oAnimationEnd",
+      ])
+        node.dispatchEvent(new w.Event(type, { bubbles: true }));
+      break;
+    }
+    node = node.parentElement;
+  }
+  return !d.querySelector('[aria-label="Nom de la séance"]');
 }
 (async () => {
   await click("Me connecter");
@@ -64,6 +86,42 @@ async function until(fn) {
   await click("Retour");
   await click("Séances & tarifs");
   ok(!has("Créez une offre par formule"), "Offer explanatory wall removed");
+  await click("Nouvelle offre");
+  input("Nom de la séance", "Séance test UX 34");
+  control.delay = 900;
+  await click("Enregistrer l’offre");
+  ok(
+    !!d.querySelector('[aria-label="Nom de la séance"]'),
+    "Offer editor stays open while server saves",
+  );
+  ok(
+    !has("Offre enregistrée."),
+    "Offer does not announce success before acknowledgement",
+  );
+  await until(offerEditorClosed);
+  ok(
+    !!button("Séance test UX 34"),
+    "Offer editor closes after acknowledged save",
+  );
+  // A second creation exercises refusal/retry without the legacy fixture’s distinct coach/account IDs.
+  await click("Nouvelle offre");
+  input("Nom de la séance", "Séance à réessayer UX 34");
+  control.fail = true;
+  await click("Enregistrer l’offre");
+  await until(() => has("Échec de test"));
+  ok(
+    d.querySelector('[aria-label="Nom de la séance"]')?.value ===
+      "Séance à réessayer UX 34",
+    "Offer failure retains editor and draft",
+  );
+  control.fail = false;
+  control.delay = 0;
+  await click("Enregistrer l’offre");
+  await until(offerEditorClosed);
+  ok(
+    !!button("Séance à réessayer UX 34"),
+    "Offer retry closes only on acknowledgement",
+  );
   await click("Retour");
   await click("Préférences de notification");
   await until(() => has("Vos échanges"));

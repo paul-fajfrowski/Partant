@@ -1,6 +1,16 @@
 import React from "react";
-import { View, Pressable, StyleSheet } from "react-native";
-import { Eyebrow, H1, H2, P, Row, Button, Icon, TextButton } from "../ui";
+import { View, Pressable, StyleSheet, useWindowDimensions } from "react-native";
+import {
+  Eyebrow,
+  H1,
+  H2,
+  P,
+  Row,
+  Button,
+  Icon,
+  TextButton,
+  Select,
+} from "../ui";
 import { tokens as t } from "../tokens";
 
 const groups = [
@@ -222,34 +232,60 @@ export function DesktopSettingsLayout({
   disabled?: boolean;
   children: React.ReactNode;
 }) {
+  const compact = useWindowDimensions().width < 1280;
   return (
-    <View style={s.layout} testID="desktop-settings-layout">
-      <View
-        style={s.menu}
-        accessibilityLabel="Rubriques des réglages"
-        role="navigation"
-      >
-        {groups.map((group) => (
-          <View key={group.title} style={{ marginBottom: 20 }}>
-            <Eyebrow
-              style={{ marginHorizontal: 12, marginBottom: 8, fontSize: 9 }}
-            >
-              {group.title.toUpperCase()}
-            </Eyebrow>
-            {group.items.map((item) => (
-              <Item
-                compact
-                key={item[0]}
-                item={item}
-                selected={(related[current] ?? current) === item[0]}
-                disabled={disabled}
-                onPress={() => onSelect(item[0])}
-              />
+    <View
+      style={[s.layout, compact && { flexDirection: "column" }]}
+      testID="desktop-settings-layout"
+    >
+      {compact && (
+        <View style={{ paddingHorizontal: 24, paddingTop: 12 }}>
+          <Select
+            label="Rubrique des réglages"
+            value={related[current] ?? current}
+            items={groups.flatMap((g) =>
+              g.items.map((i) => [i[0], i[1]] as [string, string]),
+            )}
+            onChange={(id) => {
+              if (!disabled) onSelect(id);
+            }}
+          />
+        </View>
+      )}
+      {!compact && (
+        <>
+          <View
+            style={s.menu}
+            accessibilityLabel="Rubriques des réglages"
+            role="navigation"
+          >
+            {groups.map((group) => (
+              <View key={group.title} style={{ marginBottom: 20 }}>
+                <Eyebrow
+                  style={{ marginHorizontal: 12, marginBottom: 8, fontSize: 9 }}
+                >
+                  {group.title.toUpperCase()}
+                </Eyebrow>
+                {group.items.map((item) => (
+                  <Item
+                    compact
+                    key={item[0]}
+                    item={item}
+                    selected={(related[current] ?? current) === item[0]}
+                    disabled={disabled}
+                    onPress={() => onSelect(item[0])}
+                  />
+                ))}
+              </View>
             ))}
           </View>
-        ))}
+        </>
+      )}
+      <View
+        style={{ flex: 1, minWidth: 0, maxWidth: compact ? undefined : 860 }}
+      >
+        {children}
       </View>
-      <View style={{ flex: 1, minWidth: 0, maxWidth: 860 }}>{children}</View>
     </View>
   );
 }

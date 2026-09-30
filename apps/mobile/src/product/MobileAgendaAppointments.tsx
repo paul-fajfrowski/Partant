@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, View } from "react-native";
-import { Store, endTime } from "./model";
+import { Store, endTime, instant, now } from "./model";
 import { agendaDay, AgendaItem } from "./web-agenda/agendaView";
 import { P, Row, Icon } from "./ui";
 
@@ -17,6 +17,11 @@ export function MobileAgendaAppointments({
   onOpen: (item: AgendaItem) => void;
 }) {
   const agenda = agendaDay(store, coach, day);
+  const ordered = [...agenda.items].sort((a, b) => {
+    const pastA = instant(day, a.time) + a.duration * 60000 <= now();
+    const pastB = instant(day, b.time) + b.duration * 60000 <= now();
+    return Number(pastA) - Number(pastB) || a.time.localeCompare(b.time);
+  });
   return (
     <View>
       {!agenda.appointments && (
@@ -24,7 +29,7 @@ export function MobileAgendaAppointments({
           Aucune réservation pour le moment.
         </P>
       )}
-      {agenda.items.map((item) => {
+      {ordered.map((item) => {
         const dark = item.kind === "booking" && !item.completed;
         const content = (
           <Row between>

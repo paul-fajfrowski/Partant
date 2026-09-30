@@ -1,3 +1,4 @@
+import { offerErrors } from "./experience";
 import { useLocalBack } from "./BackNavigation";
 import { AvailabilityWeekEditor } from "./AvailabilityWeekEditor";
 import { CoachVerification } from "./CoachVerification";
@@ -12,7 +13,7 @@ import {
 import { CoachPlacesEditor } from "./CoachPlacesEditor";
 import { validateLocations } from "./locations";
 import React, { useEffect, useRef, useState, useContext } from "react";
-import { Pressable, View, Switch } from "react-native";
+import { Platform, Pressable, View, Switch } from "react-native";
 import {
   Store,
   Coach,
@@ -40,6 +41,7 @@ import {
 import { choosePhoto, chooseDocument, openDocument } from "./deviceFiles";
 import {
   Button,
+  Dialog,
   Chip,
   Field,
   H1,
@@ -76,6 +78,7 @@ export function Toggle({
         onValueChange={onChange}
         trackColor={{ false: "#ddd", true: "#141414" }}
         thumbColor="#fff"
+        {...(Platform.OS === "web" ? { activeThumbColor: "#fff" } : {})}
       />
     </Row>
   );
@@ -110,6 +113,7 @@ export function CoachConfiguration(
     section: string;
     initialDate?: string;
     saveAction?: React.MutableRefObject<(() => void) | null>;
+    onDirtyChange?: (dirty: boolean) => void;
   },
 ) {
   const key = `${coachAccountId(props.store)}:${props.section}`;
@@ -168,11 +172,13 @@ function ConfigurationEditor({
   message,
   go,
   saveAction,
+  onDirtyChange,
   refresh,
 }: FlowProps & {
   section: string;
   initialDate?: string;
   saveAction?: React.MutableRefObject<(() => void) | null>;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const actual = coachAccountId(store),
     c = allCoaches(store).find((c) => c.id === actual)!;
@@ -227,6 +233,26 @@ function ConfigurationEditor({
       active: true,
     },
   );
+  const [offerEditing, setOfferEditing] = useState(!!savedDraft?.edit?.name);
+  const [offerAttempts, setOfferAttempts] = useState(0);
+  const fieldErrors = offerAttempts ? offerErrors(edit) : {};
+  const firstOfferError = Object.keys(fieldErrors)[0];
+  useLocalBack(
+    section === "offers" && offerEditing,
+    () => setOfferEditing(false),
+    30,
+  );
+  const changedFields = sectionFields[section] ?? [];
+  const dirty =
+    changedFields.some(
+      (key) =>
+        JSON.stringify(cfg[key]) !==
+        JSON.stringify(configFor(store, actual)[key]),
+    ) ||
+    (section === "schedule" && !cfg.weeklyConfigured);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
   const form = {
     exceptionDay,
     exceptionClosed,
@@ -240,6 +266,28 @@ function ConfigurationEditor({
   const flushDraft = useRef<() => void>(() => {});
   const feedbackState = useContext(SaveFeedbackContext);
   const seenFailure = useRef(feedbackState.failure);
+  const offerSave = useRef<{ success: number; failure: number } | null>(null);
+  const finishOffer = () => {
+    initialDraft.current = JSON.stringify({ cfg, profile, edit, form });
+    flushDraft.current = () => {};
+    setOfferAttempts(0);
+    setOfferEditing(false);
+  };
+  useEffect(() => {
+    if (!offerSave.current) return;
+    if (feedbackState.failure !== offerSave.current.failure) {
+      offerSave.current = null;
+      return;
+    }
+    if (
+      feedbackState.success > offerSave.current.success &&
+      feedbackState.pending === 0
+    ) {
+      offerSave.current = null;
+      finishOffer();
+    }
+  }, [feedbackState.success, feedbackState.failure, feedbackState.pending]);
+
   useEffect(() => {
     if (feedbackState.failure !== seenFailure.current) {
       seenFailure.current = feedbackState.failure;
@@ -310,9 +358,27 @@ function ConfigurationEditor({
       initialDraft.current = JSON.stringify({ cfg: next, profile, edit, form });
       if (!store.connected) message("Réglages enregistrés.");
     });
+  const [profileAttempts, setProfileAttempts] = useState(0);
+  const profileErrors: Partial<Record<keyof Coach, string>> = {};
+  if (profileAttempts) {
+    if (!profile.name.trim()) profileErrors.name = "Indiquez votre nom public.";
+    if (!profile.bio.trim())
+      profileErrors.bio = "Présentez votre approche en quelques mots.";
+    if (
+      !Number.isFinite(profile.years) ||
+      profile.years < 0 ||
+      profile.years > 60
+    )
+      profileErrors.years = "Saisissez une expérience entre 0 et 60 ans.";
+    if (!profile.cert.trim())
+      profileErrors.cert = "Indiquez vos diplômes ou certifications.";
+  }
+  const firstProfileError = Object.keys(profileErrors)[0];
   const text = (label: string, key: keyof Coach, multi = false) => (
     <Field
       label={label}
+      error={profileErrors[key]}
+      focusRequest={firstProfileError === key ? profileAttempts : 0}
       value={String(profile[key] ?? "")}
       onChange={(v) => setProfile({ ...profile, [key]: v })}
       multiline={multi}
@@ -379,9 +445,13 @@ function ConfigurationEditor({
         {text("Votre approche", "bio", true)}
         <Field
           label="Années d’expérience"
-          value={String(profile.years)}
+          error={profileErrors.years}
+          focusRequest={firstProfileError === "years" ? profileAttempts : 0}
+          value={Number.isFinite(profile.years) ? String(profile.years) : ""}
           numeric
-          onChange={(v) => setProfile({ ...profile, years: Number(v) })}
+          onChange={(v) =>
+            setProfile({ ...profile, years: v.trim() ? Number(v) : NaN })
+          }
         />
         {text("Diplômes et certifications", "cert")}
         {text("Langues parlées", "langs")}
@@ -444,6 +514,16 @@ function ConfigurationEditor({
         <Button
           onPress={() =>
             run(() => {
+              setProfileAttempts((n) => n + 1);
+              if (
+                !profile.name.trim() ||
+                !profile.bio.trim() ||
+                !profile.cert.trim() ||
+                !Number.isFinite(profile.years) ||
+                profile.years < 0 ||
+                profile.years > 60
+              )
+                return;
               const { formats, place, address, ...profileFields } = profile;
               commit(saveCoach(store, actual, profileFields));
               if (profile.name !== c.name || profile.cert !== c.cert)
@@ -471,143 +551,189 @@ function ConfigurationEditor({
             <View key={o.id}>
               <Setting
                 title={o.name}
-                description={`${o.duration} min · ${o.kind} · ${euro(o.price)}${o.kind === "Groupe" ? "/personne · " + o.capacity + " places" : ""}`}
-                onPress={() => setEdit({ ...o })}
+                description={`${o.duration} min · ${o.kind} · ${euro(o.price)}${o.kind === "Groupe" ? "/personne · " + o.capacity + " places" : ""} · ${o.active ? "Active" : "En pause"}`}
+                onPress={() => {
+                  setEdit({ ...o });
+                  setOfferAttempts(0);
+                  setOfferEditing(true);
+                }}
               />
-              <Row between>
-                <TextButton onPress={() => setEdit({ ...o })}>
-                  Modifier {o.name}
-                </TextButton>
-                <TextButton
-                  onPress={() =>
-                    run(() =>
-                      setStore(saveOffer(store, { ...o, active: !o.active })),
-                    )
-                  }
-                >
-                  {o.active ? "Mettre en pause" : "Activer"}
-                </TextButton>
-              </Row>
             </View>
           ))}
-        <Rule />
-        <H2 style={{ marginBottom: 16 }}>
-          {store.offers.some((o) => o.id === edit.id)
-            ? "Modifier une séance"
-            : "Créer une séance"}
-        </H2>
-        <Field
-          label="Nom de la séance"
-          value={edit.name}
-          onChange={(name) => setEdit({ ...edit, name })}
-        />
-        <Select
-          label="Pratique de cette séance"
-          value={edit.discipline ?? c.sport}
-          items={selectedPractices(c)}
-          onChange={(discipline) => setEdit({ ...edit, discipline })}
-        />
-        <Select
-          label="Format"
-          value={edit.kind}
-          items={["Individuel", "Duo", "Groupe"]}
-          onChange={(kind) =>
-            setEdit({
-              ...edit,
-              kind,
-              capacity: kind === "Groupe" ? 6 : kind === "Duo" ? 2 : 1,
-            })
-          }
-        />
-        <Field
-          label="Durée (minutes)"
-          value={String(edit.duration)}
-          numeric
-          onChange={(v) => setEdit({ ...edit, duration: Number(v) })}
-        />
-        <Field
-          label={
-            edit.kind === "Groupe"
-              ? "Prix par personne (€)"
-              : "Prix de la séance (€)"
-          }
-          value={String(edit.price)}
-          numeric
-          onChange={(v) =>
-            setEdit({ ...edit, price: Number(v.replace(",", ".")) })
-          }
-        />
-        {edit.kind === "Groupe" && (
-          <Field
-            label="Nombre maximum de participants"
-            value={String(edit.capacity)}
-            numeric
-            onChange={(v) => setEdit({ ...edit, capacity: Number(v) })}
-          />
-        )}
-        {edit.kind === "Groupe" && (
-          <Select
-            label="Niveau du cours"
-            value={edit.level ?? "Tous niveaux"}
-            items={["Tous niveaux", "Débutant", "Intermédiaire", "Confirmé"]}
-            onChange={(level) => setEdit({ ...edit, level })}
-          />
-        )}
-        <H2 style={{ marginVertical: 16 }}>Où proposer cette séance ?</H2>
-        <P small muted>
-          Choisissez les lieux autorisés pour cette prestation. Les adresses se
-          règlent dans Lieux & déplacements.
-        </P>
-        {c.formats.map((f) => (
-          <Toggle
-            key={f}
-            label={`${coachLocations(store, c)[f]?.type ?? f} · ${locationLabel(store, c, f)}`}
-            value={offerFormats(c, edit).includes(f)}
-            onChange={(checked) =>
-              setEdit({
-                ...edit,
-                formats: checked
-                  ? [...offerFormats(c, edit), f]
-                  : offerFormats(c, edit).filter((x) => x !== f),
-              })
-            }
-          />
-        ))}
-        <TextButton onPress={() => go("config-native", "places")}>
-          Configurer mes lieux
-        </TextButton>
         <Button
-          onPress={() =>
-            run(() => {
-              commit(saveOffer(store, edit));
-              setEdit({ ...edit, id: uid(), name: "" });
-              message(
-                "Offre enregistrée. Les cours déjà planifiés gardent leur tarif et capacité.",
-              );
-            })
-          }
-        >
-          Enregistrer l’offre
-        </Button>
-        <TextButton
-          onPress={() =>
+          style={{ marginTop: 20 }}
+          onPress={() => {
             setEdit({
               id: uid(),
               coach: actual,
               name: "",
               kind: "Individuel",
-              price: 50,
               duration: 60,
+              price: 50,
               capacity: 1,
               active: true,
-            })
-          }
+            });
+            setOfferAttempts(0);
+            setOfferEditing(true);
+          }}
         >
-          Créer une autre séance
-        </TextButton>
-        <Note>
-          Les réservations confirmées conservent leur prix et leur durée.
-        </Note>
+          Nouvelle offre
+        </Button>
+        {!!savedDraft?.edit?.name && !offerEditing && (
+          <TextButton onPress={() => setOfferEditing(true)}>
+            Reprendre mon brouillon
+          </TextButton>
+        )}
+        <Dialog
+          open={offerEditing}
+          title={
+            store.offers.some((o) => o.id === edit.id)
+              ? "Modifier une séance"
+              : "Créer une séance"
+          }
+          onClose={() => setOfferEditing(false)}
+        >
+          {feedback}
+          <Field
+            label="Nom de la séance"
+            error={fieldErrors.name}
+            focusRequest={firstOfferError === "name" ? offerAttempts : 0}
+            value={edit.name}
+            onChange={(name) => setEdit({ ...edit, name })}
+          />
+          <Select
+            label="Pratique de cette séance"
+            value={edit.discipline ?? c.sport}
+            items={selectedPractices(c)}
+            onChange={(discipline) => setEdit({ ...edit, discipline })}
+          />
+          <Select
+            label="Format"
+            value={edit.kind}
+            items={["Individuel", "Duo", "Groupe"]}
+            onChange={(kind) =>
+              setEdit({
+                ...edit,
+                kind,
+                capacity: kind === "Groupe" ? 6 : kind === "Duo" ? 2 : 1,
+              })
+            }
+          />
+          <Field
+            label="Durée (minutes)"
+            error={fieldErrors.duration}
+            focusRequest={firstOfferError === "duration" ? offerAttempts : 0}
+            value={Number.isFinite(edit.duration) ? String(edit.duration) : ""}
+            numeric
+            onChange={(v) =>
+              setEdit({ ...edit, duration: v.trim() ? Number(v) : NaN })
+            }
+          />
+          <Field
+            label={
+              edit.kind === "Groupe"
+                ? "Prix par personne (€)"
+                : "Prix de la séance (€)"
+            }
+            error={fieldErrors.price}
+            focusRequest={firstOfferError === "price" ? offerAttempts : 0}
+            value={Number.isFinite(edit.price) ? String(edit.price) : ""}
+            numeric
+            onChange={(v) =>
+              setEdit({
+                ...edit,
+                price: v.trim() ? Number(v.replace(",", ".")) : NaN,
+              })
+            }
+          />
+          {edit.kind === "Groupe" && (
+            <Field
+              label="Nombre maximum de participants"
+              error={fieldErrors.capacity}
+              focusRequest={firstOfferError === "capacity" ? offerAttempts : 0}
+              value={
+                Number.isFinite(edit.capacity) ? String(edit.capacity) : ""
+              }
+              numeric
+              onChange={(v) =>
+                setEdit({ ...edit, capacity: v.trim() ? Number(v) : NaN })
+              }
+            />
+          )}
+          {edit.kind === "Groupe" && (
+            <Select
+              label="Niveau du cours"
+              value={edit.level ?? "Tous niveaux"}
+              items={["Tous niveaux", "Débutant", "Intermédiaire", "Confirmé"]}
+              onChange={(level) => setEdit({ ...edit, level })}
+            />
+          )}
+          <H2 style={{ marginVertical: 16 }}>Où proposer cette séance ?</H2>
+          <P small muted>
+            Choisissez les lieux autorisés pour cette prestation. Les adresses
+            se règlent dans Lieux & déplacements.
+          </P>
+          {c.formats.map((f) => (
+            <Toggle
+              key={f}
+              label={`${coachLocations(store, c)[f]?.type ?? f} · ${locationLabel(store, c, f)}`}
+              value={offerFormats(c, edit).includes(f)}
+              onChange={(checked) =>
+                setEdit({
+                  ...edit,
+                  formats: checked
+                    ? [...offerFormats(c, edit), f]
+                    : offerFormats(c, edit).filter((x) => x !== f),
+                })
+              }
+            />
+          ))}
+          <TextButton onPress={() => go("config-native", "places")}>
+            Configurer mes lieux
+          </TextButton>
+          <Button
+            onPress={() => {
+              setOfferAttempts((n) => n + 1);
+              if (Object.keys(offerErrors(edit)).length) return;
+              run(() => {
+                const next = saveOffer(store, edit);
+                if (store.connected)
+                  offerSave.current = {
+                    success: feedbackState.success,
+                    failure: feedbackState.failure,
+                  };
+                commit(next);
+                if (!store.connected) finishOffer();
+                if (!store.connected)
+                  message(
+                    "Offre enregistrée. Les cours déjà planifiés gardent leur tarif et capacité.",
+                  );
+              });
+            }}
+          >
+            Enregistrer l’offre
+          </Button>
+          {store.offers.some((o) => o.id === edit.id) && (
+            <TextButton
+              onPress={() => {
+                run(() => {
+                  setStore(
+                    saveOffer(store, {
+                      ...store.offers.find((o) => o.id === edit.id)!,
+                      active: !edit.active,
+                    }),
+                  );
+                  setEdit({ ...edit, active: !edit.active });
+                });
+              }}
+            >
+              {edit.active ? "Mettre en pause" : "Activer"}
+            </TextButton>
+          )}
+          <Note>
+            Les réservations confirmées conservent leur prix et leur durée.
+          </Note>
+        </Dialog>
       </>
     );
   if (section === "places")
@@ -671,10 +797,16 @@ function ConfigurationEditor({
     return (
       <>
         {feedback}
-        {JSON.stringify(cfg.week) !== JSON.stringify(configFor(store, actual).week) && (
+        {JSON.stringify(cfg.week) !==
+          JSON.stringify(configFor(store, actual).week) && (
           <View accessibilityLiveRegion="polite" style={{ marginBottom: 16 }}>
-            <P bold small>Modifications non enregistrées</P>
-            <P small muted>Enregistrez les réglages pour mettre ces horaires à disposition de vos clients.</P>
+            <P bold small>
+              Modifications non enregistrées
+            </P>
+            <P small muted>
+              Enregistrez les réglages pour mettre ces horaires à disposition de
+              vos clients.
+            </P>
           </View>
         )}
         <AvailabilityWeekEditor
@@ -850,9 +982,15 @@ function ConfigurationEditor({
             sont conservées sur chaque réservation.
           </P>
         </Note>
-        <Button style={{ marginTop: 24 }} onPress={() => save()}>
-          Enregistrer
-        </Button>
+        {!saveAction && (
+          <Button
+            disabled={!dirty}
+            style={{ marginTop: 24 }}
+            onPress={() => save()}
+          >
+            Enregistrer les réglages
+          </Button>
+        )}
       </>
     );
   if (section === "preparation")
@@ -861,8 +999,8 @@ function ConfigurationEditor({
         {feedback}
         <H1>Une rencontre{"\n"}bien préparée.</H1>
         <P muted style={{ marginVertical: 20 }}>
-          Ces consignes sont réservées aux clients ayant réservé une séance.
-          Les séances déjà confirmées gardent leurs consignes.
+          Ces consignes sont réservées aux clients ayant réservé une séance. Les
+          séances déjà confirmées gardent leurs consignes.
         </P>
         {(
           [
@@ -882,7 +1020,11 @@ function ConfigurationEditor({
             }
           />
         ))}
-        <Button onPress={() => save()}>Enregistrer les consignes</Button>
+        {!saveAction && (
+          <Button disabled={!dirty} onPress={() => save()}>
+            Enregistrer les consignes
+          </Button>
+        )}
       </>
     );
   if (section === "payout")
