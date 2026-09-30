@@ -5,6 +5,7 @@ select jsonb_build_object(
  'deletions_stalled',(select count(*) from private.account_deletion_jobs where status<>'completed' and created_at<now()-interval '1 hour'),
  'push_stalled',(select count(*) from private.push_outbox where status in ('pending','sending') and due_at<now()-interval '15 minutes' and expires_at>now()),
  'cron_failures_24h',(select count(*) from cron.job_run_details where start_time>now()-interval '24 hours' and status='failed'),
+ 'edge_http_failures',(select count(*) from net._http_response where created>now()-interval '24 hours' and (status_code>=400 or timed_out or error_msg is not null)),
  'push_devices',(select count(*) from private.push_devices),
  'calendar_connections',(select count(*) from private.calendar_links),
  'team_accounts',(select count(*) from private.product_staff),

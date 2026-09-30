@@ -61,7 +61,7 @@ node scripts/qa-33.cjs
 
 Navigateur : installer Chromium avec `npx --prefix tools/qa playwright install chromium`, servir `apps/mobile/dist` sur 8098 et lancer `PARTANT_QA_URL=http://127.0.0.1:8098 node scripts/qa-33.cjs --browser`. Le workflow `.github/workflows/qa.yml` enchaîne ces contrôles et archive les résultats. Il ne possède pas de secret serveur et ne déploie rien.
 
-Pour un opérateur disposant déjà de l’accès CLI Supabase : `node scripts/check-operations-33.mjs`. La sortie ne contient que des compteurs ; exit 1 si une suppression ou un push reste bloqué, ou en cas d’échec cron. `node scripts/backup-product-23.mjs --verify` produit un fichier privé exclu de Git et vérifie sa reconstruction dans une table temporaire, sans remplacer les données vivantes.
+Pour un opérateur disposant déjà de l’accès CLI Supabase : `node scripts/check-operations-33.mjs`. La sortie ne contient que des compteurs ; exit 1 si une suppression ou un push reste bloqué, ou en cas d’échec cron/HTTP visible dans la rétention de pg_net. Un cron réussi peut simplement avoir mis sa requête HTTP en file ; les deux compteurs doivent être examinés. `node scripts/backup-product-23.mjs --verify` produit un fichier privé exclu de Git et vérifie sa reconstruction dans une table temporaire, sans remplacer les données vivantes.
 
 Les scripts `test-connected-api.mjs` et `test-deletion-api-33.mjs` constituent une recette distante dédiée, avec fixtures isolées et nettoyage obligatoire ; ils ne font pas partie de la CI courante. Ne jamais les adapter pour supprimer un compte utilisateur réel.
 
