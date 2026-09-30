@@ -1,5 +1,7 @@
 # Partant
 
+**Ouvrir dans Xcode :** double-cliquer sur `Ouvrir Partant.command` à la racine de cette copie. Le lanceur ouvre son propre `apps/mobile/ios/Partant.xcworkspace`, avec les dépendances CocoaPods. Le schéma partagé `Partant` lance une compilation Release en mode connecté par défaut ; la démo web reste accessible avec `?data=preview`. Cela utilise le serveur de développement, sans activer les paiements ni publier l’application.
+
 **Corrections — livraison 33 :** [correctifs, preuves de recette et points encore ouverts](docs/corrections-audit-33.md). Consulter ce suivi avant le constat initial de l’audit.
 
 **Audit — 30 septembre 2026 :** [App, WebApp, serveur, anomalies reproduites et plan de correction](docs/audit-app-webapp-2026-09-30.md). Audit réalisé sur la livraison 32 ; aucune correction produit incluse dans ce rapport.

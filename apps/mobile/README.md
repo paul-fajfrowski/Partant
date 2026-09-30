@@ -20,7 +20,9 @@ npm run web
 
 Ne jamais utiliser une clé `service_role` ou une clé secrète dans `EXPO_PUBLIC_*`. Le fichier `.env` n’est pas versionné. Aucun déploiement public n’est nécessaire.
 
-Le chemin `/` ouvre la démonstration native (code e-mail fictif `123456`). `/?data=connected` utilise les données de développement Supabase. `/?tools=connections` ouvre l’atelier technique antérieur. Sur iOS/Android, `EXPO_PUBLIC_DATA_MODE=preview` ou `connected` choisit le mode initial. Les parcours avancés (dossiers, transferts, remboursements, assistance…) sont locaux et restent à raccorder au backend.
+Le chemin `/` suit `EXPO_PUBLIC_DATA_MODE` (connecté dans la configuration locale actuelle). `/?data=preview` ouvre la démonstration avec données fictives et `/?data=connected` utilise le serveur de développement. `/?tools=connections` ouvre l’atelier technique antérieur. Les deux modes utilisent les mêmes écrans et règles partagées ; les écritures serveur ne sont effectuées qu’en mode connecté. Consulter `docs/corrections-audit-33.md` pour les intégrations réellement validées et restantes.
+
+Pour Xcode, double-cliquer sur `Ouvrir Partant.command` à la racine du dépôt. Le schéma partagé `Partant` utilise Release pour embarquer le JavaScript sans dépendre de Metro. `.xcode.env` fixe le mode connecté lors de la compilation. Pour une compilation native de démonstration explicite, ajouter temporairement `export EXPO_PUBLIC_DATA_MODE=preview` à `.xcode.env.local`, puis recompiler ; retirer cette ligne pour revenir au connecté. Un changement de mode nécessite de reconstruire le bundle, pas seulement de changer une variable dans les arguments de lancement du schéma. Cette variante QA utilise le même identifiant d’application et remplace donc l’installation précédente sur l’iPhone.
 
 Sur téléphone, `npm run ios` ou `npm run android` nécessite un simulateur/environnement adapté à Expo SDK 57. Les exports seuls ne sont pas des applications signées installables.
 
