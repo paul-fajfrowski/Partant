@@ -3451,22 +3451,20 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           key={store.account?.id ?? "guest"}
           store={store}
           busy={busy}
-          onOpen={(row) =>
-            run(() => {
-              setStore((s) => ({
-                ...s,
-                notices: s.notices.map((n) =>
-                  n.id === row.notice.id && n.recipient === s.account?.id
-                    ? { ...n, read: true }
-                    : n,
-                ),
-              }));
-              const target = row.target;
-              if (target.booking) setSelectedBooking(target.booking);
-              if (target.config) setConfig(target.config);
-              go(target.screen, target.focus ?? "");
-            })
-          }
+          onOpen={(row) => {
+            setStore((s) => ({
+              ...s,
+              notices: s.notices.map((n) =>
+                n.id === row.notice.id && n.recipient === s.account?.id
+                  ? { ...n, read: true }
+                  : n,
+              ),
+            }));
+            const target = row.target;
+            if (target.booking) setSelectedBooking(target.booking);
+            if (target.config) setConfig(target.config);
+            go(target.screen, target.focus ?? "");
+          }}
         />
       </Section>
     );

@@ -51,5 +51,10 @@
     "name": "test-keyboard-responsive-33",
     "pass": true,
     "summary": "PASS 35 keyboard range, modal focus and reduced viewport checks (720 CSS px approximates 1440 at 200% zoom)."
+  },
+  {
+    "name": "test-notification-browser-33",
+    "pass": true,
+    "summary": "PASS 10 real Chromium notification detail, read state and return paging checks."
   }
 ]

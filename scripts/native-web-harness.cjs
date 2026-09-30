@@ -123,6 +123,11 @@ async function click(text) {
     await wait();
   }
   assert.ok(el, `Missing button ${text}\n${d.body.textContent.slice(-1000)}`);
+  // RN Web refreshes its PressResponder in a passive effect after DOM props.
+  // Wait one event-loop turn and re-read the current enabled control.
+  await wait();
+  el = findButton(text);
+  assert.ok(el && !el.disabled && el.getAttribute("aria-disabled") !== "true", `Control not ready: ${text}`);
   el.click();
   await wait();
 }

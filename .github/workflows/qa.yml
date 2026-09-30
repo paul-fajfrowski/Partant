@@ -29,7 +29,7 @@ jobs:
       - run: node scripts/build-server-domain.cjs
       - run: npx expo export --platform web --platform ios --output-dir dist --max-workers 1
         working-directory: apps/mobile
-      - run: node scripts/qa-33.cjs
+      - run: node scripts/qa-33.cjs --fail-fast
       - name: Browser and accessibility
         run: |
           python3 -m http.server 8098 --directory apps/mobile/dist > /tmp/partant-http.log 2>&1 &
