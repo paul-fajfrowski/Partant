@@ -1,0 +1,55 @@
+[
+  {
+    "name": "test-agenda-density-30",
+    "pass": true,
+    "seconds": 8.7,
+    "summary": [
+      "PASS 39 density, detail and realistic-coach checks. Screenshots /var/folders/lw/8hmpsc111273mr_gzl4k3bqw0000gn/T/partant-agenda-30"
+    ]
+  },
+  {
+    "name": "test-availability-editor-31",
+    "pass": true,
+    "seconds": 8.2,
+    "summary": [
+      "PASS 78 availability editor checks; screenshots /var/folders/lw/8hmpsc111273mr_gzl4k3bqw0000gn/T/partant-availability-31"
+    ]
+  },
+  {
+    "name": "test-back-layers-32",
+    "pass": true,
+    "seconds": 59.3,
+    "summary": [
+      "PASS 100 navigation layer checks; screenshots /var/folders/lw/8hmpsc111273mr_gzl4k3bqw0000gn/T/partant-navigation-32"
+    ]
+  },
+  {
+    "name": "test-documents-browser-28",
+    "pass": true,
+    "seconds": 9.5,
+    "summary": [
+      "PASS 16 dossier browser checks; screenshots /var/folders/lw/8hmpsc111273mr_gzl4k3bqw0000gn/T/partant-documents-28"
+    ]
+  },
+  {
+    "name": "test-range-browser-29",
+    "pass": true,
+    "seconds": 8.7,
+    "summary": [
+      "PASS 20 range-card browser checks; screenshots /var/folders/lw/8hmpsc111273mr_gzl4k3bqw0000gn/T/partant-agenda-29"
+    ]
+  },
+  {
+    "name": "test-webapp-27",
+    "pass": true,
+    "seconds": 22.9,
+    "summary": [
+      "PASS WebApp: 45 checks; screenshots /var/folders/lw/8hmpsc111273mr_gzl4k3bqw0000gn/T/partant-webapp-27"
+    ]
+  },
+  {
+    "name": "test-keyboard-responsive-33",
+    "pass": true,
+    "summary": "PASS 35 keyboard range, modal focus and reduced viewport checks (720 CSS px approximates 1440 at 200% zoom)."
+  }
+]

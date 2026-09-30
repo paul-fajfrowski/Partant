@@ -1,0 +1,15 @@
+{
+  "exit_code": null,
+  "seconds": 360,
+  "timeout": true,
+  "scheme": "Partant",
+  "configuration": "Debug",
+  "sdk": "iphonesimulator",
+  "signing": false,
+  "result": "inconclusive_timeout",
+  "last_observed_phase": "ReactCodegen script",
+  "compiler_errors_observed": 0,
+  "workspace_list": "passed",
+  "native_dependency_test": "90-second timeout in local folder, two attempts; missing generated header in isolated clone",
+  "limits": "No app installed or launched on a real iPhone. No signed release build validated."
+}

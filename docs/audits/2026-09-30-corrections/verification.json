@@ -1,0 +1,45 @@
+{
+  "deployedApi": {
+    "checks": 36,
+    "pass": true
+  },
+  "deployedPrivacyDeletionStorage": {
+    "checks": 10,
+    "pass": true
+  },
+  "health": {
+    "calendar_connections": 0,
+    "checked_at": "2026-09-30T12:38:42.882245+00:00",
+    "cron_failures_24h": 0,
+    "deletions_pending": 0,
+    "deletions_stalled": 0,
+    "documents_bytes": 7557,
+    "push_devices": 0,
+    "push_stalled": 0,
+    "team_accounts": 0
+  },
+  "nativeBuild": {
+    "validated": false,
+    "reason": "No space left on device",
+    "podInstall": true,
+    "configTests": true,
+    "iosHermesExport": true
+  },
+  "npmAudit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "backupRestore": {
+    "productDocumentsOnly": true,
+    "temporaryTableVerified": true,
+    "authStorageSecretsVerified": false
+  },
+  "cleanup": {
+    "qaUsersRemaining": 0,
+    "orphanedCoachObjects": 0
+  }
+}

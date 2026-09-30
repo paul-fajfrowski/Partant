@@ -41,7 +41,8 @@
       ],
       "expo-apple-authentication",
       "./plugins/withPartantIos.cjs",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-secure-store"
     ],
     "scheme": "partant"
   }

@@ -7,6 +7,7 @@ async function merge(admin: any, coach: string, busy: any[], status: any) {
     const loaded = await admin.rpc("product_load", {});
     if (loaded.error) throw loaded.error;
     const state = { ...emptyConnected(), ...loaded.data.documents };
+    if (state.deletedAccounts?.includes(coach)) return;
     state.calendarBusy = { ...state.calendarBusy, [coach]: busy };
     state.calendarStatus = { ...state.calendarStatus, [coach]: status };
     const saved = await admin.rpc("product_commit", {
@@ -98,6 +99,7 @@ export async function syncGoogle(admin: any, coach: string) {
     const loaded = await admin.rpc("product_load", {});
     if (loaded.error) throw loaded.error;
     const state = { ...emptyConnected(), ...loaded.data.documents };
+    if (state.deletedAccounts?.includes(coach)) return;
     const start = new Date().toISOString(),
       end = new Date(Date.now() + 90 * 86400000).toISOString();
     const desired = sessions(state, coach).filter(

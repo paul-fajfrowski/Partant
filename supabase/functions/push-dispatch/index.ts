@@ -1,3 +1,4 @@
+import { runAccountDeletions } from "../_shared/accountDeletion.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { emptyConnected, documents, maintain } from "../product-api/domain.js";
 import { sendApns } from "../_shared/apns.ts";
@@ -53,13 +54,15 @@ Deno.serve(async (req) => {
         await rpc("product_maintenance_done", { p_version: loaded.version });
       break;
     }
+    // Uses the existing protected minute scheduler, even when APNs is not configured.
+    const deletions = await runAccountDeletions(admin);
     const key = Deno.env.get("APNS_PRIVATE_KEY_BASE64")
         ? atob(Deno.env.get("APNS_PRIVATE_KEY_BASE64")!)
         : undefined,
       keyId = Deno.env.get("APNS_KEY_ID"),
       team = Deno.env.get("APNS_TEAM_ID");
     if (!key || !keyId || !team)
-      return json({ configured: false, accepted: 0 });
+      return json({ configured: false, accepted: 0, deletions });
     // Private transport diagnostic: an impossible all-zero token, never a user's device.
     if (req.headers.get("x-partant-check") === "apns") {
       const probe = await sendApns(
@@ -138,7 +141,7 @@ Deno.serve(async (req) => {
         durationMs: Date.now() - started,
       }),
     );
-    return json({ configured: true, processed: jobs.length, accepted });
+    return json({ configured: true, processed: jobs.length, accepted, deletions });
   } catch {
     console.error(
       JSON.stringify({

@@ -114,6 +114,7 @@ export function useMarketplace(live: boolean) {
       store: Store;
       version: number;
       deleted?: boolean;
+      deletionPending?: boolean;
       unchanged?: boolean;
     };
   };
@@ -199,7 +200,7 @@ export function useMarketplace(live: boolean) {
       const owner = current.current.account?.id;
       if (owner)
         await AsyncStorage.removeItem(`partant-messages-v1:connected:${owner}`);
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" }).catch(() => {});
     }
     return data.store;
   }

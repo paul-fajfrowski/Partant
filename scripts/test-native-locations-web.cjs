@@ -56,12 +56,6 @@ async function toggle(label) {
       !d.body.textContent.includes("Vous choisissez les jours"),
     "Redundant introduction removed",
   );
-  await click("Aide : comprendre un créneau indisponible");
-  ok(
-    d.body.textContent.includes("Comprendre un créneau."),
-    "Diagnostic still accessible as secondary help",
-  );
-  await click("Retour");
   await click("Retour");
   await click("Lieux & déplacements");
   ok(

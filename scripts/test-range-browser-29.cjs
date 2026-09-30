@@ -15,7 +15,7 @@ require.extensions[".ts"] = (m, f) =>
 const M = require("../apps/mobile/src/product/model.ts"),
   W = require("../apps/mobile/src/product/workflows.ts");
 const { chromium } = require(process.env.PARTANT_QA_PLAYWRIGHT);
-const out = "/private/tmp/partant-agenda-29";
+const out = require("node:path").join(require("node:os").tmpdir(), "partant-agenda-29");
 fs.mkdirSync(out, { recursive: true });
 const s = W.loginDemo(
     M.newPreviewStore(),

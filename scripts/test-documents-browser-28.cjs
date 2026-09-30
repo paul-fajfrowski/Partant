@@ -16,7 +16,7 @@ const M = require("../apps/mobile/src/product/model.ts"),
   W = require("../apps/mobile/src/product/workflows.ts");
 const { chromium } = require(process.env.PARTANT_QA_PLAYWRIGHT);
 const out =
-  process.env.PARTANT_QA_SCREENSHOTS || "/private/tmp/partant-documents-28";
+  process.env.PARTANT_QA_SCREENSHOTS || require("node:path").join(require("node:os").tmpdir(), "partant-documents-28");
 fs.mkdirSync(out, { recursive: true });
 const base = W.loginDemo(
   M.newPreviewStore(),

@@ -744,7 +744,10 @@ export function Dialog({
           }}
         >
           <Pressable
-            accessibilityLabel="Fermer"
+            accessible={false}
+            focusable={false}
+            tabIndex={-1}
+            importantForAccessibility="no-hide-descendants"
             onPress={onClose}
             style={StyleSheet.absoluteFill}
           />

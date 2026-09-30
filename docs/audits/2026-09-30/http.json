@@ -1,0 +1,88 @@
+[
+  {
+    "label": "anonymous catalogue",
+    "status": 200,
+    "expected": 200,
+    "pass": true,
+    "ms": 895,
+    "bytes": 544
+  },
+  {
+    "label": "no unauthenticated write",
+    "status": 401,
+    "expected": 401,
+    "pass": true,
+    "ms": 280,
+    "bytes": 46
+  },
+  {
+    "label": "method rejected",
+    "status": 405,
+    "expected": 405,
+    "pass": true,
+    "ms": 210,
+    "bytes": 34
+  },
+  {
+    "label": "invalid input",
+    "status": 400,
+    "expected": 400,
+    "pass": true,
+    "ms": 189,
+    "bytes": 29
+  },
+  {
+    "label": "private product RPC",
+    "status": 401,
+    "expected": 401,
+    "pass": true,
+    "ms": 111,
+    "bytes": 99
+  },
+  {
+    "label": "push device auth required",
+    "status": 401,
+    "expected": 401,
+    "pass": true,
+    "ms": 282,
+    "bytes": 59
+  },
+  {
+    "label": "worker protected",
+    "status": 401,
+    "expected": 401,
+    "pass": true,
+    "ms": 1152,
+    "bytes": 24
+  },
+  {
+    "label": "calendar auth required",
+    "status": 401,
+    "expected": 401,
+    "pass": true,
+    "ms": 410,
+    "bytes": 27
+  },
+  {
+    "label": "private bookings",
+    "status": 401,
+    "expected": 401,
+    "pass": true,
+    "ms": 96,
+    "bytes": 186
+  },
+  {
+    "label": "private profiles",
+    "status": 401,
+    "expected": 401,
+    "pass": true,
+    "ms": 85,
+    "bytes": 186
+  },
+  {
+    "label": "OAuth activation",
+    "status": 200,
+    "google": true,
+    "apple": true
+  }
+]

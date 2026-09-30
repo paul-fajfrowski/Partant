@@ -1,0 +1,253 @@
+{
+  "date": "2026-09-30",
+  "revision": "2a88fa17f6635d01d0827bf37f87e2fe319df194",
+  "scope": "Règles métier et DOM local ; fournisseurs simulés. Aucun paiement ni envoi réel.",
+  "notes": [
+    "Cache Expo réexporté avec la configuration publique avant la passe finale.",
+    "Notification paging : échec sous exécution parallèle, réussite isolée sans changement du code du test.",
+    "Nouveau coach : scénario OAuth approprié, au lieu de la combinaison de paramètres email+NEW incohérente.",
+    "Google integration : dépendances services/calendar installées avant répétition."
+  ],
+  "results": [
+    {
+      "name": "test-auth-feedback-web",
+      "status": "passed",
+      "summary": "PASS 11 auth feedback limited DOM checks. Not a visual validation."
+    },
+    {
+      "name": "test-auth-journey-web-19",
+      "status": "passed",
+      "summary": "PASS 9 connected auth journey DOM checks. Not a visual validation."
+    },
+    {
+      "name": "test-auth-races-28",
+      "status": "passed",
+      "summary": "PASS 22 auth concurrency/recovery checks (iOS + web adapters)."
+    },
+    {
+      "name": "test-auth-transition-28",
+      "status": "passed",
+      "summary": "PASS 7 auth transition: OAuth callback client 390 DOM checks. Not a visual validation."
+    },
+    {
+      "name": "test-booking-resume-web-19",
+      "status": "passed",
+      "summary": "PASS 8 booking resume DOM checks. Not a visual validation."
+    },
+    {
+      "name": "test-coach-volume",
+      "status": "passed",
+      "summary": "PASS 23 coach volume DOM checks. Not a visual validation."
+    },
+    {
+      "name": "test-connected-domain",
+      "status": "passed",
+      "summary": "PASS 61 connected command, venue, authorization and privacy checks."
+    },
+    {
+      "name": "test-dependencies-22",
+      "status": "blocked_missing_native_codegen",
+      "summary": "Header ReactCodegen absent dans le clone sans pod install."
+    },
+    {
+      "name": "test-email-link-21",
+      "status": "passed",
+      "summary": "PASS 10 email link instructions DOM checks. Not a visual validation."
+    },
+    {
+      "name": "test-google-integration",
+      "status": "passed",
+      "summary": "PASS 16 Google encryption, timezone and reconciliation checks (provider responses simulated)."
+    },
+    {
+      "name": "test-messaging-web",
+      "status": "passed",
+      "summary": "PASS 23 messaging DOM checks. No visual device validation."
+    },
+    {
+      "name": "test-messaging",
+      "status": "passed",
+      "summary": "PASS 26 messaging domain checks."
+    },
+    {
+      "name": "test-native-auth-19",
+      "status": "passed",
+      "summary": "PASS 19 native auth and guest-resume checks (provider responses simulated)."
+    },
+    {
+      "name": "test-native-availability-web",
+      "status": "obsolete_expectation",
+      "summary": "Attente d’interface obsolète, voir le rapport."
+    },
+    {
+      "name": "test-native-availability",
+      "status": "passed",
+      "summary": "PASS 36 offer-specific availability assertions."
+    },
+    {
+      "name": "test-native-complete",
+      "status": "passed",
+      "summary": "PASS 68 complete native workflow assertions."
+    },
+    {
+      "name": "test-native-locations-web",
+      "status": "obsolete_expectation",
+      "summary": "Attente d’interface obsolète, voir le rapport."
+    },
+    {
+      "name": "test-native-locations",
+      "status": "passed",
+      "summary": "PASS 18 location domain checks."
+    },
+    {
+      "name": "test-native-model",
+      "status": "passed",
+      "summary": "PASS 18 native domain assertions."
+    },
+    {
+      "name": "test-native-navigation-web",
+      "status": "passed",
+      "summary": "PASS 28 native navigation DOM checks. Not a visual validation."
+    },
+    {
+      "name": "test-native-product-polish-web",
+      "status": "obsolete_expectation",
+      "summary": "Attente d’interface obsolète, voir le rapport."
+    },
+    {
+      "name": "test-native-product-polish",
+      "status": "passed",
+      "summary": "PASS 32 product-polish domain checks."
+    },
+    {
+      "name": "test-native-settings-web",
+      "status": "obsolete_expectation",
+      "summary": "Attente d’interface obsolète, voir le rapport."
+    },
+    {
+      "name": "test-navigation-exits-20",
+      "status": "passed",
+      "summary": "PASS 29 navigation exits client DOM checks. Not a visual validation."
+    },
+    {
+      "name": "test-notification-paging",
+      "status": "passed",
+      "summary": "PASS 13 notification paging and scroll restoration DOM checks. Not a visual validation."
+    },
+    {
+      "name": "test-notifications-coach-web",
+      "status": "passed",
+      "summary": "PASS 9 notification coach actions DOM checks. Not a visual validation."
+    },
+    {
+      "name": "test-notifications-web",
+      "status": "passed",
+      "summary": "PASS 20 notification client journey DOM checks. Not a visual validation."
+    },
+    {
+      "name": "test-notifications",
+      "status": "passed",
+      "summary": "PASS 53 notification domain checks."
+    },
+    {
+      "name": "test-privacy-25",
+      "status": "passed",
+      "summary": "PASS 27 privacy client, information, back navigation and rights request failure/retry DOM checks. Not a visual validation."
+    },
+    {
+      "name": "test-privacy-domain-25",
+      "status": "passed",
+      "summary": "PASS 53 privacy request ownership, team access and export checks."
+    },
+    {
+      "name": "test-push-23",
+      "status": "passed",
+      "summary": "PASS 29 push/server checks (APNs responses simulated, no notification sent)."
+    },
+    {
+      "name": "test-push-device-23",
+      "status": "passed",
+      "summary": "PASS 9 native push permission, account, token and logout checks (native APIs simulated)."
+    },
+    {
+      "name": "test-range-details-29",
+      "status": "passed",
+      "summary": "PASS 12 availability range projection checks."
+    },
+    {
+      "name": "test-sectors-24",
+      "status": "passed",
+      "summary": "PASS 16 sector resolution, department coverage and self-review guard checks."
+    },
+    {
+      "name": "test-settings-24",
+      "status": "passed",
+      "summary": "PASS 15 coach settings, acknowledgements, failure recovery and delayed logout DOM checks. Not a visual validation."
+    },
+    {
+      "name": "test-verification-26",
+      "status": "passed",
+      "summary": "PASS 38 verification, scoped approval, expiry, privacy and authorization checks."
+    },
+    {
+      "name": "test-verification-connected-web-26",
+      "status": "passed",
+      "summary": "PASS 6 connected dossier acknowledgement and failure recovery DOM checks. Not a visual validation."
+    },
+    {
+      "name": "test-verification-web-26",
+      "status": "passed",
+      "summary": "PASS 14 adaptive verification, reusable proofs and dossier-first UX DOM checks. Not a visual validation."
+    },
+    {
+      "name": "navigation-coach",
+      "status": "passed",
+      "summary": "PASS 19 navigation exits coach DOM checks. Not a visual validation."
+    },
+    {
+      "name": "navigation-incomplete",
+      "status": "passed",
+      "summary": "PASS 16 navigation exits incomplete DOM checks. Not a visual validation."
+    },
+    {
+      "name": "navigation-booking",
+      "status": "passed",
+      "summary": "PASS 9 navigation exits booking DOM checks. Not a visual validation."
+    },
+    {
+      "name": "privacy-coach",
+      "status": "obsolete_expectation",
+      "summary": "Attente d’interface obsolète, voir le rapport."
+    },
+    {
+      "name": "auth-success",
+      "status": "passed",
+      "summary": "PASS 6 auth feedback success DOM checks. Not a visual validation."
+    },
+    {
+      "name": "auth-email",
+      "status": "passed",
+      "summary": "PASS 9 auth transition: email client 390 DOM checks. Not a visual validation."
+    },
+    {
+      "name": "auth-coach",
+      "status": "passed",
+      "summary": "PASS 7 auth transition: OAuth callback coach 390 DOM checks. Not a visual validation."
+    },
+    {
+      "name": "auth-failure",
+      "status": "passed",
+      "summary": "PASS 9 auth transition: OAuth callback client 390 DOM checks. Not a visual validation."
+    },
+    {
+      "name": "auth-new-coach",
+      "status": "passed",
+      "summary": "PASS 9 auth transition: OAuth callback coach 390 DOM checks. Not a visual validation."
+    },
+    {
+      "name": "email-callback",
+      "status": "passed",
+      "summary": "PASS 4 email link callback DOM checks. Not a visual validation."
+    }
+  ]
+}

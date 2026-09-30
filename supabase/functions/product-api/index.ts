@@ -1,3 +1,4 @@
+import { runAccountDeletions } from "../_shared/accountDeletion.ts";
 import { readJson, HttpError } from "../_shared/http.ts";
 import { syncGoogle } from "../_shared/calendarSync.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.116.0";
@@ -261,13 +262,18 @@ Deno.serve(async (req) => {
             p_version: committedVersion,
           });
         if (actor && commands.some((c) => c.name === "deleteAccount")) {
-          const deletion = await admin.auth.admin.deleteUser(actor.id);
-          if (deletion.error)
-            console.error("Auth cleanup pending for deleted product account");
+          // The product commit atomically enqueued cleanup and revoked private access.
+          // Provider cleanup must not delay the user's exit or falsely report completion.
+          const runtime = (globalThis as any).EdgeRuntime;
+          if (runtime?.waitUntil) runtime.waitUntil((async () => {
+            if (token) await admin.auth.admin.signOut(token, "global").catch(() => {});
+            await runAccountDeletions(admin, actor.id);
+          })().catch(() => console.error(JSON.stringify({ service: "account-deletion", code: "cleanup_pending" }))));
           return reply({
             store: project(state),
             version: committedVersion,
             deleted: true,
+            deletionPending: true,
           });
         }
         return reply({

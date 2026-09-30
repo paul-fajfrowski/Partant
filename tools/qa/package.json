@@ -1,0 +1,1 @@
+{"name":"partant-qa","private":true,"version":"1.0.0","dependencies":{"axe-core":"4.13.0","jsdom":"30.0.1","playwright":"1.58.2"}}

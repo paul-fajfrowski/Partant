@@ -1,3 +1,4 @@
+import { eraseAccountData } from "./accountErasure";
 import {
   toVerification,
   cleanVerification,
@@ -1284,6 +1285,11 @@ export function alertMatches(s: Store, a: AvailabilityAlert) {
   return result;
 }
 export function maintain(s: Store): Store {
+  // Also finish erasing accounts deleted by earlier app versions.
+  for (const id of s.deletedAccounts ?? []) {
+    const coach = s.extraCoaches?.some(c => c.id === id) || s.settings?.[id] ? id : null;
+    s = eraseAccountData(s, id, coach);
+  }
   let next = s,
     changed = false;
   const bookings = s.bookings.map((b) => {
@@ -1505,140 +1511,12 @@ function _deleteAccount(s: Store) {
     throw Error(
       "Traitez vos rendez-vous directs avant de supprimer ce compte.",
     );
-  const affected = new Set(
-    s.bookings
-      .filter((b) => b.clientId === id || b.coach === coach)
-      .map((b) => b.id),
-  );
-  let next = {
-    ...s,
-    identities: identities(s).filter((a) => a.id !== id),
-    externalSessions: (s.externalSessions ?? []).filter(
-      (b) => b.coach !== coach,
-    ),
-    coachDrafts: Object.fromEntries(
-      Object.entries(s.coachDrafts ?? {}).filter(
-        ([key]) => coach === null || !key.startsWith(coach + ":"),
-      ),
-    ),
-    deletedAccounts: [
-      ...((s as Store & { deletedAccounts?: string[] }).deletedAccounts ?? []),
-      id,
-    ],
-    notices: s.notices
-      .filter((n) => n.recipient !== id)
-      .map((n) =>
-        affected.has(n.booking)
-          ? { ...n, context: undefined, previous: undefined }
-          : n,
-      ),
-    attempts: s.attempts?.filter((p) => p.owner !== id),
-    alerts: s.alerts?.filter((a) => a.owner !== id),
-    bookings: s.bookings.map((b) =>
-      b.clientId === id
-        ? {
-            ...b,
-            clientName: "Compte supprimé",
-            participantNames: undefined,
-            goal: "",
-            address: b.format === "Domicile" ? "Adresse supprimée" : b.address,
-          }
-        : b,
-    ),
-    messages: Object.fromEntries(
-      Object.entries(s.messages).map(([k, ms]) => [
-        k,
-        ms.map((m) => ({
-          ...(m.who === id
-            ? { ...m, text: "Message supprimé", who: "deleted" }
-            : m),
-          context: affected.has(k) ? undefined : m.context,
-        })),
-      ]),
-    ),
-  };
-  if (coach)
-    next = {
-      ...next,
-      settings: {
-        ...next.settings,
-        [coach]: { ...configFor(next, coach), published: false },
-      },
-      coachOverrides: {
-        ...next.coachOverrides,
-        [coach]: { name: "Compte supprimé", bio: "", photoUri: "" },
-      },
-    };
-  if (s.connected)
-    next = {
-      ...next,
-      reviews: next.reviews?.map((r) =>
-        r.owner === id
-          ? {
-              ...r,
-              name: "Compte supprimé",
-              text: "Avis retiré par son auteur",
-              hidden: true,
-            }
-          : r,
-      ),
-      tickets: next.tickets?.map((t) =>
-        t.owner === id
-          ? {
-              ...t,
-              body: "Compte supprimé",
-              response: "",
-              status: "resolved" as const,
-            }
-          : t,
-      ),
-      settings: Object.fromEntries(
-        Object.entries(next.settings ?? {}).map(([cid, cfg]) => [
-          cid,
-          {
-            ...cfg,
-            clientNotes: Object.fromEntries(
-              Object.entries(cfg.clientNotes).filter(
-                ([client]) => client !== id,
-              ),
-            ),
-            ...(cid === coach
-              ? {
-                  business: { name: "", email: "", address: "", status: "" },
-                  dossier: {
-                    ...cfg.dossier,
-                    documents: [],
-                    verification: undefined,
-                    publicPractices: undefined,
-                    history: [],
-                    reason: "Compte supprimé",
-                  },
-                }
-              : {}),
-          },
-        ]),
-      ),
-      extraCoaches: next.extraCoaches?.map((c) =>
-        c.id === coach
-          ? {
-              ...c,
-              name: "Compte supprimé",
-              bio: "",
-              cert: "",
-              photoUri: "",
-              address: "",
-              quote: "",
-              method: "",
-              formats: [],
-            }
-          : c,
-      ),
-    };
-  const out = switchAccount(next, null);
+  const out = switchAccount(eraseAccountData(s, id, coach), null);
   delete out.accounts?.[id];
   delete out.accountInfo?.[id];
   return out;
 }
+
 export function sessionICS(b: Booking, coach: string) {
   const utc = (ms: number) =>
       new Date(ms)

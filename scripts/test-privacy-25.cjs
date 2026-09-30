@@ -74,9 +74,10 @@ async function until(fn) {
   await until(
     () =>
       button(coach ? "Réglages" : "Mon espace") ||
-      button("Passer pour le moment"),
+      button("Passer pour le moment") || (coach && has("Votre dossier")),
   );
   if (button("Passer pour le moment")) await click("Passer pour le moment");
+  if (coach && !button("Réglages")) await click("Retour");
   await until(() => button(coach ? "Réglages" : "Mon espace"));
   await click(coach ? "Réglages" : "Mon espace");
   await click("Confidentialité");
@@ -146,7 +147,7 @@ async function until(fn) {
   await click("Retour");
   await click("Retour");
   await click("Supprimer mon compte");
-  ok(has("historiqu") && has("en partie anonymisé"), "Deletion scope honest");
+  ok(has("références") && has("automatiquement"), "Deletion scope honest");
   ok(
     button("Faire une demande sur mes données"),
     "Rights request accessible even if self-service deletion blocked",

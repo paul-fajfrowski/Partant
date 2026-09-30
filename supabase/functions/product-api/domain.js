@@ -676,7 +676,27 @@ function project(source, actor) {
         return [
             c.id,
             {
-                ...cfg,
+                // Explicit public contract: private and future settings never leak by default.
+                published: cfg.published,
+                weeklyConfigured: cfg.weeklyConfigured,
+                week: cfg.week,
+                exceptions: cfg.exceptions,
+                notice: cfg.notice,
+                horizon: cfg.horizon,
+                cancelHours: cfg.cancelHours,
+                studio: cfg.studio,
+                studioAddress: cfg.studioAddress,
+                radius: cfg.radius,
+                travelFee: cfg.travelFee,
+                buffer: 0,
+                departureStep: null,
+                payoutReady: false,
+                preparation: { provided: "", bring: "", meeting: "", weather: "" },
+                locations: cfg.locations && Object.fromEntries(Object.entries(cfg.locations).map(([key, place]) => [key, {
+                        type: place.type, name: place.name, address: place.address,
+                        sector: place.sector, radius: place.radius, travelFee: place.travelFee,
+                        coordinates: place.coordinates, instructions: "",
+                    }])),
                 clientNotes: {},
                 business: { name: "", status: "", email: "", address: "" },
                 notifications: {
@@ -747,7 +767,11 @@ function project(source, actor) {
             (own(g.offer.coach) ||
                 actor?.staff ||
                 bookings.some((b) => b.slotId === g.id) ||
-                (0, verification_1.canOffer)(M.configFor(s, g.offer.coach).dossier, M.allCoaches(s).find((c) => c.id === g.offer.coach), g.offer, g.day))),
+                (0, verification_1.canOffer)(M.configFor(s, g.offer.coach).dossier, M.allCoaches(s).find((c) => c.id === g.offer.coach), g.offer, g.day))).map((g) => own(g.offer.coach) || actor?.staff ? g : ({
+            id: g.id, offer: g.offer, day: g.day, time: g.time, address: g.address,
+            format: g.format, locationName: g.locationName, cancelled: g.cancelled,
+            cancelHours: g.cancelHours, level: g.level,
+        })),
         bookings,
         calendarBusy: Object.fromEntries(Object.entries(s.calendarBusy ?? {}).filter(([coach]) => ids.has(coach))),
         calendarStatus: Object.fromEntries(Object.entries(s.calendarStatus ?? {})
@@ -2848,6 +2872,7 @@ exports.alertMatches = alertMatches;
 exports.maintain = maintain;
 exports.accountExport = accountExport;
 exports.sessionICS = sessionICS;
+const accountErasure_1 = load("accountErasure.ts");
 const verification_1 = load("verification.ts");
 const noticeEvents_1 = load("noticeEvents.ts");
 const commands_1 = load("commands.ts");
@@ -3772,6 +3797,11 @@ function alertMatches(s, a) {
     return result;
 }
 function maintain(s) {
+    // Also finish erasing accounts deleted by earlier app versions.
+    for (const id of s.deletedAccounts ?? []) {
+        const coach = s.extraCoaches?.some(c => c.id === id) || s.settings?.[id] ? id : null;
+        s = (0, accountErasure_1.eraseAccountData)(s, id, coach);
+    }
     let next = s, changed = false;
     const bookings = s.bookings.map((b) => {
         if (b.status === "confirmed" &&
@@ -3919,110 +3949,7 @@ function _deleteAccount(s) {
     if (coach &&
         (s.externalSessions ?? []).some((b) => b.coach === coach && !b.cancelled && (0, model_1.instant)(b.day, b.time) > (0, model_1.now)()))
         throw Error("Traitez vos rendez-vous directs avant de supprimer ce compte.");
-    const affected = new Set(s.bookings
-        .filter((b) => b.clientId === id || b.coach === coach)
-        .map((b) => b.id));
-    let next = {
-        ...s,
-        identities: identities(s).filter((a) => a.id !== id),
-        externalSessions: (s.externalSessions ?? []).filter((b) => b.coach !== coach),
-        coachDrafts: Object.fromEntries(Object.entries(s.coachDrafts ?? {}).filter(([key]) => coach === null || !key.startsWith(coach + ":"))),
-        deletedAccounts: [
-            ...(s.deletedAccounts ?? []),
-            id,
-        ],
-        notices: s.notices
-            .filter((n) => n.recipient !== id)
-            .map((n) => affected.has(n.booking)
-            ? { ...n, context: undefined, previous: undefined }
-            : n),
-        attempts: s.attempts?.filter((p) => p.owner !== id),
-        alerts: s.alerts?.filter((a) => a.owner !== id),
-        bookings: s.bookings.map((b) => b.clientId === id
-            ? {
-                ...b,
-                clientName: "Compte supprimé",
-                participantNames: undefined,
-                goal: "",
-                address: b.format === "Domicile" ? "Adresse supprimée" : b.address,
-            }
-            : b),
-        messages: Object.fromEntries(Object.entries(s.messages).map(([k, ms]) => [
-            k,
-            ms.map((m) => ({
-                ...(m.who === id
-                    ? { ...m, text: "Message supprimé", who: "deleted" }
-                    : m),
-                context: affected.has(k) ? undefined : m.context,
-            })),
-        ])),
-    };
-    if (coach)
-        next = {
-            ...next,
-            settings: {
-                ...next.settings,
-                [coach]: { ...(0, model_1.configFor)(next, coach), published: false },
-            },
-            coachOverrides: {
-                ...next.coachOverrides,
-                [coach]: { name: "Compte supprimé", bio: "", photoUri: "" },
-            },
-        };
-    if (s.connected)
-        next = {
-            ...next,
-            reviews: next.reviews?.map((r) => r.owner === id
-                ? {
-                    ...r,
-                    name: "Compte supprimé",
-                    text: "Avis retiré par son auteur",
-                    hidden: true,
-                }
-                : r),
-            tickets: next.tickets?.map((t) => t.owner === id
-                ? {
-                    ...t,
-                    body: "Compte supprimé",
-                    response: "",
-                    status: "resolved",
-                }
-                : t),
-            settings: Object.fromEntries(Object.entries(next.settings ?? {}).map(([cid, cfg]) => [
-                cid,
-                {
-                    ...cfg,
-                    clientNotes: Object.fromEntries(Object.entries(cfg.clientNotes).filter(([client]) => client !== id)),
-                    ...(cid === coach
-                        ? {
-                            business: { name: "", email: "", address: "", status: "" },
-                            dossier: {
-                                ...cfg.dossier,
-                                documents: [],
-                                verification: undefined,
-                                publicPractices: undefined,
-                                history: [],
-                                reason: "Compte supprimé",
-                            },
-                        }
-                        : {}),
-                },
-            ])),
-            extraCoaches: next.extraCoaches?.map((c) => c.id === coach
-                ? {
-                    ...c,
-                    name: "Compte supprimé",
-                    bio: "",
-                    cert: "",
-                    photoUri: "",
-                    address: "",
-                    quote: "",
-                    method: "",
-                    formats: [],
-                }
-                : c),
-        };
-    const out = (0, model_1.switchAccount)(next, null);
+    const out = (0, model_1.switchAccount)((0, accountErasure_1.eraseAccountData)(s, id, coach), null);
     delete out.accounts?.[id];
     delete out.accountInfo?.[id];
     return out;
@@ -4067,6 +3994,79 @@ exports.reviewDossier = (0, commands_1.recorded)("reviewDossier", _reviewDossier
 exports.resolveTicket = (0, commands_1.recorded)("resolveTicket", _resolveTicket);
 exports.saveVerification = (0, commands_1.recorded)("saveVerification", _saveVerification);
 exports.reviewPractice = (0, commands_1.recorded)("reviewPractice", _reviewPractice);
+
+},
+"accountErasure.ts":(module,exports,load)=>{
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.eraseAccountData = eraseAccountData;
+/** Minimal historical label; no profile/contact/location data survives in it. */
+function deletedCoach(id) {
+    return {
+        id, name: "Compte supprimé", photo: null, photoUri: "", sport: "",
+        disciplines: [], tags: [], price: 0, rating: null, reviews: 0, sessions: 0,
+        years: 0, area: "", dist: null, formats: [], place: "", address: "",
+        cert: "", langs: "", quote: "", bio: "", method: "", verified: false,
+    };
+}
+/** Erase account-owned content; retain only useful, scoped session history. */
+function eraseAccountData(s, id, coach) {
+    const affected = new Set(s.bookings.filter(b => b.clientId === id || b.coach === coach).map(b => b.id));
+    const without = (values, key) => Object.fromEntries(Object.entries(values ?? {}).filter(([k]) => k !== key));
+    return {
+        ...s,
+        identities: s.identities?.filter(a => a.id !== id),
+        deletedAccounts: [...new Set([...(s.deletedAccounts ?? []), id])],
+        accounts: Object.fromEntries(Object.entries(s.accounts ?? {})
+            .filter(([key]) => key !== id)
+            .map(([key, value]) => [key, { ...value, favorites: value.favorites.filter(x => x !== coach) }])),
+        accountInfo: without(s.accountInfo, id),
+        settings: Object.fromEntries(Object.entries(s.settings ?? {})
+            .filter(([key]) => key !== coach)
+            .map(([key, value]) => [key, { ...value, clientNotes: without(value.clientNotes, id) }])),
+        coachOverrides: without(s.coachOverrides, coach),
+        coachDrafts: Object.fromEntries(Object.entries(s.coachDrafts ?? {})
+            .filter(([key]) => !coach || !key.startsWith(coach + ":"))),
+        extraCoaches: s.extraCoaches?.map(c => c.id === coach ? deletedCoach(c.id) : c),
+        offers: s.offers.filter(o => o.coach !== coach),
+        groups: s.groups?.filter(g => g.offer.coach !== coach),
+        externalSessions: s.externalSessions?.filter(b => b.coach !== coach),
+        calendarBusy: without(s.calendarBusy, coach),
+        calendarStatus: without(s.calendarStatus, coach),
+        closed: s.closed.filter(key => key.split("|")[0] !== coach),
+        busyTimes: s.busyTimes?.filter(b => b.coach !== coach),
+        attempts: s.attempts?.filter(a => a.owner !== id && a.draft.coach !== coach),
+        alerts: s.alerts?.filter(a => a.owner !== id && a.coach !== coach),
+        notices: s.notices.filter(n => n.recipient !== id).map(n => affected.has(n.booking)
+            ? { ...n, body: "Historique de séance · compte supprimé", context: undefined, previous: undefined }
+            : n),
+        bookings: s.bookings.map(b => affected.has(b.id) ? {
+            ...b,
+            ...(b.clientId === id ? { clientName: "Compte supprimé", participantNames: undefined, goal: "" } : {}),
+            address: b.coach === coach || b.format === "Domicile" ? "Adresse supprimée" : b.address,
+            locationInstructions: undefined,
+            locationName: b.coach === coach ? undefined : b.locationName,
+            preparation: undefined,
+            changes: undefined,
+        } : b),
+        messages: Object.fromEntries(Object.entries(s.messages).map(([key, values]) => [key,
+            values.map(m => ({ ...m,
+                ...(m.who === id ? { text: "Message supprimé", who: "deleted" } : {}),
+                readBy: m.readBy?.filter(reader => reader !== id),
+                context: affected.has(key) ? undefined : m.context,
+            })),
+        ])),
+        proposals: s.proposals?.map(p => affected.has(p.booking)
+            ? { ...p, before: "", reason: "", target: { ...p.target, address: "Adresse supprimée" } }
+            : p),
+        reviews: s.reviews?.filter(r => r.coach !== coach).map(r => r.owner === id
+            ? { ...r, name: "Compte supprimé", text: "Avis retiré par son auteur", reply: "", hidden: true }
+            : r),
+        tickets: s.tickets?.map(t => t.owner === id
+            ? { ...t, body: "Compte supprimé", response: "", decision: undefined, status: "resolved" }
+            : t),
+    };
+}
 
 },
 "noticeEvents.ts":(module,exports,load)=>{

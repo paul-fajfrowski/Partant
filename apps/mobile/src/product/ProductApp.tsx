@@ -42,7 +42,7 @@ import { signInSocial, socialProviders } from "../lib/auth";
 import { placeTypes } from "./locations";
 import { AgendaTools } from "./AgendaToolsScreen";
 import { setupSteps } from "./agendaTools";
-import Slider from "@react-native-community/slider";
+import { BudgetSlider } from "./BudgetSlider";
 import * as W from "./workflows";
 import { PrivacyLinks, PrivacyScreen } from "./PrivacyScreen";
 import { CompleteFlows, BookingExtras } from "./CompleteFlows";
@@ -1195,6 +1195,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         ]}
         testID={webWide ? "desktop-coach-card" : undefined}
       >
+        <View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Voir le profil de ${c.name}`}
@@ -1207,6 +1208,16 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             style={{ borderRadius: 12 }}
             label={`Portrait de ${c.name}`}
           >
+            {c.verified && (
+              <View style={styles.photoBadge}>
+                <Icon name="shield" size={17} />
+                <P small style={{ fontFamily: t.medium }}>
+                  Profil vérifié
+                </P>
+              </View>
+            )}
+          </Photo>
+        </Pressable>
             <View style={{ position: "absolute", top: 10, right: 10 }}>
               <IconButton
                 name="heart"
@@ -1220,16 +1231,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
                 onPress={() => favorite(c.id)}
               />
             </View>
-            {c.verified && (
-              <View style={styles.photoBadge}>
-                <Icon name="shield" size={17} />
-                <P small style={{ fontFamily: t.medium }}>
-                  Profil vérifié
-                </P>
-              </View>
-            )}
-          </Photo>
-        </Pressable>
+        </View>
         <Row between style={{ marginTop: 10 }}>
           <Pressable
             accessibilityRole="button"
@@ -1301,10 +1303,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         </Row>
         <Row between style={{ marginTop: 10 }}>
           <P small muted>
-            {c.formats
-              .slice(0, 2)
-              .map((f) => locationLabel(store, c, f))
-              .join(" · ")}{" "}
+            {[...new Set(c.formats.map((f) => locationLabel(store, c, f)))].slice(0, 2).join(" · ")}{" "}
             · Tout compris
           </P>
           <Pressable
@@ -4545,18 +4544,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
       <>
         <View style={{ marginBottom: 18 }}>
           <P bold>Prix maximum par séance · {budget} €</P>
-          <Slider
-            accessibilityLabel="Budget maximum par séance"
-            minimumValue={20}
-            maximumValue={300}
-            step={5}
-            value={budget}
-            onValueChange={setBudget}
-            minimumTrackTintColor="#141414"
-            maximumTrackTintColor="#e5e5e5"
-            thumbTintColor="#141414"
-            style={{ height: 44 }}
-          />
+          <BudgetSlider value={budget} onChange={setBudget} />
         </View>
         <Select
           label="Distance maximale"
@@ -5777,7 +5765,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           {sticky}
         </KeyboardAvoidingView>
         {!authTransition && !webWide && (bottom || coachBottom) && (
-          <View style={styles.bottomNav}>
+          <View style={styles.bottomNav} accessibilityRole="tablist" accessibilityLabel={coachBottom ? "Navigation coach" : "Navigation client"}>
             {(coachBottom ? coachTabs : navItems).map(([id, icon, title]) => (
               <Pressable
                 accessibilityRole="tab"

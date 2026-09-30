@@ -1,0 +1,43 @@
+name: Partant regression
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  shared-app-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPO_PUBLIC_SUPABASE_URL: https://jhhsysjdeyqsuztjtgea.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_qa_fixture_not_a_real_key
+      EXPO_PUBLIC_DATA_MODE: preview
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            apps/mobile/package-lock.json
+            tools/qa/package-lock.json
+      - run: npm --prefix apps/mobile ci
+      - run: npm --prefix tools/qa ci
+      - run: npx --prefix tools/qa playwright install --with-deps chromium
+      - run: npm --prefix apps/mobile run typecheck
+      - run: node scripts/build-server-domain.cjs
+      - run: npx expo export --platform web --platform ios --output-dir dist --max-workers 1
+        working-directory: apps/mobile
+      - run: node scripts/qa-33.cjs
+      - name: Browser and accessibility
+        run: |
+          python3 -m http.server 8098 --directory apps/mobile/dist > /tmp/partant-http.log 2>&1 &
+          for attempt in $(seq 1 20); do curl -fsS http://127.0.0.1:8098/ > /dev/null && break; sleep 1; done
+          node scripts/qa-33.cjs --browser
+          PARTANT_QA_PLAYWRIGHT="$PWD/tools/qa/node_modules/playwright" PARTANT_QA_AXE="$PWD/tools/qa/node_modules/axe-core/axe.min.js" PARTANT_AUDIT_OUTPUT="$PWD/work/qa-results/accessibility" node --no-experimental-strip-types scripts/audit-ui-20260930.cjs
+        env:
+          PARTANT_QA_URL: http://127.0.0.1:8098
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: partant-qa
+          path: work/qa-results

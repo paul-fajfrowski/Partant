@@ -1,7 +1,7 @@
 /** Versioned development notice. Never fill legal identity or retention claims by guesswork. */
 export const privacyNotice = {
-  version: "2026-09-22.1",
-  updated: "22 septembre 2026",
+  version: "2026-09-30.1",
+  updated: "30 septembre 2026",
   controller: "",
   contactEmail: "",
 };
@@ -39,7 +39,7 @@ export function privacySections(coach: boolean) {
     },
     {
       title: "Conservation et suppression",
-      text: "La suppression de compte retire l’accès au service et anonymise une partie de l’historique. Elle ne signifie pas l’effacement instantané de toute trace : des références de séances subsistent chez les interlocuteurs. Pour une demande d’effacement plus large, utilisez la demande concernant vos données. Les durées par catégorie, les sauvegardes et la purge des fichiers sont en cours de formalisation pour l’ouverture publique ; aucune durée de conservation définitive n’est annoncée dans cette version de test.",
+      text: "La suppression retire immédiatement votre profil et votre accès privé. Vos réglages personnels sont effacés et vos séances anonymisées ; les références de séances subsistent chez les interlocuteurs. Le serveur supprime ensuite vos fichiers, vos moyens de connexion et vos liens d’intégration, avec reprise automatique en cas d’incident. Les copies déjà exportées vers votre calendrier et les sauvegardes ne sont pas effacées instantanément. Pour une demande plus large, utilisez la demande concernant vos données. Les durées de conservation des historiques et sauvegardes restent à formaliser avant l’ouverture publique.",
     },
     {
       title: "Vos droits et les bases légales",

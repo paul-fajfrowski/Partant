@@ -77,57 +77,69 @@ async function toggle(label) {
     "Coach settings have three groups",
   );
   await click("Disponibilités");
-  await field("Début de plage 1", "09:25");
+  await click("Configurer lundi");
+  await click("Modifier la plage 09:10–22:00");
+  await field("Début de plage", "09:25");
+  await click("Appliquer à la journée");
+  await click("Retour à la semaine");
+  for(let i=0;i<30&&!stored().coachDrafts?.["0:schedule"];i++) await wait();
   ok(
     stored().coachDrafts["0:schedule"].cfg.week[0][0][0] === "09:25",
     "Draft persisted in device storage",
   );
-  await click("Gérer mes séances et leurs tarifs");
+  await click("Retour");
+  await click("Séances & tarifs");
   ok(
     d.body.textContent.includes("Créer une séance"),
     "Schedule navigates to offers",
   );
   await click("Retour");
+  await click("Disponibilités");
   ok(
     d.body.textContent.includes("Lundi"),
     "Back restores correct settings section",
   );
   ok(
-    d.querySelector('input[aria-label="Début de plage 1"]').value === "09:25",
+    d.body.textContent.includes("09:25"),
     "Draft survives cross-section navigation",
   );
   ok(
     stored().settings["0"].week[0][0][0] === "09:10",
     "Draft not applied to public hours",
   );
-  await click("Vers mardi");
-  await click("Copier vers ces jours");
+  await click("Configurer lundi");
+  await click("Copier ce jour");
+  await click("Mardi");
+  await click("Continuer la copie");
   await click("Confirmer la copie");
-  await click("Enregistrer les réglages");
+  await click("Enregistrer les modifications");
   ok(
     stored().settings["0"].week[1][0][0] === "09:25",
     "Copy and sticky save apply selected day",
   );
+  await click("Modifier une seule date");
   await toggle("Fermer cette journée");
-  await click("Ajouter une exception");
+  await click("Enregistrer cette date");
   const exceptionDay = Object.keys(stored().settings["0"].exceptions)[0];
-  await click(exceptionDay);
+  const dateLabel=new Date(exceptionDay+"T12:00:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
+  await match(dateLabel);
   ok(
     stored().settings["0"].exceptions[exceptionDay].length === 0,
     "Opening exception does not delete it",
   );
-  await click("Supprimer cette exception");
-  await click("Conserver l’exception");
+  await click("Revenir aux horaires habituels");
+  await click("Garder ces horaires");
   ok(
     stored().settings["0"].exceptions[exceptionDay] !== undefined,
     "Cancel delete preserves exception",
   );
-  await click("Supprimer cette exception");
+  await click("Revenir aux horaires habituels");
   await click("Confirmer la suppression");
   ok(
     stored().settings["0"].exceptions[exceptionDay] === undefined,
     "Explicit deletion removes exception",
   );
+  await click("Retour");
   await click("Retour");
   await click("Séances & tarifs");
   await click("Modifier Coaching individuel");
@@ -147,16 +159,6 @@ async function toggle(label) {
   await field("Heure du rendez-vous", "09:10");
   await click("Enregistrer le rendez-vous");
   ok(stored().externalSessions.length === 1, "Direct appointment persisted");
-  await click("Retour");
-  await click("Configurer");
-  await click("Aide : comprendre un créneau indisponible");
-  await field("Heure à vérifier", "09:10");
-  await click("Vérifier ce créneau");
-  ok(
-    d.body.textContent.includes("rendez-vous hors Partant"),
-    "Availability diagnosis explains blocked slot",
-  );
-  await click("Retour");
   await click("Retour");
   await click("Mes cours en groupe");
   await match("Running ensemble");

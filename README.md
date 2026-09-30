@@ -1,5 +1,9 @@
 # Partant
 
+**Corrections — livraison 33 :** [correctifs, preuves de recette et points encore ouverts](docs/corrections-audit-33.md). Consulter ce suivi avant le constat initial de l’audit.
+
+**Audit — 30 septembre 2026 :** [App, WebApp, serveur, anomalies reproduites et plan de correction](docs/audit-app-webapp-2026-09-30.md). Audit réalisé sur la livraison 32 ; aucune correction produit incluse dans ce rapport.
+
 **Pour reprendre le projet — 24 septembre 2026 :** [réalisé, intégrations, tests et priorités restantes](ETAT_DU_PROJET.md). Ce récapitulatif couvre les livraisons jusqu’à la 32 ; les sections plus anciennes ci-dessous conservent leur contexte historique.
 
 **WebApp — livraison 27 :** [parcours ordinateur, architecture partagée et recette](docs/webapp-27.md). [Construire et ouvrir la WebApp localement](apps/web/README.md).

@@ -1,0 +1,35 @@
+{
+  "date": "2026-09-30",
+  "scope": "Lectures de catalogue, agrégats et sondes anonymes sur le projet de développement ; aucune mutation métier volontaire.",
+  "counts": {
+    "staff_members": 0,
+    "registered_push_devices": 0,
+    "calendar_connections": 0,
+    "product_document_bytes": 8158
+  },
+  "last_24h_scheduler_successes": {
+    "push": 1440,
+    "calendar": 288,
+    "housekeeping": 24
+  },
+  "security": {
+    "private_table_anon_authenticated_grants": false,
+    "privileged_rpc_anon_authenticated_execute": false,
+    "documents_bucket_public": false,
+    "photos_bucket_public": true,
+    "private_storage_owner_and_staff_policies": true,
+    "security_advisor_info_rls_no_policy": 10,
+    "leaked_password_protection_enabled": false,
+    "performance_advisor_findings": 0
+  },
+  "postgres": {
+    "version": "17.6",
+    "ltree_installed": false,
+    "gist_float_indexes": 0
+  },
+  "limits": [
+    "Les compteurs sont un instantané, pas une preuve de livraison APNs ou de synchronisation Calendar.",
+    "Les tables publiques de catalogue et fonctions de disponibilité possèdent des droits distincts intentionnels.",
+    "Les données des comptes et les clés ne sont pas exportées dans ce rapport."
+  ]
+}

@@ -1,5 +1,9 @@
 # Partant — réalisé, reste à faire et reprise du projet
 
+**Corrections — livraison 33 :** [correctifs, preuves de recette et points encore ouverts](docs/corrections-audit-33.md). Consulter ce suivi avant le constat initial de l’audit.
+
+**Complément au 30 septembre :** le [nouvel audit App et WebApp](docs/audit-app-webapp-2026-09-30.md) apporte une vérification du code, des parcours et du serveur. Consulter ses anomalies et priorités avant de reprendre le plan ci-dessous, qui conserve son état historique du 24 septembre.
+
 **Point de situation au 24 septembre 2026 · destiné à la reprise par un collègue.**  
 État du code jusqu’à la livraison 32, commit `676c28b`. Ce document synthétise les sources, les recettes documentées et les validations du propriétaire ; ce n’est pas un nouvel audit des services déployés.
 

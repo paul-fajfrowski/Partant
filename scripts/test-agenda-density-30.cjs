@@ -69,7 +69,7 @@ ok(
   "Day selection is not a fabricated range",
 );
 const { chromium } = require(process.env.PARTANT_QA_PLAYWRIGHT);
-const out = "/private/tmp/partant-agenda-30";
+const out = require("node:path").join(require("node:os").tmpdir(), "partant-agenda-30");
 fs.mkdirSync(out, { recursive: true });
 (async () => {
   const browser = await chromium.launch({

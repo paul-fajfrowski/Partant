@@ -1,0 +1,633 @@
+[
+  {
+    "role": "client",
+    "width": 320,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "aria-required-parent",
+        "impact": "critical",
+        "description": "Ensure elements with an ARIA role that require parent roles are contained by them",
+        "count": 4,
+        "examples": [
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          },
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          }
+        ]
+      },
+      {
+        "id": "nested-interactive",
+        "impact": "serious",
+        "description": "Ensure interactive controls are not nested as they are not always announced by screen readers or can cause focus problems for assistive technologies",
+        "count": 6,
+        "examples": [
+          {
+            "html": "<button aria-label=\"Voir le profil de Thomas Martin\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          },
+          {
+            "html": "<button aria-label=\"Voir le profil de Idriss Benali\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 2,
+    "errors": []
+  },
+  {
+    "role": "client",
+    "width": 320,
+    "name": "filters",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "aria-prohibited-attr",
+        "impact": "serious",
+        "description": "Ensure ARIA attributes are not prohibited for an element's role",
+        "count": 1,
+        "examples": [
+          {
+            "html": "<div aria-label=\"Fermer\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1p0dtai r-1d2f490 r-u8s1d r-zchlnj r-ipm5af\"></div>",
+            "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+          }
+        ]
+      },
+      {
+        "id": "aria-required-attr",
+        "impact": "critical",
+        "description": "Ensure elements with ARIA roles have all required ARIA attributes",
+        "count": 1,
+        "examples": [
+          {
+            "html": "<div aria-label=\"Budget maximum par séance\" role=\"slider\" class=\"css-g5y9jx\" style=\"flex: 1 1 auto; flex-direction: row; z-index: 1; width: 248px; align-content: center; align-items: center;\">",
+            "summary": "Fix any of the following:\n  Required ARIA attribute not present: aria-valuenow"
+          }
+        ]
+      },
+      {
+        "id": "aria-required-parent",
+        "impact": "critical",
+        "description": "Ensure elements with an ARIA role that require parent roles are contained by them",
+        "count": 4,
+        "examples": [
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          },
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          }
+        ]
+      },
+      {
+        "id": "nested-interactive",
+        "impact": "serious",
+        "description": "Ensure interactive controls are not nested as they are not always announced by screen readers or can cause focus problems for assistive technologies",
+        "count": 6,
+        "examples": [
+          {
+            "html": "<button aria-label=\"Voir le profil de Thomas Martin\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          },
+          {
+            "html": "<button aria-label=\"Voir le profil de Idriss Benali\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 2,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 320,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "aria-required-parent",
+        "impact": "critical",
+        "description": "Ensure elements with an ARIA role that require parent roles are contained by them",
+        "count": 4,
+        "examples": [
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          },
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 320,
+    "name": "availability",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 320,
+    "name": "editor",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "aria-prohibited-attr",
+        "impact": "serious",
+        "description": "Ensure ARIA attributes are not prohibited for an element's role",
+        "count": 1,
+        "examples": [
+          {
+            "html": "<div aria-label=\"Fermer\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1p0dtai r-1d2f490 r-u8s1d r-zchlnj r-ipm5af\"></div>",
+            "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "client",
+    "width": 390,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "aria-required-parent",
+        "impact": "critical",
+        "description": "Ensure elements with an ARIA role that require parent roles are contained by them",
+        "count": 4,
+        "examples": [
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          },
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          }
+        ]
+      },
+      {
+        "id": "nested-interactive",
+        "impact": "serious",
+        "description": "Ensure interactive controls are not nested as they are not always announced by screen readers or can cause focus problems for assistive technologies",
+        "count": 6,
+        "examples": [
+          {
+            "html": "<button aria-label=\"Voir le profil de Thomas Martin\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          },
+          {
+            "html": "<button aria-label=\"Voir le profil de Idriss Benali\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 2,
+    "errors": []
+  },
+  {
+    "role": "client",
+    "width": 390,
+    "name": "filters",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "aria-prohibited-attr",
+        "impact": "serious",
+        "description": "Ensure ARIA attributes are not prohibited for an element's role",
+        "count": 1,
+        "examples": [
+          {
+            "html": "<div aria-label=\"Fermer\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1p0dtai r-1d2f490 r-u8s1d r-zchlnj r-ipm5af\"></div>",
+            "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+          }
+        ]
+      },
+      {
+        "id": "aria-required-attr",
+        "impact": "critical",
+        "description": "Ensure elements with ARIA roles have all required ARIA attributes",
+        "count": 1,
+        "examples": [
+          {
+            "html": "<div aria-label=\"Budget maximum par séance\" role=\"slider\" class=\"css-g5y9jx\" style=\"flex: 1 1 auto; flex-direction: row; z-index: 1; width: 318px; align-content: center; align-items: center;\">",
+            "summary": "Fix any of the following:\n  Required ARIA attribute not present: aria-valuenow"
+          }
+        ]
+      },
+      {
+        "id": "aria-required-parent",
+        "impact": "critical",
+        "description": "Ensure elements with an ARIA role that require parent roles are contained by them",
+        "count": 4,
+        "examples": [
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          },
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          }
+        ]
+      },
+      {
+        "id": "nested-interactive",
+        "impact": "serious",
+        "description": "Ensure interactive controls are not nested as they are not always announced by screen readers or can cause focus problems for assistive technologies",
+        "count": 6,
+        "examples": [
+          {
+            "html": "<button aria-label=\"Voir le profil de Thomas Martin\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          },
+          {
+            "html": "<button aria-label=\"Voir le profil de Idriss Benali\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 2,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 390,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "aria-required-parent",
+        "impact": "critical",
+        "description": "Ensure elements with an ARIA role that require parent roles are contained by them",
+        "count": 4,
+        "examples": [
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          },
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 390,
+    "name": "availability",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 390,
+    "name": "editor",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "aria-prohibited-attr",
+        "impact": "serious",
+        "description": "Ensure ARIA attributes are not prohibited for an element's role",
+        "count": 1,
+        "examples": [
+          {
+            "html": "<div aria-label=\"Fermer\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1p0dtai r-1d2f490 r-u8s1d r-zchlnj r-ipm5af\"></div>",
+            "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "client",
+    "width": 820,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "aria-required-parent",
+        "impact": "critical",
+        "description": "Ensure elements with an ARIA role that require parent roles are contained by them",
+        "count": 4,
+        "examples": [
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          },
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          }
+        ]
+      },
+      {
+        "id": "nested-interactive",
+        "impact": "serious",
+        "description": "Ensure interactive controls are not nested as they are not always announced by screen readers or can cause focus problems for assistive technologies",
+        "count": 6,
+        "examples": [
+          {
+            "html": "<button aria-label=\"Voir le profil de Thomas Martin\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          },
+          {
+            "html": "<button aria-label=\"Voir le profil de Idriss Benali\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 2,
+    "errors": []
+  },
+  {
+    "role": "client",
+    "width": 820,
+    "name": "filters",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "aria-prohibited-attr",
+        "impact": "serious",
+        "description": "Ensure ARIA attributes are not prohibited for an element's role",
+        "count": 1,
+        "examples": [
+          {
+            "html": "<div aria-label=\"Fermer\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1p0dtai r-1d2f490 r-u8s1d r-zchlnj r-ipm5af\"></div>",
+            "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+          }
+        ]
+      },
+      {
+        "id": "aria-required-attr",
+        "impact": "critical",
+        "description": "Ensure elements with ARIA roles have all required ARIA attributes",
+        "count": 1,
+        "examples": [
+          {
+            "html": "<div aria-label=\"Budget maximum par séance\" role=\"slider\" class=\"css-g5y9jx\" style=\"flex: 1 1 auto; flex-direction: row; z-index: 1; width: 362px; align-content: center; align-items: center;\">",
+            "summary": "Fix any of the following:\n  Required ARIA attribute not present: aria-valuenow"
+          }
+        ]
+      },
+      {
+        "id": "aria-required-parent",
+        "impact": "critical",
+        "description": "Ensure elements with an ARIA role that require parent roles are contained by them",
+        "count": 4,
+        "examples": [
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          },
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          }
+        ]
+      },
+      {
+        "id": "nested-interactive",
+        "impact": "serious",
+        "description": "Ensure interactive controls are not nested as they are not always announced by screen readers or can cause focus problems for assistive technologies",
+        "count": 6,
+        "examples": [
+          {
+            "html": "<button aria-label=\"Voir le profil de Thomas Martin\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          },
+          {
+            "html": "<button aria-label=\"Voir le profil de Idriss Benali\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 2,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 820,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "aria-required-parent",
+        "impact": "critical",
+        "description": "Ensure elements with an ARIA role that require parent roles are contained by them",
+        "count": 4,
+        "examples": [
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          },
+          {
+            "html": "<div role=\"tab\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1awozwy r-580adz r-1777fci r-dfe81l r-j7cuwh r-xjggfu r-is05cd\">",
+            "summary": "Fix any of the following:\n  Required ARIA parent role not present: tablist"
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 820,
+    "name": "availability",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 820,
+    "name": "editor",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "aria-prohibited-attr",
+        "impact": "serious",
+        "description": "Ensure ARIA attributes are not prohibited for an element's role",
+        "count": 1,
+        "examples": [
+          {
+            "html": "<div aria-label=\"Fermer\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1p0dtai r-1d2f490 r-u8s1d r-zchlnj r-ipm5af\"></div>",
+            "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "client",
+    "width": 1440,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "nested-interactive",
+        "impact": "serious",
+        "description": "Ensure interactive controls are not nested as they are not always announced by screen readers or can cause focus problems for assistive technologies",
+        "count": 6,
+        "examples": [
+          {
+            "html": "<button aria-label=\"Voir le profil de Thomas Martin\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          },
+          {
+            "html": "<button aria-label=\"Voir le profil de Idriss Benali\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 1,
+    "errors": []
+  },
+  {
+    "role": "client",
+    "width": 1440,
+    "name": "filters",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "aria-prohibited-attr",
+        "impact": "serious",
+        "description": "Ensure ARIA attributes are not prohibited for an element's role",
+        "count": 1,
+        "examples": [
+          {
+            "html": "<div aria-label=\"Fermer\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1p0dtai r-1d2f490 r-u8s1d r-zchlnj r-ipm5af\"></div>",
+            "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+          }
+        ]
+      },
+      {
+        "id": "aria-required-attr",
+        "impact": "critical",
+        "description": "Ensure elements with ARIA roles have all required ARIA attributes",
+        "count": 1,
+        "examples": [
+          {
+            "html": "<div aria-label=\"Budget maximum par séance\" role=\"slider\" class=\"css-g5y9jx\" style=\"flex: 1 1 auto; flex-direction: row; z-index: 1; width: 362px; align-content: center; align-items: center;\">",
+            "summary": "Fix any of the following:\n  Required ARIA attribute not present: aria-valuenow"
+          }
+        ]
+      },
+      {
+        "id": "nested-interactive",
+        "impact": "serious",
+        "description": "Ensure interactive controls are not nested as they are not always announced by screen readers or can cause focus problems for assistive technologies",
+        "count": 6,
+        "examples": [
+          {
+            "html": "<button aria-label=\"Voir le profil de Thomas Martin\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          },
+          {
+            "html": "<button aria-label=\"Voir le profil de Idriss Benali\" role=\"button\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73\" type=\"button\">",
+            "summary": "Fix any of the following:\n  Element has focusable descendants"
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 1,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 1440,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 5,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 1440,
+    "name": "availability",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 1440,
+    "name": "editor",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [
+      {
+        "id": "aria-prohibited-attr",
+        "impact": "serious",
+        "description": "Ensure ARIA attributes are not prohibited for an element's role",
+        "count": 1,
+        "examples": [
+          {
+            "html": "<div aria-label=\"Fermer\" tabindex=\"0\" class=\"css-g5y9jx r-1loqt21 r-1otgn73 r-1p0dtai r-1d2f490 r-u8s1d r-zchlnj r-ipm5af\"></div>",
+            "summary": "Fix all of the following:\n  aria-label attribute cannot be used on a div with no valid role attribute."
+          }
+        ]
+      }
+    ],
+    "targetsUnder44": 0,
+    "errors": []
+  }
+]

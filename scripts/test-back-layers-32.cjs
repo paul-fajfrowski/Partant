@@ -16,7 +16,7 @@ const {
 } = require("../apps/mobile/src/product/coachAgendaPreview.ts");
 const { chromium } = require(process.env.PARTANT_QA_PLAYWRIGHT);
 const seed = coachAgendaPreview(),
-  out = "/private/tmp/partant-navigation-32";
+  out = require("node:path").join(require("node:os").tmpdir(), "partant-navigation-32");
 fs.mkdirSync(out, { recursive: true });
 let checks = 0;
 const ok = (v, msg) => {

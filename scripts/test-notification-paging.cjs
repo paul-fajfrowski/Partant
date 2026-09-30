@@ -45,7 +45,7 @@ const rows = () =>
     await H.wait();
     scrollCalls.length = 0;
     await H.click("Retour");
-    await H.wait();
+    for(let i=0;i<40 && !scrollCalls.some(c=>c.id==="product-scroll" && c.top===640);i++) await H.wait();
     H.ok(rows().length === 20, "Loaded history survives detail return");
     H.ok(
       scrollCalls.some((c) => c.id === "product-scroll" && c.top === 640),

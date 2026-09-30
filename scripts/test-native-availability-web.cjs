@@ -54,38 +54,46 @@ async function field(label, value) {
       d.body.textContent.includes("Lundi"),
     "Availability opens directly on useful controls",
   );
-  await field("Début de plage 1", "09:00");
-  await field("Fin de plage 1", "12:00");
-  await click("Séances de la plage 1");
+  await click("Configurer lundi");
+  await click("Modifier la plage 09:00–21:00");
+  await field("Début de plage", "09:00");
+  await field("Fin de plage", "12:00");
+  await click("Séances proposées");
   await toggle("Toutes mes séances");
   await toggle("Proposer Coaching duo");
   await toggle("Proposer Renforcement express");
-  await click("Appliquer à cette plage");
+  await click("Revenir aux horaires");
+  await click("Voir l’aperçu des horaires");
   ok(
     d.body.textContent.includes("Coaching individuel · 60 min · 50 €"),
     "Assigned offer price visible in schedule",
   );
+  await click("Appliquer à la journée");
   await click("Ajouter une plage");
-  await field("Début de plage 2", "14:00");
-  await field("Fin de plage 2", "17:00");
-  await click("Séances de la plage 2");
+  await field("Début de plage", "14:00");
+  await field("Fin de plage", "17:00");
+  await click("Séances proposées");
   await toggle("Toutes mes séances");
   await toggle("Proposer Coaching individuel");
   await toggle("Proposer Coaching duo");
-  await click("Appliquer à cette plage");
+  await click("Revenir aux horaires");
+  await click("Voir l’aperçu des horaires");
+  ok(d.body.textContent.includes("14:30"), "Offer duration generates departures");
   // Editing the hours must preserve the selected offers.
-  await field("Fin de plage 2", "17:30");
-  await field("Fin de plage 2", "17:00");
+  await field("Fin de plage", "17:30");
+  await field("Fin de plage", "17:00");
+  await click("Appliquer à la journée");
   await click("Ajouter une plage");
   ok(
-    d.querySelector('input[aria-label="Début de plage 3"]').value === "",
+    d.querySelector('input[aria-label="Début de plage"]').value === "",
     "No hour is imposed for a new range",
   );
-  await field("Début de plage 3", "18:10");
-  await field("Fin de plage 3", "19:10");
+  await field("Début de plage", "18:10");
+  await field("Fin de plage", "19:10");
+  await click("Appliquer à la journée");
   await click("Ajouter une plage");
-  await field("Début de plage 4", "20:00");
-  await field("Fin de plage 4", "21:00");
+  await field("Début de plage", "20:00");
+  await field("Fin de plage", "21:00");
   ok(
     !d.body.textContent.includes("Espacement des départs") &&
       !d.querySelector(
@@ -93,12 +101,13 @@ async function field(label, value) {
       ),
     "No pause or spacing settings",
   );
+  await click("Voir l’aperçu des horaires");
   ok(
-    d.body.textContent.includes("10:00") &&
-      d.body.textContent.includes("14:30"),
+    d.body.textContent.includes("20:00"),
     "Departures follow the duration of each assigned offer",
   );
-  await click("Enregistrer la semaine");
+  await click("Appliquer à la journée");
+  await click("Enregistrer les modifications");
   ok(
     stored().settings["0"].departureStep === null &&
       stored().settings["0"].buffer === 0,
@@ -111,7 +120,9 @@ async function field(label, value) {
     "Offer assignments persist after editing hours",
   );
   await click("Retour");
+  await click("Retour");
   await click("Agenda");
+  await click("Gérer les départs réservables");
   await click("Voir les créneaux de : Coaching individuel · 60 min · 50 €");
   await click("Renforcement express · 30 min · 30 €");
   ok(

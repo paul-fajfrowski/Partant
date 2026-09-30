@@ -1,0 +1,38 @@
+[
+  {
+    "name": "test-webapp-27",
+    "code": 0,
+    "seconds": 7.1,
+    "tail": "PASS WebApp: 45 checks; screenshots /private/tmp/partant-webapp-27\n"
+  },
+  {
+    "name": "test-documents-browser-28",
+    "code": 0,
+    "seconds": 3.2,
+    "tail": "PASS 16 dossier browser checks; screenshots /private/tmp/partant-documents-28\n"
+  },
+  {
+    "name": "test-range-browser-29",
+    "code": 0,
+    "seconds": 2.9,
+    "tail": "PASS 20 range-card browser checks; screenshots /private/tmp/partant-agenda-29\n"
+  },
+  {
+    "name": "test-agenda-density-30",
+    "code": 0,
+    "seconds": 4.6,
+    "tail": "PASS 39 density, detail and realistic-coach checks. Screenshots /private/tmp/partant-agenda-30\n"
+  },
+  {
+    "name": "test-availability-editor-31",
+    "code": 0,
+    "seconds": 7.4,
+    "tail": "PASS 78 availability editor checks; screenshots /private/tmp/partant-availability-31\n"
+  },
+  {
+    "name": "test-back-layers-32",
+    "code": 0,
+    "seconds": 17.7,
+    "tail": "PASS 100 navigation layer checks; screenshots /private/tmp/partant-navigation-32\n"
+  }
+]

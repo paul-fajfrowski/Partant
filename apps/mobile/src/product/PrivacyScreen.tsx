@@ -197,8 +197,10 @@ export function PrivacyScreen(
       <>
         <H1 style={{ marginBottom: 20 }}>Supprimer{"\n"}mon compte.</H1>
         <P>
-          Votre accès au service sera retiré et votre historique en partie
-          anonymisé. Les références des séances restent chez vos interlocuteurs.
+          Votre profil sera retiré et votre accès fermé dès confirmation.
+          Vos fichiers et votre compte de connexion seront ensuite supprimés
+          automatiquement. En cas d’incident, le serveur reprendra le nettoyage.
+          Les références anonymisées des séances restent chez vos interlocuteurs.
           Cette action est irréversible.
         </P>
         <P muted style={{ marginTop: 16 }}>

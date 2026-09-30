@@ -174,6 +174,7 @@ export function CoachPlacesEditor({
             onChange={(instructions) => update({ instructions })}
             multiline
           />
+          <P small muted>Ces consignes sont communiquées après la réservation.</P>
           <TextButton onPress={() => setRemoving(true)}>
             Retirer ce lieu
           </TextButton>

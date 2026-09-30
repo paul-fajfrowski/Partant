@@ -1,0 +1,21 @@
+{
+  "audited_revision": "2a88fa17f6635d01d0827bf37f87e2fe319df194",
+  "node": "24.19.0",
+  "expo": "57.0.24",
+  "react_native": "0.86.3",
+  "npm_vulnerabilities": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "xcode_workspace_list": "passed after prolonged startup",
+  "xcode_version": "Xcode 27.0\nBuild version 27A266a",
+  "web_export": "passed",
+  "ios_hermes_export": "passed",
+  "typescript": "passed",
+  "local_tracked_source_comparison": "Identical except historical coach-volume-paged-results.json",
+  "axe_core_version": "4.13.0"
+}

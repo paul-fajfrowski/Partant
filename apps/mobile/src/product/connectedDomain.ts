@@ -764,7 +764,29 @@ export function project(source: M.Store, actor?: Actor): M.Store {
       return [
         c.id,
         {
-          ...cfg,
+          // Explicit public contract: private and future settings never leak by default.
+          published: cfg.published,
+          weeklyConfigured: cfg.weeklyConfigured,
+          week: cfg.week,
+          exceptions: cfg.exceptions,
+          notice: cfg.notice,
+          horizon: cfg.horizon,
+          cancelHours: cfg.cancelHours,
+          studio: cfg.studio,
+          studioAddress: cfg.studioAddress,
+          radius: cfg.radius,
+          travelFee: cfg.travelFee,
+          buffer: 0,
+          departureStep: null,
+          payoutReady: false,
+          preparation: { provided: "", bring: "", meeting: "", weather: "" },
+          locations: cfg.locations && Object.fromEntries(
+            Object.entries(cfg.locations).map(([key, place]) => [key, {
+              type: place.type, name: place.name, address: place.address,
+              sector: place.sector, radius: place.radius, travelFee: place.travelFee,
+              coordinates: place.coordinates, instructions: "",
+            }]),
+          ),
           clientNotes: {},
           business: { name: "", status: "", email: "", address: "" },
           notifications: {
@@ -860,7 +882,11 @@ export function project(source: M.Store, actor?: Actor): M.Store {
             g.offer,
             g.day,
           )),
-    ),
+    ).map((g) => own(g.offer.coach) || actor?.staff ? g : ({
+      id: g.id, offer: g.offer, day: g.day, time: g.time, address: g.address,
+      format: g.format, locationName: g.locationName, cancelled: g.cancelled,
+      cancelHours: g.cancelHours, level: g.level,
+    })),
     bookings,
     calendarBusy: Object.fromEntries(
       Object.entries(s.calendarBusy ?? {}).filter(([coach]) => ids.has(coach)),

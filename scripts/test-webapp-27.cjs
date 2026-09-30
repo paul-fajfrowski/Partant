@@ -19,7 +19,7 @@ const M = require("../apps/mobile/src/product/model.ts"),
 const { chromium } = require(process.env.PARTANT_QA_PLAYWRIGHT || "playwright");
 const origin = process.env.PARTANT_QA_URL || "http://127.0.0.1:8081";
 const out =
-  process.env.PARTANT_QA_SCREENSHOTS || "/private/tmp/partant-webapp-27";
+  process.env.PARTANT_QA_SCREENSHOTS || require("node:path").join(require("node:os").tmpdir(), "partant-webapp-27");
 fs.mkdirSync(out, { recursive: true });
 let checks = 0;
 const ok = (value, label) => {

@@ -671,6 +671,12 @@ function ConfigurationEditor({
     return (
       <>
         {feedback}
+        {JSON.stringify(cfg.week) !== JSON.stringify(configFor(store, actual).week) && (
+          <View accessibilityLiveRegion="polite" style={{ marginBottom: 16 }}>
+            <P bold small>Modifications non enregistrées</P>
+            <P small muted>Enregistrez les réglages pour mettre ces horaires à disposition de vos clients.</P>
+          </View>
+        )}
         <AvailabilityWeekEditor
           showSave={!saveAction}
           settings={{
@@ -855,8 +861,8 @@ function ConfigurationEditor({
         {feedback}
         <H1>Une rencontre{"\n"}bien préparée.</H1>
         <P muted style={{ marginVertical: 20 }}>
-          Ces indications accompagnent vos nouvelles réservations. Les séances
-          déjà confirmées gardent leurs consignes.
+          Ces consignes sont réservées aux clients ayant réservé une séance.
+          Les séances déjà confirmées gardent leurs consignes.
         </P>
         {(
           [

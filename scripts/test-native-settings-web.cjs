@@ -78,7 +78,7 @@ async function match(text) {
   ok(stored().settings["0"].travelFee === 5, "Travel fee persists");
   await click("Retour");
   await click("Disponibilités");
-  await click("Enregistrer la semaine");
+  await click("Enregistrer les modifications");
   ok(stored().settings["0"].weeklyConfigured, "Weekly schedule saved");
   await click("Modifier une seule date");
   await toggle("Fermer cette journée");
@@ -102,31 +102,10 @@ async function match(text) {
   );
   await click("Retour");
   await click("Documents & vérification");
-  await click("Soumettre le dossier fictif");
-  ok(stored().settings["0"].dossier.status === "pending", "Dossier submitted");
-  ok(
-    stored().settings["0"].published === false,
-    "Submission closes publication",
-  );
+  ok(d.body.textContent.includes("Validée"), "Existing approved practice shown");
+  // Submission and team review are covered by test-verification-web-26.
   await click("Retour");
   await click("À propos de la simulation");
-  await click("Ouvrir l’espace équipe");
-  await click("Thomas Martin");
-  input(
-    "Motif de la décision",
-    "Quatre références fictives présentes et cohérentes.",
-  );
-  await wait();
-  await click("Enregistrer la décision");
-  ok(
-    stored().settings["0"].dossier.status === "approved",
-    "Team decision recorded",
-  );
-  ok(
-    stored().settings["0"].published === false,
-    "Approval does not auto-publish",
-  );
-  await click("Retour");
   await click("Choisir un compte fictif");
   await click("Alex");
   await click("Séances");

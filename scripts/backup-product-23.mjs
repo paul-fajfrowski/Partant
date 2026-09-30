@@ -58,13 +58,12 @@ try {
     { mode: 0o600 },
   );
   if (process.argv.includes("--verify")) {
-    // Exercise restoration atomically then roll back: no live data is replaced.
+    // Restore the saved payload into an isolated temporary table. No live row or
+    // production trigger is touched; this checks product data only, not a full DR.
     const quoted = JSON.stringify(snapshot.documents).replaceAll("'", "''");
-    fs.writeFileSync(
-      sql,
-      `begin; select version from private.product_revision for update; delete from private.product_documents; insert into private.product_documents(key,body) select key,value from jsonb_each('${quoted}'::jsonb); do $$ begin if (select jsonb_object_agg(key,body) from private.product_documents) is distinct from '${quoted}'::jsonb then raise exception 'RESTORE_MISMATCH'; end if; end $$; rollback;`,
-      { mode: 0o600 },
-    );
+    fs.writeFileSync(sql,
+      `begin; create temporary table partant_restore_check(key text primary key,body jsonb) on commit drop; insert into partant_restore_check select key,value from jsonb_each('${quoted}'::jsonb); do $$ begin if (select jsonb_object_agg(key,body) from partant_restore_check) is distinct from '${quoted}'::jsonb then raise exception 'RESTORE_MISMATCH'; end if; end $$; rollback;`,
+      { mode: 0o600 });
     query(sql);
   }
   console.log(
