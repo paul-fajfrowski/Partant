@@ -5,14 +5,15 @@ const { JSDOM, VirtualConsole } = require(
   process.env.PARTANT_QA_JSDOM ?? "../work/qa-runtime/node_modules/jsdom",
 );
 const root = path.resolve(__dirname, "..");
+const dist = process.env.PARTANT_QA_DIST || path.join(root, "apps/mobile/dist");
 const html = fs.readFileSync(
-  path.join(root, "apps/mobile/dist/index.html"),
+  path.join(dist, "index.html"),
   "utf8",
 );
 const scripts = [
   ...html.matchAll(/<script[^>]*src="([^"]+)"[^>]*><\/script>/g),
 ].map((m) =>
-  fs.readFileSync(path.join(root, "apps/mobile/dist", m[1]), "utf8"),
+  fs.readFileSync(path.join(dist, m[1]), "utf8"),
 );
 const viewportWidth = Number(process.env.PARTANT_QA_WIDTH || 390);
 const viewportHeight = Number(process.env.PARTANT_QA_HEIGHT || 844);
@@ -117,7 +118,8 @@ async function click(text) {
   let el;
   for (let attempt = 0; attempt < 40; attempt++) {
     el = findButton(text);
-    if (el) break;
+    if (el && !el.disabled && el.getAttribute("aria-disabled") !== "true" && el.getAttribute("aria-busy") !== "true") break;
+    el = undefined;
     await wait();
   }
   assert.ok(el, `Missing button ${text}\n${d.body.textContent.slice(-1000)}`);

@@ -87,6 +87,7 @@ const rows = () =>
     );
     H.finish("notification paging and scroll restoration");
   } catch (e) {
+    console.error("Rendered screen at failure:", H.d.body.textContent.slice(-3000));
     H.close();
     throw e;
   }

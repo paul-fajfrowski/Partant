@@ -73,6 +73,7 @@ const report = {
       "Middle booking opens correctly",
     );
     await H.click("Retour");
+    for(let i=0;i<40 && rows().length!==20;i++) await H.wait();
     H.ok(rows().length === 20, "Expanded page survives return");
     H.ok(
       H.d
@@ -157,6 +158,7 @@ const report = {
     H.finish("coach volume");
     console.log(JSON.stringify(report, null, 2));
   } catch (e) {
+    console.error("Rendered screen at failure:", H.d.body.textContent.slice(-3000));
     H.close();
     throw e;
   }

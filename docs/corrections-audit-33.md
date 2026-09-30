@@ -51,6 +51,7 @@ Node 24.19.0 ; depuis la racine :
 ```sh
 npm --prefix apps/mobile ci
 npm --prefix tools/qa ci
+npm --prefix services/calendar ci
 npm --prefix apps/mobile run typecheck
 node scripts/build-server-domain.cjs
 cd apps/mobile
@@ -59,7 +60,7 @@ cd ../..
 node scripts/qa-33.cjs
 ```
 
-Navigateur : installer Chromium avec `npx --prefix tools/qa playwright install chromium`, servir `apps/mobile/dist` sur 8098 et lancer `PARTANT_QA_URL=http://127.0.0.1:8098 node scripts/qa-33.cjs --browser`. Le workflow `.github/workflows/qa.yml` enchaîne ces contrôles et archive les résultats. Il ne possède pas de secret serveur et ne déploie rien.
+Navigateur : installer Chromium avec `npx --prefix tools/qa playwright install chromium`, servir `apps/mobile/dist` sur 8098 et lancer `PARTANT_QA_URL=http://127.0.0.1:8098 node scripts/qa-33.cjs --browser`. Les interactions de recette attendent que les contrôles soient réellement activés avant de cliquer, pour respecter les transitions occupées sur les machines moins rapides. Le workflow `.github/workflows/qa.yml` enchaîne ces contrôles et archive les résultats. Il ne possède pas de secret serveur et ne déploie rien.
 
 Pour un opérateur disposant déjà de l’accès CLI Supabase : `node scripts/check-operations-33.mjs`. La sortie ne contient que des compteurs ; exit 1 si une suppression ou un push reste bloqué, ou en cas d’échec cron/HTTP visible dans la rétention de pg_net. Un cron réussi peut simplement avoir mis sa requête HTTP en file ; les deux compteurs doivent être examinés. `node scripts/backup-product-23.mjs --verify` produit un fichier privé exclu de Git et vérifie sa reconstruction dans une table temporaire, sans remplacer les données vivantes.
 
