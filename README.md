@@ -1,5 +1,7 @@
 # Partant
 
+**Audit des fonctionnalités — 30 septembre 2026 :** [inventaire client/coach/équipe, quatre anomalies reproduites, parcours incomplets et prochaines priorités](docs/audit-features-2026-09-30.md). Audit postérieur à UX34 ; constats ouverts, aucun correctif produit dans cette livraison documentaire.
+
 **Améliorations UX/UI — livraison 34 :** [les dix corrections, leur recette et les limites natives](docs/corrections-ux-ui-34.md). Sources communes à l’app et à la WebApp.
 
 **Audit UX/UI — 30 septembre 2026 :** [constats reproduits, captures et dix améliorations priorisées](docs/audit-ux-ui-2026-09-30.md). Revue postérieure aux corrections techniques : constat historique avant les corrections de la livraison 34.

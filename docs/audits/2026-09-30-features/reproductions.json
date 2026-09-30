@@ -1,0 +1,30 @@
+{
+  "fixtureDate": "2026-09-30",
+  "scope": "shared connected domain; synthetic local data only",
+  "observations": [
+    {
+      "id": "F-01",
+      "observed": "Coach can republish after team suspension",
+      "reproduced": true
+    },
+    {
+      "id": "F-02",
+      "observed": "Paris coach with 3 km radius accepts a home booking in Lyon",
+      "reproduced": true
+    },
+    {
+      "id": "F-03",
+      "observed": "Date-only availability cannot publish without a recurring week",
+      "reproduced": true,
+      "issues": [
+        "Ouvrez votre planning."
+      ]
+    },
+    {
+      "id": "F-04",
+      "observed": "Two-person alert excludes an available Duo even with groupOnly false",
+      "reproduced": true,
+      "availableDuoSlots": 3
+    }
+  ]
+}

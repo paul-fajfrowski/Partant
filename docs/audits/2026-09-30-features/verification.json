@@ -1,0 +1,21 @@
+{
+  "date": "2026-09-30",
+  "productCommit": "6869b07",
+  "scope": "Feature audit, no product changes or remote mutations",
+  "freshLocalSuites": [
+    { "script": "scripts/test-connected-domain.cjs", "assertions": 61, "status": "passed" },
+    { "script": "scripts/test-verification-26.cjs", "assertions": 38, "status": "passed" },
+    { "script": "scripts/test-native-complete.cjs", "assertions": 68, "status": "passed" }
+  ],
+  "newReproductions": "reproductions.json",
+  "remoteReadOnlyObservation": {
+    "project": "jhhsysjdeyqsuztjtgea",
+    "teamAccounts": 0,
+    "calendarConnections": 0,
+    "pushDevices": 0,
+    "pushOutboxEntries": 0,
+    "activeFunctions": { "product-api": 21, "google-calendar": 16, "push-devices": 5, "push-dispatch": 9 },
+    "query": "select 'team_accounts' as feature, count(*)::int as total from private.product_staff union all select 'calendar_connections', count(*)::int from private.calendar_links union all select 'push_devices', count(*)::int from private.push_devices union all select 'push_outbox', count(*)::int from private.push_outbox;"
+  },
+  "notExecuted": ["physical iPhone or Android recipe", "new Xcode build", "live provider OAuth/Calendar/push transaction", "payment", "load test", "full browser regression rerun"]
+}

@@ -1,7 +1,7 @@
 # Partant — réalisé, reste à faire et reprise du projet
 
 **Mis à jour le 30 septembre 2026 — point d’entrée pour reprendre le projet.**
-Couvre les corrections techniques (livraison 33), les dix améliorations UX/UI (livraison 34) et la configuration Xcode `326eb1a`. Les résultats ci-dessous sont ceux des recettes documentées ; cette mise à jour documentaire ne constitue pas une nouvelle recette appareil ou serveur.
+Couvre les corrections techniques (livraison 33), les dix améliorations UX/UI (livraison 34), la configuration Xcode `326eb1a` et l’audit fonctionnel postérieur. L’[audit des fonctionnalités](docs/audit-features-2026-09-30.md) ajoute quatre anomalies reproduites encore ouvertes, 167 assertions locales rejouées et une observation serveur en lecture seule. Il ne constitue pas une nouvelle recette appareil ou de transaction fournisseur.
 
 Lire ce document en premier, puis le [détail des corrections et limites](docs/corrections-audit-33.md). L’[audit initial](docs/audit-app-webapp-2026-09-30.md) conserve volontairement les défauts observés avant correction : ne pas les considérer tous comme encore ouverts.
 
@@ -11,6 +11,7 @@ Lire ce document en premier, puis le [détail des corrections et limites](docs/c
 - **Les défauts de confidentialité, de stockage de session natif, d’accessibilité web et de navigation des notifications identifiés dans l’audit ont reçu leurs correctifs.** Les changements serveur correspondants sont déployés sur le projet de développement.
 - **Les tests automatisés sont concluants dans leur périmètre**, mais le dernier build natif signé n’est pas validé : la compilation locale a manqué d’espace disque.
 - **Le MVP commercial reste ouvert** : habilitation équipe, recette réelle iPhone/agenda/push, paiement, confidentialité opérationnelle et préparation de la distribution.
+- **Nouveaux défauts fonctionnels ouverts :** suspension contournable par republication, rayon domicile non contrôlé à la réservation, publication bloquée avec uniquement des dates ponctuelles, alertes excluant le duo. Voir F-01 à F-04 ; ils ne sont pas corrigés par la livraison UX34.
 - **Première action du collègue :** récupérer `main`, préparer son environnement (section 6), compiler puis exécuter la recette à deux comptes. Ne pas utiliser les anciens dossiers ou binaires comme preuve de mise à jour.
 
 Partant est une marketplace locale de coachs sportifs, centrée sur leurs disponibilités et la réservation. Le cœur fonctionnel existe dans une application React Native et une WebApp partageant leur code. Un serveur de développement est raccordé. **L’application n’est pas encore prête pour un lancement commercial : le paiement reste simulé et plusieurs validations réelles sont à terminer.**
@@ -41,7 +42,7 @@ La direction artistique reste monochrome, Hanken Grotesk, boutons pilules, surfa
 - Découverte locale, recherche, filtres sportifs et temporels, carte, comparaison, profils, avis et favoris.
 - Disponibilités visibles ; choix du créneau, de l’offre et du lieu ; individuel, duo et cours collectifs.
 - Récapitulatif, confirmation, séances futures/passées, modification, annulation, réservation à nouveau et avis.
-- Parcours de récurrence, propositions d’un coach, transfert de cours et annulation partielle de places ; aucun débit récurrent réel.
+- Réservation à nouveau avec choix et confirmation de chaque séance, propositions d’un coach, transfert de cours et annulation partielle de places ; aucune série client réservée automatiquement ni débit récurrent réel.
 - Messagerie regroupée par personne, brouillons et reprise d’envoi ; notifications par rubrique et chronologie, pagination visuelle, accès aux actions en attente. Les messages ont leur propre rubrique et badge.
 - Compte, préférences, assistance et confidentialité.
 
@@ -121,6 +122,8 @@ Les dix recommandations de l’[audit UX/UI avec captures](docs/audit-ux-ui-2026
 ## 5. MVP restant, par ordre de priorité
 
 Le socle fonctionnel permet de poursuivre les essais sans ajouter de nouvelles fonctionnalités. Les lignes ci-dessous séparent les validations manquantes des intégrations volontairement reportées.
+
+**Priorités ajoutées par l’audit fonctionnel :** corriger d’abord la suspension, le contrôle de zone à domicile et la publication sur dates ponctuelles (F-01 à F-03), puis compléter les alertes duo/localisation (F-04/F-05). Définir aussi l’issue de la candidature « Devenir coach » (F-06), actuellement transmise à l’assistance sans procédure complète d’accès au dossier professionnel. Aucun de ces constats n’est marqué résolu ; [preuves et critères de fin](docs/audit-features-2026-09-30.md).
 
 | Priorité / statut | Travail restant | Dépendance / responsable | Critère de fin |
 | --- | --- | --- | --- |
