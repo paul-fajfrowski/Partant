@@ -1,0 +1,76 @@
+[
+  {
+    "name": "test-agenda-density-30",
+    "pass": true,
+    "seconds": 16.5,
+    "summary": [
+      "PASS 39 density, detail and realistic-coach checks. Screenshots /var/folders/lw/8hmpsc111273mr_gzl4k3bqw0000gn/T/partant-agenda-30"
+    ]
+  },
+  {
+    "name": "test-availability-editor-31",
+    "pass": true,
+    "seconds": 10.5,
+    "summary": [
+      "PASS 78 availability editor checks; screenshots /var/folders/lw/8hmpsc111273mr_gzl4k3bqw0000gn/T/partant-availability-31"
+    ]
+  },
+  {
+    "name": "test-back-layers-32",
+    "pass": false,
+    "seconds": 13.8,
+    "summary": []
+  },
+  {
+    "name": "test-documents-browser-28",
+    "pass": true,
+    "seconds": 4.1,
+    "summary": [
+      "PASS 16 dossier browser checks; screenshots /var/folders/lw/8hmpsc111273mr_gzl4k3bqw0000gn/T/partant-documents-28"
+    ]
+  },
+  {
+    "name": "test-range-browser-29",
+    "pass": true,
+    "seconds": 3.9,
+    "summary": [
+      "PASS 20 range-card browser checks; screenshots /var/folders/lw/8hmpsc111273mr_gzl4k3bqw0000gn/T/partant-agenda-29"
+    ]
+  },
+  {
+    "name": "test-webapp-27",
+    "pass": false,
+    "seconds": 2.8,
+    "summary": []
+  },
+  {
+    "name": "test-keyboard-responsive-33",
+    "pass": true,
+    "seconds": 3,
+    "summary": [
+      "PASS 35 keyboard range, modal focus and reduced viewport checks (720 CSS px approximates 1440 at 200% zoom)."
+    ]
+  },
+  {
+    "name": "test-notification-browser-33",
+    "pass": true,
+    "seconds": 3.8,
+    "summary": [
+      "PASS 10 real Chromium notification detail, read state and return paging checks."
+    ]
+  },
+  {
+    "name": "test-experience-browser-34",
+    "pass": false,
+    "seconds": 7.6,
+    "summary": []
+  },
+  {
+    "name": "test-features-browser-35",
+    "pass": true,
+    "seconds": 3.4,
+    "summary": [
+      "PASS 10 feature-35 mobile/desktop application transition and dossier checks."
+    ]
+  }
+]

@@ -1,6 +1,8 @@
 # Partant — réalisé, reste à faire et reprise du projet
 
-**Mis à jour le 30 septembre 2026 — point d’entrée pour reprendre le projet.**
+**Mis à jour le 4 octobre 2026 — point d’entrée pour reprendre le projet.**
+
+L’[audit global du 4 octobre](docs/audit-complet-2026-10-04.md) ajoute le plan domaine/e-mail, données, exploitation et lancement. Il relève les avis npm de deux dépendances d’outillage, la maintenance PostgreSQL, un format de justificatif WebP incompatible, une heure inexistante mal convertie et un défaut d’accessibilité de dialogue. Aucune correction produit appliquée dans ce nouvel audit.
 Couvre les corrections techniques 33, les améliorations UX/UI 34 et les six corrections fonctionnelles 35, ainsi que la configuration Xcode `326eb1a`. Lire le [suivi fonctionnel 35](docs/corrections-features-35.md) avant l’audit historique : serveur déployé, recettes métier/API/navigateur exécutées, dernier binaire iPhone toujours à revalider.
 
 Lire ce document en premier, puis le [détail des corrections et limites](docs/corrections-audit-33.md). L’[audit initial](docs/audit-app-webapp-2026-09-30.md) conserve volontairement les défauts observés avant correction : ne pas les considérer tous comme encore ouverts.
@@ -9,7 +11,7 @@ Lire ce document en premier, puis le [détail des corrections et limites](docs/c
 
 - **Une seule source produit** pour l’app native et la WebApp, avec modes connecté et démonstration. Pas de seconde application à recopier ; le HTML reste une archive.
 - **Les défauts de confidentialité, de stockage de session natif, d’accessibilité web et de navigation des notifications identifiés dans l’audit ont reçu leurs correctifs.** Les changements serveur correspondants sont déployés sur le projet de développement.
-- **Les tests automatisés sont concluants dans leur périmètre**, mais le dernier build natif signé n’est pas validé : la compilation locale a manqué d’espace disque.
+- **Recette du 4 octobre : 43/43 suites métier/DOM passent.** Navigateur : 7/10 au premier passage, deux suites passent ensuite avec une horloge contrôlée ; le défaut d’accessibilité de l’éditeur d’offre reste reproduit. Le dernier build natif signé reste à valider.
 - **Le MVP commercial reste ouvert** : habilitation équipe, recette réelle iPhone/agenda/push, paiement, confidentialité opérationnelle et préparation de la distribution.
 - **Six points fonctionnels corrigés :** suspension protégée, rayon domicile vérifié côté serveur, dates ponctuelles publiables, alertes duo au prix total, alertes locales et candidature client vers coach avec décision équipe puis confirmation du client. Le dossier professionnel reste obligatoire.
 - **Première action du collègue :** récupérer `main`, préparer son environnement (section 6), compiler puis exécuter la recette à deux comptes. Ne pas utiliser les anciens dossiers ou binaires comme preuve de mise à jour.
@@ -120,6 +122,8 @@ Le propriétaire avait validé Apple natif, Google et plusieurs parcours dans de
 Les dix recommandations de l’[audit UX/UI avec captures](docs/audit-ux-ui-2026-09-30.md) ont été mises en œuvre dans la source partagée : recherche et date préservées, annulation contextualisée, agenda coach priorisé, offres dans un éditeur dédié, erreurs au niveau des champs, états de sauvegarde, états vides et composition desktop. Voir [la livraison 34 et ses preuves](docs/corrections-ux-ui-34.md). La recette 34 consolide 42 suites métier/DOM, 9 suites navigateur et les contrôles d’accessibilité des écrans modifiés. Les rapports historiques de la livraison 33 ci-dessus sont conservés. L’audit initial reste une photographie avant correction ; la validation physique du nouveau build iPhone reste à faire.
 
 ## 5. MVP restant, par ordre de priorité
+
+**Complément du 4 octobre :** traiter A36-01 à A36-06 dans l’[audit global](docs/audit-complet-2026-10-04.md#corrections-techniques-nouvelles-à-prévoir), puis suivre son ordre domaine/e-mail, équipe, données/exploitation, appareils et paiement. Les corrections F-01 à F-06 restent acquises ; les nouveaux constats ne les annulent pas.
 
 Le socle fonctionnel permet de poursuivre les essais sans ajouter de nouvelles fonctionnalités. Les lignes ci-dessous séparent les validations manquantes des intégrations volontairement reportées.
 

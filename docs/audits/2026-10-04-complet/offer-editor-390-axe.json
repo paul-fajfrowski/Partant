@@ -1,0 +1,9 @@
+[
+  {
+    "id": "aria-allowed-attr",
+    "impact": "critical",
+    "nodes": [
+      "<div aria-modal=\"true\" class=\"css-g5y9jx r-1p0dtai r-1d2f490 r-1xcajam r-zchlnj r-ipm5af r-1niwhzg\">"
+    ]
+  }
+]

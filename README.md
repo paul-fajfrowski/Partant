@@ -1,5 +1,7 @@
 # Partant
 
+**Audit global — 4 octobre 2026 :** [App, WebApp, données, e-mails, sécurité, exploitation et plan de lancement](docs/audit-complet-2026-10-04.md). 43 suites métier passent ; un défaut d’accessibilité persiste et deux recettes navigateur nécessitent une horloge contrôlée. Nouveaux points techniques et services manquants détaillés, sans correction produit dans cet audit.
+
 **Corrections fonctionnelles — livraison 35 :** [les six points corrigés, la recette et les validations restantes](docs/corrections-features-35.md). App native, WebApp et serveur de développement mis à jour.
 
 **Audit des fonctionnalités — 30 septembre 2026 :** [inventaire client/coach/équipe, quatre anomalies reproduites, parcours incomplets et prochaines priorités](docs/audit-features-2026-09-30.md). Constat historique après UX34 ; lire la livraison 35 pour les corrections.

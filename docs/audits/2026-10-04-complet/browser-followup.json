@@ -1,0 +1,18 @@
+{
+  "initialPassed": 7,
+  "initialTotal": 10,
+  "controlledClock": "2026-09-30T10:00:00Z",
+  "controlledClockPasses": [
+    "test-webapp-27: 45 checks",
+    "test-back-layers-32: 100 checks"
+  ],
+  "stillFailing": "test-experience-browser-34: aria-allowed-attr on offer-editor-390, reproduced twice",
+  "logs": {
+    "test-back-layers-32": "locator.click: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: /^Voir les 6 plages du/ }).first()\u001b[22m\n\n    at /Users/paulf/Developer/Partant-audit-33/scripts/test-back-layers-32.cjs:185:10 {\n  name: 'TimeoutError'\n}\n",
+    "test-webapp-27": "AssertionError [ERR_ASSERTION]: Actual booking appears once in weekly agenda\n    at ok (/Users/paulf/Developer/Partant-audit-33/scripts/test-webapp-27.cjs:26:10)\n    at /Users/paulf/Developer/Partant-audit-33/scripts/test-webapp-27.cjs:153:3 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}\n",
+    "test-experience-browser-34": "AssertionError [ERR_ASSERTION]: offer-editor-390 axe checks\n    at ok (/Users/paulf/Developer/Partant-audit-33/scripts/test-experience-browser-34.cjs:28:10)\n    at snap (/Users/paulf/Developer/Partant-audit-33/scripts/test-experience-browser-34.cjs:66:7)\n    at async /Users/paulf/Developer/Partant-audit-33/scripts/test-experience-browser-34.cjs:192:7 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}\n",
+    "webapp-fixed-clock": "PASS WebApp: 45 checks; screenshots /var/folders/lw/8hmpsc111273mr_gzl4k3bqw0000gn/T/partant-webapp-27\n",
+    "back-fixed-clock": "PASS 100 navigation layer checks; screenshots /var/folders/lw/8hmpsc111273mr_gzl4k3bqw0000gn/T/partant-navigation-32\n",
+    "ux-rerun": "AssertionError [ERR_ASSERTION]: offer-editor-390 axe checks\n    at ok (/Users/paulf/Developer/Partant-audit-33/scripts/test-experience-browser-34.cjs:28:10)\n    at snap (/Users/paulf/Developer/Partant-audit-33/scripts/test-experience-browser-34.cjs:66:7)\n    at async /Users/paulf/Developer/Partant-audit-33/scripts/test-experience-browser-34.cjs:192:7 {\n  generatedMessage: false,\n  code: 'ERR_ASSERTION',\n  actual: false,\n  expected: true,\n  operator: '==',\n  diff: 'simple'\n}\n"
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "date": "2026-10-04",
+  "commit": "bb7eff1",
+  "gitMatchesOriginMain": true,
+  "typecheck": "passed",
+  "unitDomSuites": {
+    "passed": 43,
+    "total": 43
+  },
+  "browser": "7/10 initial; 2 pass with controlled weekday; 1 accessibility failure persists",
+  "remote": {
+    "region": "eu-west-1",
+    "projectStatus": "ACTIVE_HEALTHY",
+    "postgres": "17.6 (platform 17.6.1.166)",
+    "teamAccounts": 0,
+    "calendarLinks": 0,
+    "pushDevices": 0,
+    "pushOutbox": 0,
+    "pendingDeletions": 0,
+    "stalledDeletions": 0,
+    "stalledPush": 0,
+    "cronFailures24h": 0,
+    "recentHttpFailures": 0,
+    "documentsBytes": 7557,
+    "publicApiStatus": 200,
+    "anonymousAccount": null,
+    "publicCoaches": 0,
+    "privateIdentitiesExposedInAnonymousResponse": false,
+    "anonymousRpcStatus": {
+      "product_load": 401,
+      "product_commit": 401
+    },
+    "functions": {
+      "product-api": 23,
+      "google-calendar": 18,
+      "push-dispatch": 11,
+      "push-devices": 5
+    },
+    "securityAdvisors": {
+      "warnings": [
+        "Leaked password protection disabled"
+      ],
+      "info": [
+        "11 RLS-enabled private tables without policies; no anon/authenticated table grants"
+      ],
+      "performanceAdvisors": []
+    },
+    "buckets": {
+      "coach-photos": {
+        "public": true,
+        "maxBytes": 5242880,
+        "mime": [
+          "image/jpeg",
+          "image/png",
+          "image/webp"
+        ]
+      },
+      "coach-documents": {
+        "public": false,
+        "maxBytes": 10485760,
+        "mime": [
+          "application/pdf",
+          "image/jpeg",
+          "image/png"
+        ]
+      }
+    },
+    "allPublicPrivateTablesObservedHaveRls": true,
+    "productAndCalendarRpcNotExecutableByAnonOrAuthenticated": true
+  },
+  "newReproductions": {
+    "webpDocuments": "picker accepts image/webp; live private bucket does not",
+    "dst": {
+      "inputParis": "2027-03-28 02:30",
+      "actualUtc": "2027-03-28T00:30:00.000Z",
+      "roundTripParis": "2027-03-28 01:30"
+    },
+    "accessibility": "aria-modal on div without appropriate role after return to offer editor"
+  },
+  "npm": {
+    "mobileHighPackages": 16,
+    "uniqueAdvisories": [
+      "GHSA-vfj7-8cjw-p6xm",
+      "GHSA-86w9-cpqp-85rv"
+    ],
+    "paths": "Expo CLI / Metro tooling",
+    "qaVulnerabilities": 0,
+    "calendarVulnerabilities": 0
+  },
+  "notPerformed": [
+    "signed native build or physical phone recipe",
+    "full live authenticated API regression (56 checks from September 30 remain historical)",
+    "real OAuth/Calendar/APNs transaction",
+    "load/penetration test",
+    "complete backup restoration",
+    "production HTTP header audit",
+    "SMTP/OAuth console reconfiguration",
+    "purchases or product fixes"
+  ]
+}
