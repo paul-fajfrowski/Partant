@@ -25,13 +25,15 @@ export async function choosePhoto(owner?: string) {
   const picker = await import("expo-image-picker");
   const r = await picker.launchImageLibraryAsync({
     mediaTypes: ["images"],
-    base64: true,
+    base64: !owner,
     quality: 0.7,
   });
   if (r.canceled) return null;
   const a = r.assets[0];
-  if (!a.base64 || a.base64.length * 0.75 > 600 * 1024)
-    throw Error("Choisissez une photo de moins de 600 Ko.");
+  if (!owner && (!a.base64 || a.base64.length * 0.75 > 600 * 1024))
+    throw Error("Pour cet aperçu local, choisissez une photo de moins de 600 Ko.");
+  if (owner && a.fileSize && a.fileSize > 5 * 1024 * 1024)
+    throw Error("Choisissez une photo de moins de 5 Mo.");
   if (
     a.mimeType &&
     !["image/jpeg", "image/png", "image/webp"].includes(a.mimeType)
@@ -69,7 +71,8 @@ export async function uploadAsset(
       "image/webp": "webp",
     } as Record<string, string>
   )[mime];
-  if (!ext) throw Error("Choisissez un PDF, JPEG, PNG ou WebP.");
+  if (!ext || (bucket === "coach-photos" && mime === "application/pdf"))
+    throw Error(bucket === "coach-photos" ? "Choisissez un JPEG, PNG ou WebP." : "Choisissez un PDF, JPEG, PNG ou WebP.");
   const path = `${owner}/${Crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage
     .from(bucket)

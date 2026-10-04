@@ -293,23 +293,33 @@ export function dayLabel(day: string, short = false) {
     timeZone: "Europe/Paris",
   }).format(new Date(day + "T12:00:00Z"));
 }
+const parisClock = new Intl.DateTimeFormat("sv-SE", {
+  timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+});
+const wallClock = (utc: number) => {
+  const parts = Object.fromEntries(parisClock.formatToParts(new Date(utc)).map(p => [p.type, p.value]));
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}Z`;
+};
+/** Paris wall time. Gaps are invalid; repeated autumn times use the later occurrence.
+ * This preserves existing bookings' autumn interpretation without inventing a start. */
 export function instant(day: string, time: string) {
-  const target = Date.parse(`${day}T${time}:00Z`);
-  let utc = target;
-  for (let i = 0; i < 3; i++) {
-    const parts = new Intl.DateTimeFormat("sv-SE", {
-      timeZone: "Europe/Paris",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hourCycle: "h23",
-    }).format(new Date(utc));
-    utc += target - Date.parse(parts.replace(" ", "T") + "Z");
-  }
-  return utc;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) return NaN;
+  const local = `${day}T${time}:00Z`, target = Date.parse(local);
+  if (!Number.isFinite(target) || new Date(target).toISOString().slice(0, 10) !== day) return NaN;
+  const offsets = new Set([-86400000, 0, 86400000].map(delta => {
+    const sample = target + delta;
+    return Date.parse(wallClock(sample)) - sample;
+  }));
+  const matches = [...offsets].map(offset => target - offset).filter(utc => wallClock(utc) === local);
+  return matches.length ? Math.max(...matches) : NaN;
+}
+/** Do not sell a wall-clock interval whose actual duration changes at the DST boundary. */
+export function validSessionTime(day: string, time: string, duration: number) {
+  const start = instant(day, time), endMinutes = mins(time) + duration;
+  if (!Number.isFinite(start) || !Number.isFinite(duration) || duration <= 0 || endMinutes > 1440) return false;
+  const end = endMinutes === 1440 ? instant(addDays(day, 1), "00:00") : instant(day, endTime(time, duration));
+  return end - start === duration * 60000;
 }
 export const mins = (time: string) =>
   Number(time.slice(0, 2)) * 60 + Number(time.slice(3));
@@ -358,6 +368,7 @@ export function slotsFor(
           generatedTimes(cfg, day, offer?.duration ?? 60, offer?.id));
   return base.filter(
     (time) =>
+      validSessionTime(day, time, offer?.duration ?? 60) &&
       instant(day, time) > now() + cfg.notice * 3600000 &&
       (!offer ||
         offer.kind === "Groupe" ||
@@ -616,7 +627,7 @@ function _openGroup(store: Store, group: GroupSession): Store {
   if (
     !/^\d{4}-\d{2}-\d{2}$/.test(group.day) ||
     !/^([01]\d|2[0-3]):[0-5]\d$/.test(group.time) ||
-    !Number.isFinite(instant(group.day, group.time)) ||
+    !validSessionTime(group.day, group.time, o.duration) ||
     instant(group.day, group.time) < now() + 7200000 ||
     !group.address.trim()
   )

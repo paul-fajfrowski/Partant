@@ -3,6 +3,7 @@ import { ActivityIndicator, Platform, View } from "react-native";
 import { useFonts } from "expo-font";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import ProductApp from "./src/product/ProductApp";
+import { runtimeMode } from "./src/runtimeMode";
 import ConnectedPilot from "./src/ConnectedPilot";
 export default function App() {
   const [loaded, error] = useFonts({
@@ -29,17 +30,15 @@ export default function App() {
     );
   const params =
     Platform.OS === "web" ? new URLSearchParams(window.location.search) : null;
+  const mode = runtimeMode(process.env.EXPO_PUBLIC_RELEASE_CHANNEL === "production", Platform.OS,
+    params?.get("data"), process.env.EXPO_PUBLIC_DATA_MODE, params?.get("tools"));
   return (
     <SafeAreaProvider>
-      {params?.get("tools") === "connections" ? (
+      {mode.connectionTools ? (
         <ConnectedPilot />
       ) : (
         <ProductApp
-          live={
-            (params?.get("data") ??
-              process.env.EXPO_PUBLIC_DATA_MODE ??
-              (Platform.OS === "web" ? "preview" : "connected")) === "connected"
-          }
+          live={mode.live}
         />
       )}
     </SafeAreaProvider>

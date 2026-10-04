@@ -40,5 +40,6 @@
   "test-deletion-worker-33",
   "test-secure-session-33",
   "test-experience-34",
-  "test-features-35"
+  "test-features-35",
+  "test-hardening-36"
 ]

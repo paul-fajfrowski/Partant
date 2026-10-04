@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-04",
+  "project": "jhhsysjdeyqsuztjtgea",
+  "checks": {
+    "connected_api": 36,
+    "features_api": 20,
+    "storage": 7,
+    "dst_api": 4
+  },
+  "remaining_qa_users": 0,
+  "remaining_qa_objects": 0,
+  "functions": {
+    "product-api": 24,
+    "google-calendar": 19,
+    "push-dispatch": 12
+  },
+  "migration": "20261004163226_storage_webp_36",
+  "backup_restore_check": "Product documents restored in rolled-back temporary table only; excludes Auth, Storage and secrets."
+}

@@ -17,6 +17,8 @@ const {
 const { chromium } = require(process.env.PARTANT_QA_PLAYWRIGHT);
 const seed = coachAgendaPreview(),
   out = require("node:path").join(require("node:os").tmpdir(), "partant-navigation-32");
+// Exercise a busy day even on Saturday/Sunday; no production schedule is changed.
+seed.settings["0"].exceptions[require("../apps/mobile/src/product/model.ts").today()] = seed.settings["0"].week[0].map(r => [...r]);
 fs.mkdirSync(out, { recursive: true });
 let checks = 0;
 const ok = (v, msg) => {

@@ -1,0 +1,1 @@
+PASS production browser: demo URLs and seeded demo account ignored; connected welcome rendered; launchers removed.

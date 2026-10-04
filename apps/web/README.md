@@ -35,3 +35,7 @@ Les derniers états serveur sont rechargés périodiquement lorsque l’applicat
 Le paiement reste simulé ; cette WebApp ne réactive aucun des branchements reportés. Les push actuellement configurés concernent iOS, pas les notifications du navigateur. L’usage hors connexion et la publication publique ne sont pas inclus.
 
 Voir `../../docs/webapp-27.md` pour la recette et les limites.
+
+## Export destiné à une future publication
+
+`npm --prefix apps/web run build:production` produit `apps/web/dist-production` : connexion imposée, paramètres de démonstration ignorés et pages de recette retirées. Il reste relié au projet configuré dans les variables publiques ; la commande ne crée pas un serveur de production et ne publie rien. Le modèle `_headers` doit être pris en charge par l’hébergeur. La CI teste qu’un compte fictif déjà stocké et les paramètres `data=preview&tools=connections` ne donnent pas accès à la démo. Voir [livraison 36](../../docs/corrections-audit-36.md).

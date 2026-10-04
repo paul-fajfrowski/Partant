@@ -48,3 +48,6 @@ if (
       "Le correctif safe-area-context doit être revérifié : source native inattendue.",
     );
 }
+
+// Shared web accessibility and Expo build-tool security patches.
+require('./patch-audit-36.cjs');

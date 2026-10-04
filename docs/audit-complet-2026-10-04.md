@@ -1,5 +1,7 @@
 # Audit global de Partant et préparation au lancement
 
+> Suivi après corrections : voir la [livraison 36](corrections-audit-36.md). Le présent document conserve les constats historiques avant correction.
+
 Audit du 4 octobre 2026, sur `bb7eff1`, identique à `origin/main` au contrôle. Il couvre les sources communes React Native/WebApp, les parcours automatisés, la configuration serveur observable et les besoins d’exploitation. Aucune correction produit, migration, nouvelle habilitation ou souscription n’a été appliquée pendant cet audit.
 
 **Partant possède un socle produit développé, mais pas encore une exploitation commerciale complète.** Les priorités sont désormais la fiabilité, l’exploitation des comptes coachs, l’identité professionnelle, les communications et le paiement. Ajouter des écrans n’est pas la principale réponse. Supabase fournit déjà une vraie base de données ; c’est son modèle métier et son exploitation qu’il faut faire évoluer.

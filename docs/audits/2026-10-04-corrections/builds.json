@@ -1,0 +1,26 @@
+{
+  "artifacts": {
+    "shared": {
+      "metadata_sha256": "82bcc4b69e03350c02926d3da60f3c576a77ea35f1e4f1dacfda4cd672d2d573",
+      "bundles": [
+        "_expo/static/js/ios/index-0814203773cf675b15cf217b83753014.hbc"
+      ]
+    },
+    "webapp": {
+      "metadata_sha256": "aa5f19cc84d41c0f8c70ececb2bc82e863227ea1e121632aca879eb616056991",
+      "bundles": []
+    },
+    "public": {
+      "metadata_sha256": "aa5f19cc84d41c0f8c70ececb2bc82e863227ea1e121632aca879eb616056991",
+      "bundles": []
+    },
+    "ios_release": {
+      "metadata_sha256": "784f7dc17b5a1f37ddc848a2a470b0c83be850e7b5ff395d42fc01123031ec20",
+      "bundles": [
+        "_expo/static/js/ios/index-3ae32998e9b7044cef1be6dec27ca109.hbc"
+      ]
+    }
+  },
+  "signed_xcode_build": false,
+  "device_test": false
+}

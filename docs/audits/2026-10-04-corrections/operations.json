@@ -1,0 +1,13 @@
+{
+  "calendar_connections": 0,
+  "checked_at": "2026-10-04T16:43:03.656106+00:00",
+  "cron_failures_24h": 0,
+  "cron_stale_or_missing": 0,
+  "deletions_pending": 0,
+  "deletions_stalled": 0,
+  "documents_bytes": 7557,
+  "edge_http_failures": 0,
+  "push_devices": 0,
+  "push_stalled": 0,
+  "team_accounts": 0
+}

@@ -29,3 +29,6 @@ work/
 
 # Private local business backups (not source artifacts)
 .local-backups/
+
+# Dedicated public-release artifact (never source)
+dist-production/

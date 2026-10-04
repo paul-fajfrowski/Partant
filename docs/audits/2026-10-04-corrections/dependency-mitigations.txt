@@ -1,0 +1,6 @@
+MITIGATED (upstream still flagged) apps/mobile GHSA-vfj7-8cjw-p6xm high
+MITIGATED (upstream still flagged) apps/mobile GHSA-86w9-cpqp-85rv high
+apps/mobile: 2 root advisory/advisories
+tools/qa: 0 root advisory/advisories
+services/calendar: 0 root advisory/advisories
+PASS 43 hardening regressions (DST, dependency mitigations)

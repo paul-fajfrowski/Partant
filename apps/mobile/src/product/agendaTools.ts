@@ -12,6 +12,7 @@ import {
   mins,
   overlap,
   instant,
+  validSessionTime,
   now,
   today,
   addDays,
@@ -94,7 +95,7 @@ function _addExternalSession(
     !values.name.trim() ||
     !/^\d{4}-\d{2}-\d{2}$/.test(values.day) ||
     !/^([01]\d|2[0-3]):[0-5]\d$/.test(values.time) ||
-    !Number.isFinite(instant(values.day, values.time)) ||
+    !validSessionTime(values.day, values.time, o.duration) ||
     instant(values.day, values.time) <= now() ||
     mins(values.time) + o.duration > 1440
   )
@@ -177,6 +178,8 @@ export function availabilityReasons(
   if (slotsFor(c, day, s, o).includes(time)) return [];
   const cfg = configFor(s, c.id),
     reasons: string[] = [];
+  if (!validSessionTime(day, time, o.duration))
+    reasons.push("Cette heure ou cette durée traverse le changement d’heure. Choisissez un autre départ.");
   if (!cfg.published) reasons.push("Votre profil n’est pas publié.");
   if (!canOffer(cfg.dossier, c, o, today()))
     reasons.push("Votre dossier doit être validé et à jour.");

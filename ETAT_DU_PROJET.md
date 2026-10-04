@@ -2,8 +2,9 @@
 
 **Mis à jour le 4 octobre 2026 — point d’entrée pour reprendre le projet.**
 
-L’[audit global du 4 octobre](docs/audit-complet-2026-10-04.md) ajoute le plan domaine/e-mail, données, exploitation et lancement. Il relève les avis npm de deux dépendances d’outillage, la maintenance PostgreSQL, un format de justificatif WebP incompatible, une heure inexistante mal convertie et un défaut d’accessibilité de dialogue. Aucune correction produit appliquée dans ce nouvel audit.
-Couvre les corrections techniques 33, les améliorations UX/UI 34 et les six corrections fonctionnelles 35, ainsi que la configuration Xcode `326eb1a`. Lire le [suivi fonctionnel 35](docs/corrections-features-35.md) avant l’audit historique : serveur déployé, recettes métier/API/navigateur exécutées, dernier binaire iPhone toujours à revalider.
+La [livraison 36](docs/corrections-audit-36.md) corrige les défauts reproductibles de l’audit global et ajoute les contrôles de diffusion : WebP privé, changement d’heure, fenêtres accessibles, recettes stables, mitigations dépendances, séparation des exports démo/production et cache, manifeste iOS, contrôles CI et tâches planifiées. Les fonctions serveur sont déployées. PostgreSQL reste en 17.6 : préparation de maintenance réalisée, mise à jour encore ouverte.
+
+Couvre aussi les corrections techniques 33, UX/UI 34 et fonctionnelles 35. Le dernier binaire iPhone signé reste à revalider.
 
 Lire ce document en premier, puis le [détail des corrections et limites](docs/corrections-audit-33.md). L’[audit initial](docs/audit-app-webapp-2026-09-30.md) conserve volontairement les défauts observés avant correction : ne pas les considérer tous comme encore ouverts.
 
@@ -11,7 +12,7 @@ Lire ce document en premier, puis le [détail des corrections et limites](docs/c
 
 - **Une seule source produit** pour l’app native et la WebApp, avec modes connecté et démonstration. Pas de seconde application à recopier ; le HTML reste une archive.
 - **Les défauts de confidentialité, de stockage de session natif, d’accessibilité web et de navigation des notifications identifiés dans l’audit ont reçu leurs correctifs.** Les changements serveur correspondants sont déployés sur le projet de développement.
-- **Recette du 4 octobre : 43/43 suites métier/DOM passent.** Navigateur : 7/10 au premier passage, deux suites passent ensuite avec une horloge contrôlée ; le défaut d’accessibilité de l’éditeur d’offre reste reproduit. Le dernier build natif signé reste à valider.
+- **Recette après corrections : 44/44 suites métier/DOM, 10/10 suites navigateur, export public et 67 contrôles serveur passent.** Bundle Hermes exporté ; aucune nouvelle validation physique iPhone annoncée.
 - **Le MVP commercial reste ouvert** : habilitation équipe, recette réelle iPhone/agenda/push, paiement, confidentialité opérationnelle et préparation de la distribution.
 - **Six points fonctionnels corrigés :** suspension protégée, rayon domicile vérifié côté serveur, dates ponctuelles publiables, alertes duo au prix total, alertes locales et candidature client vers coach avec décision équipe puis confirmation du client. Le dossier professionnel reste obligatoire.
 - **Première action du collègue :** récupérer `main`, préparer son environnement (section 6), compiler puis exécuter la recette à deux comptes. Ne pas utiliser les anciens dossiers ou binaires comme preuve de mise à jour.

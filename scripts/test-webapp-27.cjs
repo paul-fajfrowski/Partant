@@ -150,6 +150,9 @@ async function noOverflow(page, label) {
   await guest.close();
   const coach = await pageFor("coach");
   await coach.getByTestId("desktop-agenda").waitFor();
+  // Tomorrow belongs to next week on Sundays. Navigate to the fixture's actual week.
+  const nextWeek = new Date(day + "T12:00:00Z").getUTCDay() === 1;
+  if (nextWeek) await coach.getByRole("button", { name: "Semaine suivante", exact: true }).click();
   ok(
     (await coach.getByRole("button", { name: /14:07.*Alex/ }).count()) === 1,
     "Actual booking appears once in weekly agenda",
@@ -178,6 +181,7 @@ async function noOverflow(page, label) {
   ok(true, "Coach can reopen the exact departure");
   await coach.getByRole("button", { name: "Aujourd’hui", exact: true }).click();
 
+  if (nextWeek) await coach.getByRole("button", { name: "Semaine suivante", exact: true }).click();
   await coach.getByRole("button", { name: /17:13.*Nina/ }).click();
   await coach.getByText("Nina", { exact: true }).waitFor();
   ok(
@@ -188,6 +192,7 @@ async function noOverflow(page, label) {
   );
   await coach.getByRole("button", { name: "Retour", exact: true }).click();
   await coach.getByTestId("desktop-agenda").waitFor();
+  await coach.getByRole("button", { name: "Aujourd’hui", exact: true }).click();
   await coach
     .getByRole("button", { name: "Semaine suivante", exact: true })
     .click();
