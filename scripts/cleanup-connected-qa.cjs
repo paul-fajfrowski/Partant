@@ -31,6 +31,7 @@ begin
  end loop;
  update private.product_revision set version=version+1;
 end $$;
+delete from private.product_team_events where actor::text=any(array[${ids}]) or subject=any(array[${ids}]);
 delete from private.product_requests where actor::text=any(array[${ids}]);
 delete from private.product_rate_limits where actor=any(array[${ids}]) or actor=any(array(select 'push:'||x from unnest(array[${ids}]::text[]) x));
 delete from auth.refresh_tokens where user_id::text=any(array[${ids}]);

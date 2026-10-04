@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-04T17:46:05.617568+00:00",
+  "baseCommit": "a630f20",
+  "delivery": 37,
+  "unitDom": {
+    "passed": 46,
+    "total": 46
+  },
+  "browser": {
+    "passed": 11,
+    "total": 11
+  },
+  "liveTests": [
+    "PASS 36 deployed API, Auth, concurrency, privacy and Storage checks. No payments or emails.",
+    "PASS 20 deployed feature-35 radius, dates, suspension and coach conversion checks. QA accounts only.",
+    "PASS 19 deployed team MFA, roles, pagination, claims, Storage and session revocation checks"
+  ],
+  "cleanup": [
+    {
+      "remaining_qa_users": 0
+    }
+  ],
+  "securityAdvisor": {
+    "errors": 0,
+    "informationalPrivateRlsTables": 13,
+    "existingWarning": "auth_leaked_password_protection"
+  },
+  "deployed": {
+    "product-api": 26,
+    "google-calendar": 21,
+    "push-dispatch": 14
+  },
+  "exports": [
+    "shared web + Hermes iOS",
+    "production web",
+    "production Hermes iOS"
+  ],
+  "physicalIphoneValidated": false,
+  "remoteGithubCIValidated": false,
+  "claimLifecycleRollbackTest": "passed",
+  "teamDecisionRetry": "Lost acknowledgement retains reason and request ID; passes on mobile and desktop DOM"
+}

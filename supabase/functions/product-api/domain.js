@@ -42,6 +42,7 @@ exports.asActor = asActor;
 exports.applyCommand = applyCommand;
 exports.project = project;
 exports.documents = documents;
+const teamAccess_1 = load("teamAccess.ts");
 const geoPolicy_1 = load("geoPolicy.ts");
 const verification_1 = load("verification.ts");
 const Messaging = __importStar(load("messaging.ts"));
@@ -166,6 +167,9 @@ function applyCommand(source, actor, cmd, geo = {}) {
     const a = cmd.args;
     if (!Array.isArray(a))
         throw Error("Action invalide.");
+    const permission = (0, teamAccess_1.teamPermission)(cmd.name, a);
+    if (permission && (!actor.staff || !(0, teamAccess_1.teamAllowed)(actor.teamRole ?? "admin", permission)))
+        throw Error("Votre habilitation ne permet pas cette action. Vérifiez votre accès équipe.");
     let n = s;
     switch (cmd.name) {
         case "preferences": {
@@ -696,23 +700,29 @@ function applyCommand(source, actor, cmd, geo = {}) {
 /** Public discovery plus strictly scoped private information. */
 function project(source, actor) {
     const s = asActor(source, actor), id = actor?.id, own = (coach) => !!id && coach === id;
+    const review = (coach) => !!actor?.staff && (actor.teamRole === undefined ||
+        ((0, teamAccess_1.teamAllowed)(actor.teamRole, "reviewer") && actor.reviewCoach === coach));
+    const administer = !!actor?.staff && actor.teamRole === "admin";
+    const support = !!actor?.staff && (0, teamAccess_1.teamAllowed)(actor.teamRole ?? "admin", "support");
     const bookings = s.bookings.filter((b) => b.clientId === id || own(b.coach));
     const bookingIds = new Set(bookings.map((b) => b.id));
     const related = new Set(bookings.map((b) => b.coach));
-    const coaches = M.allCoaches(s).filter((c) => actor?.staff ||
+    const coaches = M.allCoaches(s).filter((c) => review(c.id) ||
+        (administer && !!M.configFor(s, c.id).suspension?.active) ||
         own(c.id) ||
         related.has(c.id) ||
         (M.configFor(s, c.id).published && !M.configFor(s, c.id).suspension?.active));
     const ids = new Set(coaches.map((c) => c.id));
     const settings = Object.fromEntries(coaches.map((c) => {
         const cfg = M.configFor(s, c.id);
-        if (own(c.id) || actor?.staff)
+        if (own(c.id) || review(c.id))
             return [c.id, cfg];
         return [
             c.id,
             {
                 // Explicit public contract: private and future settings never leak by default.
                 published: cfg.published,
+                ...(administer && cfg.suspension?.active ? { suspension: cfg.suspension } : {}),
                 weeklyConfigured: cfg.weeklyConfigured,
                 week: cfg.week,
                 exceptions: cfg.exceptions,
@@ -777,9 +787,10 @@ function project(source, actor) {
         ...(0, exports.emptyConnected)(),
         account: s.account,
         staff: !!actor?.staff,
+        teamAccess: actor?.teamRole ? { role: actor.teamRole, unlocked: !!actor.staff } : undefined,
         extraCoaches: coaches.map((c) => {
             if (own(c.id) ||
-                actor?.staff ||
+                review(c.id) ||
                 !M.configFor(s, c.id).dossier.verification)
                 return c;
             const disciplines = (0, verification_1.approvedPractices)(M.configFor(s, c.id).dossier, M.today());
@@ -794,15 +805,15 @@ function project(source, actor) {
         settings,
         offers: s.offers.filter((o) => ids.has(o.coach) &&
             (own(o.coach) ||
-                actor?.staff ||
+                review(o.coach) ||
                 bookings.some((b) => b.offerId === o.id) ||
                 (o.active &&
                     (0, verification_1.canOffer)(M.configFor(s, o.coach).dossier, M.allCoaches(s).find((c) => c.id === o.coach), o, M.today())))),
         groups: s.groups?.filter((g) => ids.has(g.offer.coach) &&
             (own(g.offer.coach) ||
-                actor?.staff ||
+                review(g.offer.coach) ||
                 bookings.some((b) => b.slotId === g.id) ||
-                (0, verification_1.canOffer)(M.configFor(s, g.offer.coach).dossier, M.allCoaches(s).find((c) => c.id === g.offer.coach), g.offer, g.day))).map((g) => own(g.offer.coach) || actor?.staff ? g : ({
+                (0, verification_1.canOffer)(M.configFor(s, g.offer.coach).dossier, M.allCoaches(s).find((c) => c.id === g.offer.coach), g.offer, g.day))).map((g) => own(g.offer.coach) || review(g.offer.coach) ? g : ({
             id: g.id, offer: g.offer, day: g.day, time: g.time, address: g.address,
             format: g.format, locationName: g.locationName, cancelled: g.cancelled,
             cancelHours: g.cancelHours, level: g.level,
@@ -840,7 +851,7 @@ function project(source, actor) {
         proposals: s.proposals?.filter((p) => bookingIds.has(p.booking)),
         refunds: s.refunds?.filter((r) => bookingIds.has(r.booking)),
         alerts: s.alerts?.filter((a) => a.owner === id),
-        tickets: s.tickets?.filter((t) => t.owner === id || actor?.staff),
+        tickets: s.tickets?.filter((t) => t.owner === id || support),
     };
 }
 /** Store fields become separate private documents, not a writable client snapshot. */
@@ -851,10 +862,30 @@ function documents(s) {
         "favorites",
         "busyTimes",
         "staff",
+        "teamAccess",
         "connected",
         "testMode",
         "clockHours",
     ].includes(k)));
+}
+
+},
+"teamAccess.ts":(module,exports,load)=>{
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.teamPermission = teamPermission;
+exports.teamAllowed = teamAllowed;
+function teamPermission(name, args = []) {
+    if (["reviewPractice", "reviewDossier"].includes(name))
+        return "reviewer";
+    if (name === "liftSuspension")
+        return "admin";
+    if (name === "resolveTicket")
+        return args[2] === "Répondre" ? "support" : "admin";
+    return null;
+}
+function teamAllowed(role, permission) {
+    return role === "admin" || role === permission;
 }
 
 },
@@ -4670,3 +4701,4 @@ export const {emptyConnected,register,applyCommand,project,documents}=d;
 export const {maintain}=load('workflows.ts');
 export const {instant}=load('model.ts');
 export const {geoQueries}=load('geoPolicy.ts');
+export const {teamPermission,teamAllowed}=load('teamAccess.ts');

@@ -1,5 +1,5 @@
 import { resolveGeo } from "../_shared/geoResolver.ts";
-import { geoQueries } from "./domain.js";
+import { geoQueries, teamPermission, teamAllowed } from "./domain.js";
 import { runAccountDeletions } from "../_shared/accountDeletion.ts";
 import { readJson, HttpError } from "../_shared/http.ts";
 import { syncGoogle } from "../_shared/calendarSync.ts";
@@ -47,9 +47,81 @@ Deno.serve(async (req) => {
     const requestId = writing ? input.requestId : null;
     if (writing && !/^[0-9a-f-]{36}$/i.test(requestId ?? ""))
       return reply({ error: "Référence de requête invalide." }, 400);
-    const actor = user
+    const actor: any = user
       ? { id: user.id, email: user.email ?? "", staff: false }
       : undefined;
+    // Decode only after getUser verified this token with Auth; never trust request metadata.
+    let claims: any = {};
+    if (user && token) {
+      try {
+        const encoded = token
+          .split(".")[1]
+          .replace(/-/g, "+")
+          .replace(/_/g, "/");
+        claims = JSON.parse(
+          new TextDecoder().decode(
+            Uint8Array.from(
+              atob(encoded.padEnd(Math.ceil(encoded.length / 4) * 4, "=")),
+              (c) => c.charCodeAt(0),
+            ),
+          ),
+        );
+      } catch {
+        return reply({ error: "Session invalide." }, 401);
+      }
+    }
+    const sessionId = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(
+      claims.session_id ?? "",
+    )
+      ? claims.session_id
+      : null;
+    const accessResult = actor
+      ? await admin.rpc("product_team_access", {
+          p_actor: actor.id,
+          p_session: sessionId,
+          p_aal: claims.aal ?? "aal1",
+        })
+      : { data: null, error: null };
+    if (accessResult.error) throw accessResult.error;
+    const access = accessResult.data;
+    if (actor) {
+      actor.staff = !!access?.unlocked;
+      actor.teamRole = access?.role;
+    }
+    const permissions = commands
+      .map((c: any) => teamPermission(c.name, c.args))
+      .filter(Boolean);
+    if (
+      permissions.some(
+        (p: string) => !actor?.staff || !teamAllowed(actor.teamRole, p),
+      )
+    )
+      return reply(
+        {
+          error:
+            "Vérifiez votre double authentification et votre habilitation équipe.",
+        },
+        403,
+      );
+    if (permissions.length && commands.length !== 1)
+      return reply(
+        { error: "Enregistrez une décision équipe à la fois." },
+        400,
+      );
+    const team = input.team;
+    if (team) {
+      if (!actor?.staff || !teamAllowed(actor.teamRole, "reviewer"))
+        return reply({ error: "Accès vérification sécurisé requis." }, 403);
+      if (writing) return reply({ error: "Requête équipe invalide." }, 400);
+      if (!["list", "detail", "claim", "release"].includes(team.action))
+        return reply({ error: "Action équipe invalide." }, 400);
+      if (
+        team.action !== "list" &&
+        (typeof team.coach !== "string" || team.coach.length > 100)
+      )
+        return reply({ error: "Dossier invalide." }, 400);
+      if (team.action === "detail") actor.reviewCoach = team.coach;
+    }
     const rate = await admin.rpc("product_rate_limit", {
       p_actor:
         actor?.id ??
@@ -61,7 +133,38 @@ Deno.serve(async (req) => {
         { error: "Trop de requêtes. Réessayez dans une minute." },
         429,
       );
-    if (!writing && Number.isSafeInteger(input.ifVersion)) {
+    if (team && team.action !== "detail") {
+      const args = {
+        p_actor: actor.id,
+        p_session: sessionId,
+        p_aal: claims.aal,
+      };
+      const result =
+        team.action === "list"
+          ? await admin.rpc("product_team_queue", {
+              ...args,
+              p_page: team.page ?? 0,
+              p_query: team.query ?? "",
+              p_filter: team.filter ?? "pending",
+            })
+          : await admin.rpc("product_team_claim", {
+              ...args,
+              p_coach: team.coach,
+              p_release: team.action === "release",
+            });
+      if (result.error)
+        return reply(
+          {
+            error:
+              "Cette opération est indisponible. Actualisez votre accès équipe.",
+          },
+          403,
+        );
+      return reply(
+        team.action === "list" ? result.data : { changed: result.data },
+      );
+    }
+    if (!team && !writing && Number.isSafeInteger(input.ifVersion)) {
       const checkpoint = await admin.rpc("product_checkpoint", {
         p_actor: actor?.id ?? null,
       });
@@ -71,7 +174,9 @@ Deno.serve(async (req) => {
       if (
         checkpoint.data.fresh &&
         checkpoint.data.version === input.ifVersion &&
-        checkpoint.data.staff === input.ifStaff &&
+        !!access?.unlocked === input.ifStaff &&
+        (input.ifTeamAccess?.role ?? null) === (access?.role ?? null) &&
+        !!input.ifTeamAccess?.unlocked === !!access?.unlocked &&
         input.scope === (actor?.id ?? null)
       )
         return reply({ unchanged: true, version: checkpoint.data.version });
@@ -97,7 +202,7 @@ Deno.serve(async (req) => {
       });
       if (loaded.error) throw loaded.error;
       const { version, documents: docs, staff, requestDigest } = loaded.data;
-      if (actor) actor.staff = staff;
+      // Membership alone never upgrades an AAL1 session.
       let state = { ...emptyConnected(), ...docs };
       if (actor && state.deletedAccounts?.includes(actor.id))
         return reply({ error: "Ce compte a été supprimé." }, 403);
@@ -248,13 +353,36 @@ Deno.serve(async (req) => {
         }
       state = maintain(state);
       if (writing || before !== JSON.stringify(documents(state))) {
-        const saved = await admin.rpc("product_commit", {
-          p_version: version,
-          p_documents: documents(state),
-          p_actor: actor?.id ?? null,
-          p_request: requestId,
-          p_digest: digest,
-        });
+        const saved = await admin.rpc(
+          permissions.length ? "product_commit_team" : "product_commit",
+          {
+            p_version: version,
+            p_documents: documents(state),
+            p_actor: actor?.id ?? null,
+            p_request: requestId,
+            p_digest: digest,
+            ...(permissions.length
+              ? {
+                  p_session: sessionId,
+                  p_aal: claims.aal,
+                  p_required: permissions[0],
+                  p_coach: ["reviewPractice", "reviewDossier"].includes(
+                    commands[0].name,
+                  )
+                    ? commands[0].args[0]
+                    : null,
+                }
+              : {}),
+          },
+        );
+        if (saved.error && permissions.length)
+          return reply(
+            {
+              error:
+                "Décision non enregistrée : prenez en charge ce dossier et vérifiez votre accès équipe.",
+            },
+            403,
+          );
         if (saved.error) throw saved.error;
         if (!saved.data) continue;
         // A concurrent replay may have committed first; always return canonical IDs/state.
@@ -273,10 +401,23 @@ Deno.serve(async (req) => {
           // The product commit atomically enqueued cleanup and revoked private access.
           // Provider cleanup must not delay the user's exit or falsely report completion.
           const runtime = (globalThis as any).EdgeRuntime;
-          if (runtime?.waitUntil) runtime.waitUntil((async () => {
-            if (token) await admin.auth.admin.signOut(token, "global").catch(() => {});
-            await runAccountDeletions(admin, actor.id);
-          })().catch(() => console.error(JSON.stringify({ service: "account-deletion", code: "cleanup_pending" }))));
+          if (runtime?.waitUntil)
+            runtime.waitUntil(
+              (async () => {
+                if (token)
+                  await admin.auth.admin
+                    .signOut(token, "global")
+                    .catch(() => {});
+                await runAccountDeletions(admin, actor.id);
+              })().catch(() =>
+                console.error(
+                  JSON.stringify({
+                    service: "account-deletion",
+                    code: "cleanup_pending",
+                  }),
+                ),
+              ),
+            );
           return reply({
             store: project(state),
             version: committedVersion,

@@ -1,3 +1,4 @@
+import { teamAllowed, teamPermission, TeamRole } from "./teamAccess";
 import { validateGeoChanges, validPoint, type GeoContext } from "./geoPolicy";
 import {
   publicVerification,
@@ -12,7 +13,7 @@ import * as W from "./workflows";
 import * as A from "./agendaTools";
 import type { Command } from "./commands";
 import type { CoachSettings } from "./extendedTypes";
-export type Actor = { id: string; email: string; staff?: boolean };
+export type Actor = { id: string; email: string; staff?: boolean; teamRole?: TeamRole; reviewCoach?: string };
 export const emptyConnected = (): M.Store => ({
   ...M.initialStore,
   connected: true,
@@ -137,6 +138,9 @@ export function applyCommand(
   me(s);
   const a = cmd.args;
   if (!Array.isArray(a)) throw Error("Action invalide.");
+  const permission = teamPermission(cmd.name, a);
+  if (permission && (!actor.staff || !teamAllowed(actor.teamRole ?? "admin", permission)))
+    throw Error("Votre habilitation ne permet pas cette action. Vérifiez votre accès équipe.");
   let n = s;
   switch (cmd.name) {
     case "preferences": {
@@ -779,12 +783,17 @@ export function project(source: M.Store, actor?: Actor): M.Store {
   const s = asActor(source, actor),
     id = actor?.id,
     own = (coach: string) => !!id && coach === id;
+  const review = (coach: string) => !!actor?.staff && (actor.teamRole === undefined ||
+    (teamAllowed(actor.teamRole, "reviewer") && actor.reviewCoach === coach));
+  const administer = !!actor?.staff && actor.teamRole === "admin";
+  const support = !!actor?.staff && teamAllowed(actor.teamRole ?? "admin", "support");
   const bookings = s.bookings.filter((b) => b.clientId === id || own(b.coach));
   const bookingIds = new Set(bookings.map((b) => b.id));
   const related = new Set(bookings.map((b) => b.coach));
   const coaches = M.allCoaches(s).filter(
     (c) =>
-      actor?.staff ||
+      review(c.id) ||
+      (administer && !!M.configFor(s,c.id).suspension?.active) ||
       own(c.id) ||
       related.has(c.id) ||
       (M.configFor(s, c.id).published && !M.configFor(s, c.id).suspension?.active),
@@ -793,12 +802,13 @@ export function project(source: M.Store, actor?: Actor): M.Store {
   const settings = Object.fromEntries(
     coaches.map((c) => {
       const cfg = M.configFor(s, c.id);
-      if (own(c.id) || actor?.staff) return [c.id, cfg];
+      if (own(c.id) || review(c.id)) return [c.id, cfg];
       return [
         c.id,
         {
           // Explicit public contract: private and future settings never leak by default.
           published: cfg.published,
+          ...(administer && cfg.suspension?.active ? {suspension:cfg.suspension} : {}),
           weeklyConfigured: cfg.weeklyConfigured,
           week: cfg.week,
           exceptions: cfg.exceptions,
@@ -869,10 +879,11 @@ export function project(source: M.Store, actor?: Actor): M.Store {
     ...emptyConnected(),
     account: s.account,
     staff: !!actor?.staff,
+    teamAccess: actor?.teamRole ? {role: actor.teamRole, unlocked: !!actor.staff} : undefined,
     extraCoaches: coaches.map((c) => {
       if (
         own(c.id) ||
-        actor?.staff ||
+        review(c.id) ||
         !M.configFor(s, c.id).dossier.verification
       )
         return c;
@@ -893,7 +904,7 @@ export function project(source: M.Store, actor?: Actor): M.Store {
       (o) =>
         ids.has(o.coach) &&
         (own(o.coach) ||
-          actor?.staff ||
+          review(o.coach) ||
           bookings.some((b) => b.offerId === o.id) ||
           (o.active &&
             canOffer(
@@ -907,7 +918,7 @@ export function project(source: M.Store, actor?: Actor): M.Store {
       (g) =>
         ids.has(g.offer.coach) &&
         (own(g.offer.coach) ||
-          actor?.staff ||
+          review(g.offer.coach) ||
           bookings.some((b) => b.slotId === g.id) ||
           canOffer(
             M.configFor(s, g.offer.coach).dossier,
@@ -915,7 +926,7 @@ export function project(source: M.Store, actor?: Actor): M.Store {
             g.offer,
             g.day,
           )),
-    ).map((g) => own(g.offer.coach) || actor?.staff ? g : ({
+    ).map((g) => own(g.offer.coach) || review(g.offer.coach) ? g : ({
       id: g.id, offer: g.offer, day: g.day, time: g.time, address: g.address,
       format: g.format, locationName: g.locationName, cancelled: g.cancelled,
       cancelHours: g.cancelHours, level: g.level,
@@ -965,7 +976,7 @@ export function project(source: M.Store, actor?: Actor): M.Store {
     proposals: s.proposals?.filter((p) => bookingIds.has(p.booking)),
     refunds: s.refunds?.filter((r) => bookingIds.has(r.booking)),
     alerts: s.alerts?.filter((a) => a.owner === id),
-    tickets: s.tickets?.filter((t) => t.owner === id || actor?.staff),
+    tickets: s.tickets?.filter((t) => t.owner === id || support),
   };
 }
 /** Store fields become separate private documents, not a writable client snapshot. */
@@ -979,6 +990,7 @@ export function documents(s: M.Store) {
           "favorites",
           "busyTimes",
           "staff",
+          "teamAccess",
           "connected",
           "testMode",
           "clockHours",

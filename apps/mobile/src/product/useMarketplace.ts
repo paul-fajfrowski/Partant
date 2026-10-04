@@ -146,6 +146,7 @@ export function useMarketplace(live: boolean) {
         const data = await invoke({
           ifVersion: version.current,
           ifStaff: !!current.current.staff,
+          ifTeamAccess: current.current.teamAccess,
           scope,
         });
         if (token !== epoch.current || jobs.current || !active.current) return;

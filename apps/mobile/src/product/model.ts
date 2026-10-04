@@ -169,6 +169,7 @@ export type Store = ExtendedStore & {
   >;
   connected?: boolean;
   staff?: boolean;
+  teamAccess?: import("./teamAccess").TeamAccess;
   busyTimes?: {
     coach: string;
     day: string;

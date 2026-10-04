@@ -30,11 +30,13 @@ export function PracticeReviewPanel({
   coach,
   setStore,
   message,
+  onDecision,
 }: {
   store: Store;
   coach: Coach;
   setStore: React.Dispatch<React.SetStateAction<Store>>;
   message: (s: string) => void;
+  onDecision?: (practice:string,status:"approved"|"correction"|"rejected",reason:string,fingerprint:string)=>Promise<void>;
 }) {
   const [practice, setPractice] = useState("");
   const [status, setStatus] = useState<"approved" | "correction" | "rejected">(
@@ -42,6 +44,7 @@ export function PracticeReviewPanel({
   );
   const [reason, setReason] = useState("");
   const [checked, setChecked] = useState<string[]>([]);
+  const [saving,setSaving]=useState(false);
   const [error, setError] = useState("");
   const feedback = useContext(SaveFeedbackContext);
   const v = toVerification(configFor(store, coach.id).dossier, coach, today());
@@ -153,15 +156,17 @@ export function PracticeReviewPanel({
       {error && <Note>{error}</Note>}
       <Button
         disabled={
-          !!own ||
+          saving || !!own ||
           feedback.pending > 0 ||
           !reason.trim() ||
           (status === "approved" &&
             (!allChecked || !!missingProofs(v, target, today()).length))
         }
-        onPress={() => {
+        onPress={async () => {
+          setSaving(true);
           try {
             setError("");
+            if(onDecision){await onDecision(target,status,reason,fingerprint);setReason("");setChecked([]);return;}
             setStore(
               reviewPractice(
                 store,
@@ -174,7 +179,7 @@ export function PracticeReviewPanel({
             );
           } catch (e) {
             setError((e as Error).message);
-          }
+          } finally {setSaving(false);}
         }}
       >
         Enregistrer la décision

@@ -1,0 +1,31 @@
+const fs=require('node:fs'),assert=require('node:assert/strict'),ts=require('../apps/mobile/node_modules/typescript');
+require.extensions['.ts']=(m,f)=>m._compile(ts.transpileModule(fs.readFileSync(f,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,esModuleInterop:true}}).outputText,f);
+const D=require('../apps/mobile/src/product/connectedDomain.ts'),M=require('../apps/mobile/src/product/model.ts'),T=require('../apps/mobile/src/product/teamAccess.ts');
+let checks=0;const ok=(v,m)=>{assert.ok(v,m);checks++;};
+let state=D.emptyConnected();const actors=[{id:'coach-a',email:'a@example.test'},{id:'coach-b',email:'b@example.test'}];
+for(const actor of actors)state=D.register(state,actor,actor.id,'coach');
+state.tickets=[{id:'private-ticket',owner:'someone',body:'Private support'}];
+for(const role of ['reviewer','support','admin']){
+ const actor={id:'team',email:'team@example.test',staff:true,teamRole:role};
+ const overview=D.project(state,actor);
+ ok(!overview.settings['coach-a']&&!overview.settings['coach-b'],`${role}: overview excludes private dossiers`);
+ ok(overview.tickets.length===(role==='reviewer'?0:1),`${role}: support scope`);
+ const detail=D.project(state,{...actor,reviewCoach:'coach-a'});
+ ok(!!detail.settings['coach-a']===(role!=='support'),`${role}: selected dossier capability`);
+ ok(!detail.settings['coach-b'],`${role}: other dossier excluded`);
+}
+const locked=D.project(state,{id:'team',email:'team@example.test',staff:false,teamRole:'admin',reviewCoach:'coach-a'});
+ok(!locked.settings['coach-a']&&!locked.tickets.length&&!locked.staff&&locked.teamAccess.unlocked===false,'Locked MFA reveals no team data');
+ok(T.teamPermission('reviewPractice')==='reviewer','Review requires reviewer');
+ok(T.teamPermission('resolveTicket',['id','text','Répondre'])==='support','Support can respond');
+for(const action of ['Suspendre le profil','Rembourser la séance','Autoriser le passage coach'])ok(T.teamPermission('resolveTicket',['id','text',action])==='admin',action+' restricted');
+assert.throws(()=>D.applyCommand(state,{id:'team',email:'team@example.test',staff:true,teamRole:'support'},{name:'reviewDossier',args:['coach-a','approved','test']}));checks++;
+assert.throws(()=>D.applyCommand(state,{id:'team',email:'team@example.test',staff:false,teamRole:'admin'},{name:'liftSuspension',args:['coach-a','test']}));checks++;
+ok(!('teamAccess' in D.documents({...state,teamAccess:{role:'admin',unlocked:true}})),'Derived privileges never persisted');
+state.settings['coach-a']={...M.configFor(state,'coach-a'),suspension:{active:true,reason:'Administrative review',by:'team',at:new Date().toISOString(),history:[]}};
+const adminView=D.project(state,{id:'team',email:'team@example.test',staff:true,teamRole:'admin'});
+ok(adminView.settings['coach-a'].suspension.active,'Admin can find suspended profiles to handle appeals');
+ok(!adminView.settings['coach-a'].dossier.documents.length,'Suspension handling does not expose proofs');
+const supportView=D.project(state,{id:'team',email:'team@example.test',staff:true,teamRole:'support'});
+ok(!supportView.settings['coach-a'],'Support cannot inspect suspended private profile');
+console.log(`PASS ${checks} team role and per-dossier projection checks`);

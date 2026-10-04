@@ -1,3 +1,5 @@
+import {TeamSecurity} from "./TeamSecurity";
+import {ConnectedTeamWorkspace} from "./ConnectedTeamWorkspace";
 import { cancellationSummary } from "./experience";
 import { BackNavigationProvider, useBackNavigation } from "./BackNavigation";
 import { MobileAgendaAppointments } from "./MobileAgendaAppointments";
@@ -5795,6 +5797,12 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         </Section>
       </>
     );
+  if (live && screen === "team") {
+    if (!store.teamAccess) content = <Section><Note>Cet espace est réservé à l’équipe habilitée.</Note></Section>;
+    else if (!store.teamAccess.unlocked) content = <TeamSecurity onVerified={market.refresh} />;
+    else if (store.teamAccess.role === "support" || (store.teamAccess.role === "admin" && webTeamSupport)) content = <Section>{store.teamAccess.role === "admin" && <TextButton onPress={() => setWebTeamSupport(false)}>← Revenir aux dossiers</TextButton>}<CompleteFlows {...flowProps} screen="team" teamSection="support" /></Section>;
+    else content = <ConnectedTeamWorkspace onNavigate={() => requestAnimationFrame(() => scroll.current?.scrollTo({y:0,animated:false}))} canReleaseOthers={store.teamAccess.role === "admin"} onChanged={market.refresh} message={setNotice} onSupport={store.teamAccess.role === "admin" ? () => setWebTeamSupport(true) : undefined} />;
+  }
   const entryScreen = [
     "welcome",
     "login",
@@ -6051,7 +6059,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           </View>
         )}
         {!webWide &&
-          store.staff &&
+          (store.staff || store.teamAccess) &&
           (screen === "account" ||
             (screen === "coach" && coachTab === "settings")) && (
             <TextButton onPress={() => go("team")}>Espace équipe</TextButton>
@@ -6141,7 +6149,8 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           }
           userName={store.account?.name}
           accountLabel={!store.account ? "Se connecter" : undefined}
-          staff={!!store.staff}
+          staff={!!(store.staff || store.teamAccess)}
+          teamLabel={store.teamAccess?.role === "support" ? "Assistance" : undefined}
           unreadCounts={{ messages: unreadMessages, notifications: unread }}
           navigationDisabled={
             authTransition || busy || (live && market.pending > 0)

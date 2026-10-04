@@ -42,6 +42,7 @@ export type DesktopShellProps = {
   unreadCounts?: { messages?: number; notifications?: number };
   /** Server-provided team permission. Never inferred from the selected role. */
   staff?: boolean;
+  teamLabel?: string;
   navigationDisabled?: boolean;
   contentWidth?: "wide" | "reading" | "form";
   contentStyle?: StyleProp<ViewStyle>;
@@ -192,6 +193,7 @@ export function DesktopShell({
   accountLabel,
   unreadCounts,
   staff = false,
+  teamLabel = "Dossiers coachs",
   navigationDisabled = false,
   contentWidth = "wide",
   contentStyle,
@@ -199,7 +201,7 @@ export function DesktopShell({
 }: DesktopShellProps) {
   const teamSpace = role === "team" && staff;
   const items = teamSpace
-    ? [teamItem]
+    ? [{...teamItem,label:teamLabel}]
     : role === "coach"
       ? coachItems
       : clientItems;
@@ -256,7 +258,7 @@ export function DesktopShell({
           {staff && !teamSpace && (
             <View style={s.communication}>
               <Text style={s.groupLabel}>ÉQUIPE PARTANT</Text>
-              {renderItem(teamItem)}
+              {renderItem({...teamItem,label:teamLabel})}
             </View>
           )}
         </ScrollView>

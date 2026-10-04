@@ -843,7 +843,7 @@ export function CompleteFlows(
               ))}
           </>
         )}
-        {allCoaches(s).filter(c => configFor(s, c.id).suspension?.active).map(c => <View key={c.id}>
+        {allCoaches(s).filter(c => (!s.connected || s.teamAccess?.role === "admin") && configFor(s, c.id).suspension?.active).map(c => <View key={c.id}>
           <H2>{c.name} · profil suspendu</H2>
           <P muted>{configFor(s, c.id).suspension?.reason}</P>
           {field("Motif de levée", "lift-" + c.id)}
@@ -862,7 +862,7 @@ export function CompleteFlows(
                 <Select
                   label="Traitement"
                   value={decision}
-                  items={[
+                  items={s.connected && s.teamAccess?.role !== "admin" ? ["Répondre"] : [
                     "Répondre",
                     ...(t.body.startsWith("Candidature coach :") ? ["Autoriser le passage coach", "Refuser la candidature"] : []),
                     ...(t.booking ? ["Rembourser la séance"] : []),

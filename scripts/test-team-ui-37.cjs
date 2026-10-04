@@ -1,0 +1,30 @@
+process.env.PARTANT_QA_URL='http://127.0.0.1:8081/?data=connected&surface=web';
+process.env.PARTANT_QA_FETCH_MODULE=require('node:path').resolve(__dirname,'fixtures/team-ui-37.cjs');
+const H=require('./native-web-harness.cjs'),{d,click,input,wait,ok}=H;
+const {control}=require('./fixtures/team-ui-37.cjs');
+const has=t=>d.body.textContent.includes(t);
+async function until(fn){for(let i=0;i<65;i++){if(fn())return;await wait();}throw Error('UI timeout '+d.body.textContent.slice(-1500));}
+(async()=>{
+ await click('Me connecter');input('Adresse e-mail','team@example.test');await click('Continuer avec mon e-mail');await click('Mon e-mail contient un code');input('Code reçu par e-mail','123456');await click('Me connecter');
+ await until(()=>has('Explorer'));
+ if(Number(process.env.PARTANT_QA_WIDTH||390)<1080)await click('Mon espace');
+ await click(Number(process.env.PARTANT_QA_WIDTH||390)>=1080?'Dossiers coachs':'Espace équipe');await until(()=>has('Votre accès équipe.'));
+ ok(control.listCalls===0,'No dossier fetch before MFA');
+ await click('Configurer mon accès sécurisé');await until(()=>has('Code de l’application d’authentification'));
+ input('Code de l’application d’authentification','000000');await click('Accéder à mon espace');await until(()=>has('Accès non confirmé'));
+ ok(control.listCalls===0,'Rejected MFA never opens team');
+ input('Code de l’application d’authentification','123456');await click('Accéder à mon espace');await until(()=>has('Coach test 10'));
+ ok(!has('Coach test 11'),'Only ten dossiers rendered');
+ await click('Suivant');await until(()=>has('Coach test 12'));ok(control.lastPage===1,'Next page fetched on server');
+ await click('Précédent');await until(()=>has('Coach test 1'));await click('Coach test 1');await until(()=>has('Prendre en charge'));
+ await click('Prendre en charge');await until(()=>has('Libérer le dossier'));ok(control.claimed,'Explicit dossier assignment');
+ await click('Décision pour cette pratique : Valider la pratique');await click('Demander un complément');input('Motif et éléments vérifiés','Merci de préciser les publics accompagnés.');await click('Enregistrer la décision');await until(()=>has('Réponse perdue après enregistrement de test.'));
+ ok(d.querySelector('[aria-label="Motif et éléments vérifiés"]').value.includes('publics'),'Decision reason retained after lost acknowledgement');
+ await click('Enregistrer la décision');await until(()=>has('Décision enregistrée.'));ok(control.decisionRequests.length===2&&new Set(control.decisionRequests).size===1,'Retry reuses request identity after lost acknowledgement');
+ await click('Libérer le dossier');await until(()=>has('Prendre en charge'));ok(!control.claimed,'Dossier released');
+ await click('← Revenir aux dossiers');await until(()=>has('Rechercher un dossier'));
+ input('Rechercher un dossier','introuvable');await until(()=>has('Aucun dossier dans cette rubrique.'));
+ control.fail=true;await click('Actualiser');await until(()=>has('Erreur de test'));ok(!has('Coach test 1'),'Failure clears stale queue');
+ control.fail=false;input('Rechercher un dossier','');await click('Actualiser');await until(()=>has('Coach test 10'));
+ H.finish('MFA team entry, pagination, assignment, return, errors and recovery');
+})().catch(e=>{console.error(e);H.close();process.exitCode=1;});

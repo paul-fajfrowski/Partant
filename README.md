@@ -1,6 +1,8 @@
 # Partant
 
-**Dernière livraison — 36, 4 octobre 2026 :** [correctifs de l’audit, durcissement, 44 suites métier/DOM et 10 suites navigateur, serveur déployé et limites restantes](docs/corrections-audit-36.md). Lire ce suivi avant le constat historique ci-dessous.
+**Dernière livraison — 37, 4 octobre 2026 :** [équipe protégée par MFA, rôles, pagination serveur, prise en charge exclusive des dossiers et reprise](docs/equipe-securisee-37.md). Le compte opérateur reste à désigner explicitement.
+
+**Livraison 36 :** [correctifs de l’audit, durcissement, 44 suites métier/DOM et 10 suites navigateur, serveur déployé et limites restantes](docs/corrections-audit-36.md). Lire ce suivi avant le constat historique ci-dessous.
 
 **Audit global — 4 octobre 2026 :** [App, WebApp, données, e-mails, sécurité, exploitation et plan de lancement](docs/audit-complet-2026-10-04.md). 43 suites métier passent ; un défaut d’accessibilité persiste et deux recettes navigateur nécessitent une horloge contrôlée. Nouveaux points techniques et services manquants détaillés, sans correction produit dans cet audit.
 
@@ -18,7 +20,7 @@
 
 **Audit — 30 septembre 2026 :** [App, WebApp, serveur, anomalies reproduites et plan de correction](docs/audit-app-webapp-2026-09-30.md). Audit réalisé sur la livraison 32 ; aucune correction produit incluse dans ce rapport.
 
-**Pour reprendre le projet — 30 septembre 2026 :** [réalisé, corrections d’audit, preuves de tests, installation Xcode/WebApp et MVP restant](ETAT_DU_PROJET.md). Point d’entrée à jour jusqu’à la livraison 36 et la configuration Xcode `326eb1a` ; les sections plus anciennes ci-dessous conservent leur contexte historique.
+**Pour reprendre le projet — 4 octobre 2026 :** [réalisé, corrections d’audit, preuves de tests, installation Xcode/WebApp et MVP restant](ETAT_DU_PROJET.md). Point d’entrée à jour jusqu’à la livraison 37 et la configuration Xcode `326eb1a` ; les sections plus anciennes ci-dessous conservent leur contexte historique.
 
 **WebApp — livraison 27 :** [parcours ordinateur, architecture partagée et recette](docs/webapp-27.md). [Construire et ouvrir la WebApp localement](apps/web/README.md).
 

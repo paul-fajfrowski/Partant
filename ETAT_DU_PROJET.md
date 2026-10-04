@@ -2,7 +2,9 @@
 
 **Mis à jour le 4 octobre 2026 — point d’entrée pour reprendre le projet.**
 
-La [livraison 36](docs/corrections-audit-36.md) corrige les défauts reproductibles de l’audit global et ajoute les contrôles de diffusion : WebP privé, changement d’heure, fenêtres accessibles, recettes stables, mitigations dépendances, séparation des exports démo/production et cache, manifeste iOS, contrôles CI et tâches planifiées. Les fonctions serveur sont déployées. PostgreSQL reste en 17.6 : préparation de maintenance réalisée, mise à jour encore ouverte.
+La [livraison 37](docs/equipe-securisee-37.md) ajoute la double authentification de l’équipe, les rôles vérification/assistance/administration, une file de dossiers paginée côté serveur et leur prise en charge exclusive. La protection est appliquée dans l’API, la transaction d’enregistrement et le stockage des justificatifs. Aucun compte réel habilité : Paul doit toujours désigner les membres.
+
+La [livraison 36](docs/corrections-audit-36.md) reste acquise : WebP privé, horaires de changement d’heure, accessibilité des fenêtres, dépendances, exports démo/production, manifeste iOS et contrôles CI. PostgreSQL reste en 17.6 : maintenance effective à planifier.
 
 Couvre aussi les corrections techniques 33, UX/UI 34 et fonctionnelles 35. Le dernier binaire iPhone signé reste à revalider.
 
@@ -12,7 +14,7 @@ Lire ce document en premier, puis le [détail des corrections et limites](docs/c
 
 - **Une seule source produit** pour l’app native et la WebApp, avec modes connecté et démonstration. Pas de seconde application à recopier ; le HTML reste une archive.
 - **Les défauts de confidentialité, de stockage de session natif, d’accessibilité web et de navigation des notifications identifiés dans l’audit ont reçu leurs correctifs.** Les changements serveur correspondants sont déployés sur le projet de développement.
-- **Recette après corrections : 44/44 suites métier/DOM, 10/10 suites navigateur, export public et 67 contrôles serveur passent.** Bundle Hermes exporté ; aucune nouvelle validation physique iPhone annoncée.
+- **Recette de la livraison 37 : voir les résultats consolidés dans son [rapport](docs/equipe-securisee-37.md#vérifications).** Les tests incluent MFA, rôles, attribution concurrente, révocation et stockage privé, en plus des parcours existants. Bundle Hermes exporté ; aucune nouvelle validation physique iPhone annoncée.
 - **Le MVP commercial reste ouvert** : habilitation équipe, recette réelle iPhone/agenda/push, paiement, confidentialité opérationnelle et préparation de la distribution.
 - **Six points fonctionnels corrigés :** suspension protégée, rayon domicile vérifié côté serveur, dates ponctuelles publiables, alertes duo au prix total, alertes locales et candidature client vers coach avec décision équipe puis confirmation du client. Le dossier professionnel reste obligatoire.
 - **Première action du collègue :** récupérer `main`, préparer son environnement (section 6), compiler puis exécuter la recette à deux comptes. Ne pas utiliser les anciens dossiers ou binaires comme preuve de mise à jour.
@@ -62,10 +64,10 @@ La direction artistique reste monochrome, Hanken Grotesk, boutons pilules, surfa
 
 ### Côté équipe
 
-- Espace web avec file de dossiers, recherche, catégories, pagination visuelle, consultation des preuves, demandes de correction et décisions par pratique avec historique.
-- Contrôles d’habilitation côté serveur ; pas d’auto-validation d’un dossier réel.
+- Espace partagé avec file de dossiers, recherche et pages de 10 résumés chargées côté serveur. Détail et justificatifs chargés à l’ouverture, décisions par pratique et historique conservés.
+- Habilitation explicite + MFA TOTP côté serveur et Storage. Rôles `reviewer`, `support`, `admin` ; pas d’auto-validation d’un dossier réel.
 - **Le compte équipe du propriétaire reste à désigner et à habiliter.** Le système a été testé avec des comptes QA distincts, nettoyés après recette.
-- La répartition entre plusieurs examinateurs et la pagination/recherche côté serveur restent à ajouter pour un volume important.
+- Prise en charge exclusive d’un dossier, libération/réattribution contrôlée et validation transactionnelle avant décision. Normalisation du stockage, stabilité des pages sous insertions concurrentes et charge représentative restent à traiter.
 
 ### Dernières corrections transversales
 
@@ -85,7 +87,7 @@ Détails : [WebApp](docs/webapp-27.md), [dossiers](docs/documents-verifications-
 
 | Service | Ce qui existe | Ce qu’il reste à valider ou réaliser |
 | --- | --- | --- |
-| Supabase | API métier, droits par compte, documents privés, protections de concurrence/idempotence, maintenance, file de push et purge durable de compte. Correctifs serveur 33 et 35 déployés. | Recette complète entre appareils, maintenance du moteur, évolution du stockage et tests de charge. |
+| Supabase | API métier, droits par compte, documents privés, protections de concurrence/idempotence, maintenance, file de push et purge durable de compte. Correctifs serveur jusqu’à la livraison 37 déployés. | Recette complète entre appareils, maintenance du moteur, évolution du stockage et tests de charge. |
 | Apple — connexion | Connexion web et module natif iOS ; fonctionnement confirmé par le propriétaire. | Refaire une recette des cas secondaires après les dernières modifications. Renouvellement du secret web documenté pour mars 2027. |
 | Google — connexion | Connexion confirmée avec le compte ajouté aux utilisateurs de test. | Recette native complète et préparation de l’accès aux futurs utilisateurs hors liste de test. |
 | Connexion par e-mail | Envoi via le fournisseur standard ; parcours adapté au lien reçu, code possible si présent dans l’e-mail. | Expéditeur personnalisé, réception réelle et activation du modèle français à code. Ne pas annoncer que l’OTP demandé remplace déjà le lien. |
@@ -100,21 +102,20 @@ Aucun domaine Partant n’a été acheté dans ce travail. Les secrets, `.env`, 
 
 ## 4. Ce qui a été testé — et les limites
 
-| Vérification après corrections | Résultat documenté | Limite |
+Les preuves historiques restent datées ; le [rapport de livraison 37](docs/equipe-securisee-37.md#vérifications) décrit les contrôles les plus récents. Ne pas assimiler un test navigateur, un export Hermes et un build iPhone signé.
+
+| Vérification | État | Limite |
 | --- | --- | --- |
-| TypeScript, export web et bundle iOS Hermes | Réussis | Aucun de ces contrôles ne signe ni n’installe une application iPhone. |
-| Règles métier et composants DOM | 41/41 suites réussies | Scénarios automatisés, fournisseurs simulés selon le test. |
-| Navigateur Chromium | 8/8 suites : les 6 parcours existants, clavier/focus et retour des notifications | Ne remplace pas Safari, Firefox, VoiceOver ou le clavier iPhone. |
-| Accessibilité responsive | 20 états aux largeurs 320, 390, 820 et 1440 px ; aucune violation axe ni débordement détecté | Pas une certification d’accessibilité ; grandes polices et lecteur d’écran réels à tester. |
-| API de développement | 36 contrôles API/Auth/concurrence/Storage + 10 contrôles de confidentialité/effacement | Comptes et fichiers QA dédiés nettoyés ; aucun compte réel effacé. |
-| Intégration continue | [Exécution GitHub réussie sur `6b681b3`](https://github.com/paul-fajfrowski/Partant/actions/runs/36718480589) | Tests sans secrets serveur ; pas de déploiement ni de build Xcode dans cette CI. Consulter les exécutions suivantes pour les commits ultérieurs. |
-| Dépendances | Audit npm : zéro vulnérabilité remontée ; alignement Expo vérifié ; Doctor 20/21 | Avis conservé pour la synchronisation manuelle de la configuration native versionnée. |
-| Projet Xcode | Pods installés, fichiers de verrouillage cohérents et contrôles de configuration réussis | Deux builds simulateur arrêtés par « No space left on device » ; dernier build signé non validé. |
-| Sauvegarde | Reconstruction des données métier vérifiée dans une table temporaire isolée | Ne couvre pas la restauration complète Auth, Storage, secrets et paramètres externes. |
+| TypeScript, export web et bundle iOS Hermes | Recette rejouée sur les sources communes | Aucun de ces contrôles ne signe ni n’installe une application iPhone. |
+| Métier/DOM et navigateur | Rapports consolidés dans `docs/audits/2026-10-04-equipe/` | Fournisseurs simulés selon le test ; la navigation et les requêtes UI sont exercées. |
+| API et stockage déployés | 36 contrôles API, 20 fonctionnels et 19 équipe/Auth/Storage réussis dans cette livraison | Uniquement comptes et fichiers QA ; nettoyage ciblé confirmé. |
+| Accessibilité | Contrôles axe et débordement sur les écrans équipe en 390 et 1440 px | Pas une certification ; lecteur d’écran et grandes polices réels encore à tester. |
+| CI GitHub | Workflow versionné, suites exécutées localement | Dernière exécution distante de ce commit non vérifiée ; ne pas déduire son succès du push. |
+| Dépendances | Deux avis racines npm restent signalés, mitigations locales et contrôles de régression en place depuis la livraison 36 | Ne pas annoncer zéro vulnérabilité ni appliquer `npm audit fix --force`. |
+| Xcode | Workspace/configuration connectée conservés, aucun nouveau Pod pour la livraison 37 | Dernier build signé et recette physique non revalidés. |
+| Sauvegarde | Restauration des seuls documents métier vérifiée antérieurement dans une table isolée | Sauvegarde/restauration complète Auth, Storage, secrets et paramètres externes ouverte. |
 
-Preuves : [règles et DOM](docs/audits/2026-09-30-corrections/unit-dom.json), [navigateur](docs/audits/2026-09-30-corrections/browser.json), [accessibilité](docs/audits/2026-09-30-corrections/accessibility.json), [serveur, nettoyage et compilation](docs/audits/2026-09-30-corrections/verification.json).
-
-Au contrôle serveur du 30 septembre : aucun appareil push, aucune connexion Calendar et aucun compte équipe enregistré. Aucun nettoyage de compte en attente ; fixtures QA nettoyées. **Ce sont des observations datées, pas une surveillance en temps réel.**
+Au contrôle du 4 octobre après recette 37 : **0 compte équipe, 0 attribution, 0 compte et fichier QA restant**. Aucun utilisateur réel promu ou supprimé. Les tests de la file utilisent 11 dossiers de test : cela valide la pagination et les droits, pas la tenue en charge à grande échelle.
 
 Le propriétaire avait validé Apple natif, Google et plusieurs parcours dans des versions précédentes. Ces validations ne couvrent pas automatiquement les derniers changements, notamment la migration SecureStore. Un test métier simulé, un export Hermes et un build iPhone sont trois niveaux distincts.
 
@@ -124,7 +125,7 @@ Les dix recommandations de l’[audit UX/UI avec captures](docs/audit-ux-ui-2026
 
 ## 5. MVP restant, par ordre de priorité
 
-**Complément du 4 octobre :** traiter A36-01 à A36-06 dans l’[audit global](docs/audit-complet-2026-10-04.md#corrections-techniques-nouvelles-à-prévoir), puis suivre son ordre domaine/e-mail, équipe, données/exploitation, appareils et paiement. Les corrections F-01 à F-06 restent acquises ; les nouveaux constats ne les annulent pas.
+**État au 4 octobre après livraisons 36 et 37 :** les corrections reproductibles de l’audit ont été traitées et l’espace équipe est techniquement protégé. Restent les validations appareil, les décisions du propriétaire et les chantiers de données/exploitation ci-dessous. Les audits antérieurs ne sont pas la liste courante des défauts.
 
 Le socle fonctionnel permet de poursuivre les essais sans ajouter de nouvelles fonctionnalités. Les lignes ci-dessous séparent les validations manquantes des intégrations volontairement reportées.
 
@@ -133,14 +134,14 @@ Le socle fonctionnel permet de poursuivre les essais sans ajouter de nouvelles f
 | Priorité / statut | Travail restant | Dépendance / responsable | Critère de fin |
 | --- | --- | --- | --- |
 | **P0 — Prochaine recette** | Construire la dernière app iOS ; Apple/Google succès et abandon, reconnexion, migration de session, déconnexion, clavier, retours, préférences et VoiceOver. | Développeur avec accès Apple/signature et iPhone ; espace disque suffisant. | Build signé installé et fiche de recette du commit exact, sans blocage sur ces parcours. |
-| **P0 — À habiliter** | Désigner le compte équipe, lui donner les droits puis tester dépôt → correction → validation/refus → publication par discipline. | Paul doit indiquer explicitement le compte ; aucun compte administrateur deviné. Script `scripts/configure-team-24.mjs`. | Un opérateur autorisé traite un dossier de test ; un coach ne peut pas s’auto-valider ni publier une pratique refusée. |
+| **P0 — À habiliter** | Désigner le compte équipe, lui donner les droits puis tester dépôt → correction → validation/refus → publication par discipline. | Paul doit indiquer explicitement le compte ; aucun compte administrateur deviné. Script `scripts/configure-team-24.mjs` avec rôle explicite, puis MFA dans l’interface. | Un opérateur autorisé traite un dossier de test ; un coach ne peut pas s’auto-valider ni publier une pratique refusée. |
 | **P0 — À rejouer en réel** | Coach WebApp et client iPhone : individuel/duo/groupe, dernière place concurrente, modification, annulation, messages, favoris, reconnexion et coupure réseau. | Deux comptes de test séparés ; serveur de développement. | États cohérents entre appareils, pas de double réservation, récupération après erreur documentée. |
 | **P1 — Branché, à valider** | Push iPhone en premier plan/arrière-plan/app fermée, ouverture de la bonne séance, refus et déconnexion. Google Calendar : consentement, occupations, création/modification/annulation, conflit et expiration. | iPhone enregistré et agenda consenti ; aujourd’hui aucun résultat de réception/synchronisation réelle documenté. | Réception et échanges réels prouvés ; erreurs et reprises testées. |
 | **P1 — Avant publication** | Identité juridique/contact, durées de conservation par catégorie, demandes utilisateurs, périmètre des sauvegardes, procédure de purge et déclarations de distribution. | Informations du propriétaire et validation appropriée des engagements. | Notice et pratiques opérationnelles concordantes ; suppression technique testée et limites expliquées. |
 | **P1 — Reporté sur demande** | Paiement marketplace en test d’abord : Stripe Connect, onboarding financier coach, encaissement, commission, remboursement, versement, webhooks et reprises. | Reprise explicite par Paul, compte et configuration fournisseur. | Parcours financier complet testé côté serveur avant tout paiement réel. Aucun IBAN à collecter dans une solution provisoire. |
 | **P1 — Avant bêta externe** | Domaine/hébergement, expéditeur e-mail, code français réellement reçu, callbacks, accès OAuth testeurs, signature/TestFlight et APNs Production. | Décisions du propriétaire sur services, comptes et éventuels coûts ; ne rien acheter implicitement. | Un testeur externe termine le parcours sans outillage de démo ; mode connecté et environnement push cohérents. |
 | **P2 — Exploitation à compléter** | Maintenance Postgres hébergé après revue/sauvegarde, alertes actionnables, exercice de restauration Auth/fichiers/données/secrets sur environnement isolé. | Développeur/opérateur autorisé ; fenêtre de maintenance. | Version compatible et restauration mesurée, responsabilités et procédure d’incident documentées. |
-| **P2 — Avant volume important** | Mesurer la charge ; normaliser les domaines sollicités, limiter les conflits de révision globale, recherche/pagination serveur et attribution des dossiers entre examinateurs. | Volumétrie cible à convenir. | Capacité mesurée et traitement concurrent des dossiers sans perte de données ni décisions contradictoires. |
+| **P2 — Avant volume important** | Mesurer la charge ; normaliser les domaines sollicités, limiter les conflits de révision globale, pagination des demandes d’assistance et stabilité/performances de la file de dossiers. La pagination serveur et l’attribution des dossiers existent depuis la livraison 37. | Volumétrie cible à convenir. | Capacité mesurée et traitement concurrent des dossiers sans perte de données ni décisions contradictoires. |
 
 **Confidentialité :** le défaut d’effacement partiel relevé dans l’audit a reçu un correctif métier + Storage + Auth, testé sur le serveur de développement. Il ne faut plus le présenter comme inchangé. En revanche, la conservation réglementaire, les sauvegardes et les données déjà exportées vers un tiers demandent des procédures distinctes ; la conformité complète n’est pas déclarée. Le [suivi 33](docs/corrections-audit-33.md) prévaut sur les limites techniques historiques de la livraison 25.
 
@@ -199,6 +200,8 @@ La construction autonome web utilise `npm --prefix apps/web run build`. Les modi
 ### Rejouer la recette
 
 Installer aussi `npm --prefix tools/qa ci` et `npm --prefix services/calendar ci`, puis suivre les commandes de [reproduction de la livraison 33](docs/corrections-audit-33.md#reproduire-la-recette). Le workflow `.github/workflows/qa.yml` constitue la référence pour TypeScript, exports, tests DOM et navigateur.
+
+La livraison 37 ajoute `test-team-access-37.cjs`, `test-team-ui-37.cjs` et `test-team-browser-37.cjs` à la recette. L’API se teste avec `test-team-api-37.mjs`, uniquement après préparation des comptes QA et avec nettoyage, suivant le guide de livraison.
 
 Les tests connectés avec écritures nécessitent l’accès opérateur et des fixtures isolées avec nettoyage. Ne pas injecter les scénarios de démonstration sur le compte réel de Paul. La CI ne déploie pas les fonctions serveur et ne réalise aucun paiement.
 

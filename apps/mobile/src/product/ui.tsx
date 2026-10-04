@@ -278,16 +278,20 @@ export function TextButton({
   children,
   onPress,
   muted = false,
+  disabled = false,
   style,
 }: {
   children: React.ReactNode;
   onPress: () => void;
   muted?: boolean;
+  disabled?: boolean;
   style?: ViewStyle;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
+      disabled={disabled}
+      accessibilityState={{disabled}}
       onPress={onPress}
       style={[
         {
@@ -296,6 +300,7 @@ export function TextButton({
           justifyContent: "center",
           alignItems: "center",
         },
+        disabled && {opacity:0.4},
         style,
       ]}
     >

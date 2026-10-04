@@ -1,10 +1,11 @@
+import {elevateQaTeam} from "./fixtures/team-mfa-37.mjs";
 // Isolated QA accounts prepared by test-connected-api.mjs; no real customer mutations.
 import fs from 'node:fs';import assert from 'node:assert/strict';import {randomUUID} from 'node:crypto';
 const users=JSON.parse(fs.readFileSync('/private/tmp/partant-connected-qa.json','utf8'));assert(users.every(u=>u.email.startsWith('partant-qa-')&&u.email.endsWith('@example.invalid')));
 const [coach,client,bob,team]=users;
 const env=Object.fromEntries(fs.readFileSync('apps/mobile/.env','utf8').split('\n').filter(x=>x.includes('=')).map(x=>[x.slice(0,x.indexOf('=')),x.slice(x.indexOf('=')+1)]));
 const base=env.EXPO_PUBLIC_SUPABASE_URL,apikey=env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-for(const u of users){const r=await fetch(base+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey,'Content-Type':'application/json'},body:JSON.stringify({email:u.email,password:u.password})});assert(r.ok);u.token=(await r.json()).access_token;}
+for(const u of users){const r=await fetch(base+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey,'Content-Type':'application/json'},body:JSON.stringify({email:u.email,password:u.password})});assert(r.ok);u.token=(await r.json()).access_token;if(u.name==="team")u.token=await elevateQaTeam(u,base,apikey);}
 let checks=0;const ok=(v,msg)=>{assert.ok(v,msg);checks++};
 async function api(u,body={}){const r=await fetch(base+'/functions/v1/product-api',{method:'POST',headers:{apikey,'Content-Type':'application/json',Authorization:'Bearer '+u.token},body:JSON.stringify(body)});return {status:r.status,...await r.json()};}
 async function command(u,name,...args){for(let n=0;n<4;n++){const current=await api(u);assert.equal(current.status,200);const result=await api(u,{version:current.version,requestId:randomUUID(),commands:[{name,args}]});if(result.status!==409)return result;}throw Error('Repeated revision conflict');}
@@ -22,7 +23,7 @@ s=await pass(client,'reserve',{...draft,address:'2 Rue du Général Blaise 75011
 r=await command(client,'reschedule',draft.id,day,'10:00','Place Bellecour 69002 Lyon');ok(r.status===400&&r.error.includes('hors de la zone'),'Remote change out of zone rejected');
 s=await pass(client,'report',{kind:'Assistance',body:'QA feature 35 suspension',coach:coach.id});const ticket=s.tickets.find(t=>t.body==='QA feature 35 suspension');
 await pass(team,'resolveTicket',ticket.id,'Suspension QA temporaire','Suspendre le profil');r=await command(coach,'publish',coach.id);ok(r.status===400&&r.error.includes('suspendu'),'Remote suspension prevents publication');
-r=await command(coach,'liftSuspension',coach.id,'Tentative QA');ok(r.status===400&&r.error.includes('équipe'),'Coach cannot lift own suspension');
+r=await command(coach,'liftSuspension',coach.id,'Tentative QA');ok([400,403].includes(r.status)&&r.error.includes('équipe'),'Coach cannot lift own suspension');
 await pass(team,'liftSuspension',coach.id,'Fin du test QA');await pass(coach,'publish',coach.id);
 s=(await api(bob)).store;
 for(const b of s.bookings.filter(b=>b.clientId===bob.id&&b.status==='confirmed'))await pass(bob,'cancelSession',b.id,'Clôture QA avant candidature');

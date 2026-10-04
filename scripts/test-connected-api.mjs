@@ -1,3 +1,4 @@
+import {elevateQaTeam} from "./fixtures/team-mfa-37.mjs";
 import fs from "node:fs";
 import assert from "node:assert/strict";
 import { randomUUID, randomBytes } from "node:crypto";
@@ -18,7 +19,7 @@ if (process.argv.includes("--prepare")) {
     .join("\n");
   fs.writeFileSync(
     "/private/tmp/partant-connected-qa-setup.sql",
-    `begin;\n${sql}\ninsert into private.product_staff(id) values('${users[3].id}');\ncommit;`,
+    `begin;\n${sql}\ninsert into private.product_staff(id,role) values('${users[3].id}','admin');\ncommit;`,
     { mode: 0o600 },
   );
   console.log(
@@ -64,6 +65,7 @@ async function read(u) {
   return r;
 }
 async function command(u, name, ...args) {
+  if(["reviewDossier","reviewPractice"].includes(name))assert.equal((await api(u,{team:{action:"claim",coach:args[0]}})).changed,true);
   const current = await read(u),
     r = await api(u, {
       version: current.version,
@@ -82,6 +84,7 @@ for (const u of users) {
   const data = await r.json();
   assert.equal(r.ok, true, JSON.stringify(data));
   u.token = data.access_token;
+  if(u.name==="team")u.token=await elevateQaTeam(u,base,apikey);
 }
 let pub = await read();
 ok(
@@ -168,7 +171,7 @@ r = await api(coach, {
     { name: "reviewDossier", args: [coach.id, "approved", "Self approval"] },
   ],
 });
-ok(r.status === 400, "Coach cannot self-approve");
+ok(r.status === 403, "Coach cannot self-approve");
 await command(
   team,
   "reviewDossier",
