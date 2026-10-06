@@ -909,7 +909,7 @@ export function validateIntervals(list: Interval[]) {
   }
   return sorted;
 }
-export function quotePrice(store: Store, b: Booking, o: Offer) {
+export function quotePrice(store: Store, b: Pick<Booking, "coach" | "format" | "seats">, o: Offer) {
   return (
     Math.round(
       (o.price * (o.kind === "Groupe" ? b.seats : 1) +

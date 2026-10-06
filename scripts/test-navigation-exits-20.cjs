@@ -161,9 +161,7 @@ async function login() {
           ok(has("Bonjour, Alex"), `${label} restores account`);
         }
         await click("Ajuster mes préférences");
-        await click("Continuer");
-        await click("Retour");
-        ok(has("1 / 3"), "Onboarding back goes to the previous step");
+        ok(has("Votre sport."), "One-screen onboarding is accessible");
         await click("Retour");
         ok(has("Bonjour, Alex"), "First onboarding step returns to its origin");
       }

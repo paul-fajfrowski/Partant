@@ -1,0 +1,378 @@
+[
+  {
+    "name": "test-coach-volume",
+    "pass": true,
+    "seconds": 6.8,
+    "summary": [
+      "PASS 23 coach volume DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-notification-paging",
+    "pass": true,
+    "seconds": 5.8,
+    "summary": [
+      "PASS 13 notification paging and scroll restoration DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-google-integration",
+    "pass": true,
+    "seconds": 0.5,
+    "summary": [
+      "PASS 16 Google encryption, timezone and reconciliation checks (provider responses simulated)."
+    ]
+  },
+  {
+    "name": "test-auth-feedback-web",
+    "pass": true,
+    "seconds": 4,
+    "summary": [
+      "PASS 11 auth feedback limited DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-auth-journey-web-19",
+    "pass": true,
+    "seconds": 8.3,
+    "summary": [
+      "PASS 9 connected auth journey DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-auth-races-28",
+    "pass": true,
+    "seconds": 1.5,
+    "summary": [
+      "PASS 22 auth concurrency/recovery checks (iOS + web adapters)."
+    ]
+  },
+  {
+    "name": "test-auth-transition-28",
+    "pass": true,
+    "seconds": 2.4,
+    "summary": [
+      "PASS 7 auth transition: OAuth callback client 390 DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-booking-resume-web-19",
+    "pass": true,
+    "seconds": 3.3,
+    "summary": [
+      "PASS 8 booking resume DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-connected-domain",
+    "pass": true,
+    "seconds": 0.5,
+    "summary": [
+      "PASS 61 connected command, venue, authorization and privacy checks."
+    ]
+  },
+  {
+    "name": "test-email-link-21",
+    "pass": true,
+    "seconds": 3,
+    "summary": [
+      "PASS 10 email link instructions DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-messaging-web",
+    "pass": true,
+    "seconds": 6,
+    "summary": [
+      "PASS 23 messaging DOM checks. No visual device validation."
+    ]
+  },
+  {
+    "name": "test-messaging",
+    "pass": true,
+    "seconds": 0.5,
+    "summary": [
+      "PASS 26 messaging domain checks."
+    ]
+  },
+  {
+    "name": "test-native-auth-19",
+    "pass": true,
+    "seconds": 0.4,
+    "summary": [
+      "PASS 19 native auth and guest-resume checks (provider responses simulated)."
+    ]
+  },
+  {
+    "name": "test-native-availability-web",
+    "pass": true,
+    "seconds": 17.3,
+    "summary": [
+      "PASS 17 native offer scheduling DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-native-availability",
+    "pass": true,
+    "seconds": 0.4,
+    "summary": [
+      "PASS 36 offer-specific availability assertions."
+    ]
+  },
+  {
+    "name": "test-native-complete",
+    "pass": true,
+    "seconds": 0.4,
+    "summary": [
+      "PASS 68 complete native workflow assertions."
+    ]
+  },
+  {
+    "name": "test-native-locations-web",
+    "pass": true,
+    "seconds": 8.5,
+    "summary": [
+      "PASS 13 coach locations DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-native-locations",
+    "pass": true,
+    "seconds": 0.5,
+    "summary": [
+      "PASS 18 location domain checks."
+    ]
+  },
+  {
+    "name": "test-native-model",
+    "pass": true,
+    "seconds": 0.3,
+    "summary": [
+      "PASS 18 native domain assertions."
+    ]
+  },
+  {
+    "name": "test-native-navigation-web",
+    "pass": true,
+    "seconds": 13,
+    "summary": [
+      "PASS 28 native navigation DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-native-product-polish-web",
+    "pass": true,
+    "seconds": 15.7,
+    "summary": [
+      "PASS 16 product polish DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-native-product-polish",
+    "pass": true,
+    "seconds": 0.4,
+    "summary": [
+      "PASS 32 product-polish domain checks."
+    ]
+  },
+  {
+    "name": "test-native-settings-web",
+    "pass": true,
+    "seconds": 12,
+    "summary": [
+      "PASS 11 native settings DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-navigation-exits-20",
+    "pass": true,
+    "seconds": 12,
+    "summary": [
+      "PASS 29 navigation exits client DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-notifications-coach-web",
+    "pass": true,
+    "seconds": 3.2,
+    "summary": [
+      "PASS 9 notification coach actions DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-notifications-web",
+    "pass": true,
+    "seconds": 5.9,
+    "summary": [
+      "PASS 20 notification client journey DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-notifications",
+    "pass": true,
+    "seconds": 0.4,
+    "summary": [
+      "PASS 53 notification domain checks."
+    ]
+  },
+  {
+    "name": "test-privacy-25",
+    "pass": true,
+    "seconds": 11.4,
+    "summary": [
+      "PASS 27 privacy client, information, back navigation and rights request failure/retry DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-privacy-domain-25",
+    "pass": true,
+    "seconds": 0.4,
+    "summary": [
+      "PASS 53 privacy request ownership, team access and export checks."
+    ]
+  },
+  {
+    "name": "test-push-23",
+    "pass": true,
+    "seconds": 0.3,
+    "summary": [
+      "PASS 29 push/server checks (APNs responses simulated, no notification sent)."
+    ]
+  },
+  {
+    "name": "test-push-device-23",
+    "pass": true,
+    "seconds": 0.2,
+    "summary": [
+      "PASS 9 native push permission, account, token and logout checks (native APIs simulated)."
+    ]
+  },
+  {
+    "name": "test-range-details-29",
+    "pass": true,
+    "seconds": 0.3,
+    "summary": [
+      "PASS 12 availability range projection checks."
+    ]
+  },
+  {
+    "name": "test-sectors-24",
+    "pass": true,
+    "seconds": 0.4,
+    "summary": [
+      "PASS 16 sector resolution, department coverage and self-review guard checks."
+    ]
+  },
+  {
+    "name": "test-settings-24",
+    "pass": true,
+    "seconds": 18.3,
+    "summary": [
+      "PASS 20 coach settings, acknowledgements, failure recovery and delayed logout DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-verification-26",
+    "pass": true,
+    "seconds": 0.4,
+    "summary": [
+      "PASS 38 verification, scoped approval, expiry, privacy and authorization checks."
+    ]
+  },
+  {
+    "name": "test-verification-connected-web-26",
+    "pass": true,
+    "seconds": 7.4,
+    "summary": [
+      "PASS 6 connected dossier acknowledgement and failure recovery DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-verification-web-26",
+    "pass": true,
+    "seconds": 9.7,
+    "summary": [
+      "PASS 14 adaptive verification, reusable proofs and dossier-first UX DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-audit-privacy-33",
+    "pass": true,
+    "seconds": 0.4,
+    "summary": [
+      "PASS 20 public projection, booking access and erasure regression checks."
+    ]
+  },
+  {
+    "name": "test-deletion-worker-33",
+    "pass": true,
+    "seconds": 0.2,
+    "summary": [
+      "PASS 48 erasure worker scope, provider failure, bounded work and replay checks."
+    ]
+  },
+  {
+    "name": "test-secure-session-33",
+    "pass": true,
+    "seconds": 0.2,
+    "summary": [
+      "PASS 16 secure session migration, chunking, interrupted writes and logout checks."
+    ]
+  },
+  {
+    "name": "test-experience-34",
+    "pass": true,
+    "seconds": 0.3,
+    "summary": [
+      "PASS 20 presentation-policy and field-validation checks."
+    ]
+  },
+  {
+    "name": "test-features-35",
+    "pass": true,
+    "seconds": 0.5,
+    "summary": [
+      "PASS 57 feature-35 suspension, home radius, dated availability, alerts, coach application and resolver checks."
+    ]
+  },
+  {
+    "name": "test-hardening-36",
+    "pass": true,
+    "seconds": 0.5,
+    "summary": [
+      "PASS 43 hardening regressions (DST, dependency mitigations)"
+    ]
+  },
+  {
+    "name": "test-team-access-37",
+    "pass": true,
+    "seconds": 0.4,
+    "summary": [
+      "PASS 24 team role and per-dossier projection checks"
+    ]
+  },
+  {
+    "name": "test-team-ui-37",
+    "pass": true,
+    "seconds": 8.7,
+    "summary": [
+      "PASS 10 MFA team entry, pagination, assignment, return, errors and recovery DOM checks. Not a visual validation."
+    ]
+  },
+  {
+    "name": "test-product-38",
+    "pass": true,
+    "seconds": 0.5,
+    "summary": [
+      "PASS 24 product 38 regression checks"
+    ]
+  },
+  {
+    "name": "test-privacy-25-coach",
+    "pass": true,
+    "seconds": 11.5,
+    "summary": [
+      "PASS 27 privacy coach, information, back navigation and rights request failure/retry DOM checks. Not a visual validation."
+    ]
+  }
+]

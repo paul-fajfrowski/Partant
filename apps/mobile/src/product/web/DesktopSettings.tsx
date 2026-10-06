@@ -143,6 +143,7 @@ function Item({
   );
 }
 export function DesktopSettings({
+  status,
   published,
   onSelect,
   onChecklist,
@@ -151,6 +152,7 @@ export function DesktopSettings({
   onPublication,
   disabled,
 }: {
+  status: { title: string; description: string };
   published: boolean;
   onSelect: (id: string) => void;
   onChecklist: () => void;
@@ -172,15 +174,9 @@ export function DesktopSettings({
       </Row>
       <Row between wrap style={s.status}>
         <View style={{ flex: 1, minWidth: 250 }}>
-          <H2>
-            {published
-              ? "Votre profil est en ligne"
-              : "Votre profil est en pause"}
-          </H2>
+          <H2>{status.title}</H2>
           <P muted small style={{ marginTop: 5 }}>
-            {published
-              ? "Vos offres et disponibilités sont visibles des clients."
-              : "Préparez votre offre et complétez les étapes de mise en ligne."}
+            {status.description}
           </P>
         </View>
         <Button onPress={onChecklist}>Gérer ma mise en ligne</Button>

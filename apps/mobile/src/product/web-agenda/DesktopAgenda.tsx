@@ -140,8 +140,11 @@ function CoachAgenda({
           <Action onPress={() => onConfigure("schedule")}>
             Disponibilités
           </Action>
-          <Action primary onPress={() => onConfigure("groups")}>
-            + Cours en groupe
+          <Action onPress={() => onConfigure("blocks")}>
+            Indisponibilité
+          </Action>
+          <Action primary onPress={() => onConfigure("external")}>
+            + Rendez-vous
           </Action>
         </View>
       </View>

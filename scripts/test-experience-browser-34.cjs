@@ -205,7 +205,7 @@ const ok = (v, label) => {
       await btn("Configurer lundi").click();
       await btn("Modifier la plage 09:00–11:00").click();
       await p.getByLabel("Fin de plage", { exact: true }).fill("11:15");
-      await btn("Valider cette plage").click();
+      await btn("Appliquer à la journée").click();
       await p.waitForFunction(
         () =>
           [...document.querySelectorAll('[role="button"]')]

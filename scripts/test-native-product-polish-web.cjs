@@ -80,7 +80,7 @@ async function toggle(label) {
   await click("Configurer lundi");
   await click("Modifier la plage 09:10–22:00");
   await field("Début de plage", "09:25");
-  await click("Valider cette plage");
+  await click("Appliquer à la journée");
   await click("Retour à la semaine");
   for(let i=0;i<30&&!stored().coachDrafts?.["0:schedule"];i++) await wait();
   ok(
@@ -154,7 +154,7 @@ async function toggle(label) {
   );
   await click("Retour");
   await click("Agenda");
-  await click("+ Rendez-vous pris directement");
+  await click("+ Rendez-vous");
   await field("Nom du client", "Camille");
   await field("Heure du rendez-vous", "09:10");
   await click("Enregistrer le rendez-vous");

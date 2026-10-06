@@ -1,0 +1,64 @@
+[
+  {
+    "id": "search-discipline",
+    "reproduced": true,
+    "description": "Running sélectionné, mais la carte de Thomas propose Musculation audit.",
+    "text": "partant\nParis 11e\nOn bouge quand ?\nTrouvez votre coach. Réservez votre moment.\nAujourd’hui\nCe soir\nDemain\nDate & heure\nTout\nRunning\nPilates\nMusculation\nBoxe\nYoga\nAutres\nTous\nIndividuel\nDuo\nGroupe\nDes coachs, tout près.\n2 disponibles · mer. 7 oct.\nTrier\nProfil vérifié\nThomas Martin\n★ 4,9 (86)\nMusculation\n50 € / 60 min\nMusculation audit · Paris 11e · Voltaire · 0,8 km\nDemain · Réservation immédiate\n09:00\n10:00\n11:00\nSquare Maurice-Gardette · Chez le client · Tout compris\n+ Comparer\nProfil vérifié\nIdriss Benali\n★ 4,9 (63)\nRunning\n40 € / 60 min\nCoaching individuel · Paris 12e · Bastille · 1,3 km\nDemain · Réservation immédiate\n08:30\n17:00\n19:00\nCoulée verte René-Dumont · En visioconférence · Tout compris\n+ Comparer\nDes coachs indépendants. Du temps pour vous.\n\nDémo · profils et créneaux fictifs\nM’alerter de nouvelles disponibilités\nExplorer\nFavoris\nSéances\nMon espace"
+  },
+  {
+    "id": "web-route-refresh",
+    "reproduced": true,
+    "description": "Rechargement du profil retourne à Explorer.",
+    "url": "http://127.0.0.1:8081/?data=preview"
+  },
+  {
+    "id": "search-person-day",
+    "reproduced": true,
+    "description": "Thomas disponible demain, recherche nominative affiche aucun résultat aujourd’hui.",
+    "text": "partant\nParis 11e\nOn bouge quand ?\nTrouvez votre coach. Réservez votre moment.\nAujourd’hui\nCe soir\nDemain\nDate & heure\nTout\nRunning\nPilates\nMusculation\nBoxe\nYoga\nAutres\nTous\nIndividuel\nDuo\nGroupe\nDes coachs, tout près.\n0 disponibles · mar. 6 oct.\nTrier\nAucun résultat pour « Thomas Martin »\nGardez vos préférences et explorez une autre possibilité.\nEffacer le texte recherché\nRéinitialiser les filtres\nDes coachs indépendants. Du temps pour vous.\n\nDémo · profils et créneaux fictifs\nExplorer\nFavoris\nSéances\nMon espace"
+  },
+  {
+    "id": "search-price-home",
+    "reproduced": true,
+    "description": "Budget 50 €, domicile : carte Thomas à 50 € Tout compris, tarif moteur avec déplacement 70 €.",
+    "quoted": 70,
+    "text": "partant\nParis 11e\nOn bouge quand ?\nTrouvez votre coach. Réservez votre moment.\nAujourd’hui\nCe soir\nDemain\nDate & heure\nTout\nRunning\nPilates\nMusculation\nBoxe\nYoga\nAutres\nTous\nIndividuel\nDuo\nGroupe\nJusqu’à 50 € ×\nDomicile ×\nDes coachs, tout près.\n1 disponible · mer. 7 oct.\nTrier\nProfil vérifié\nThomas Martin\n★ 4,9 (86)\nMusculation\n50 € / 60 min\nMusculation audit · Paris 11e · Voltaire · 0,8 km\nDemain · Réservation immédiate\n09:00\n10:00\n11:00\nParc · Studio · Tout compris\n+ Comparer\nDes coachs indépendants. Du temps pour vous.\n\nDémo · profils et créneaux fictifs\nM’alerter de nouvelles disponibilités\nExplorer\nFavoris\nSéances\nMon espace"
+  },
+  {
+    "id": "checklist-dated",
+    "reproduced": true,
+    "checklist": [
+      {
+        "id": "profile",
+        "title": "Présentez-vous",
+        "done": true
+      },
+      {
+        "id": "offers",
+        "title": "Créez votre offre",
+        "done": true
+      },
+      {
+        "id": "places",
+        "title": "Choisissez vos lieux",
+        "done": true
+      },
+      {
+        "id": "schedule",
+        "title": "Ouvrez votre planning",
+        "done": false
+      },
+      {
+        "id": "documents",
+        "title": "Vérifiez votre profil",
+        "done": true
+      },
+      {
+        "id": "payout",
+        "title": "Activez vos versements de test",
+        "done": true
+      }
+    ],
+    "publicationIssues": []
+  }
+]

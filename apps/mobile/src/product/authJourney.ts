@@ -9,12 +9,14 @@ export type AuthJourney = {
   expires: number;
   draft?: Booking;
   favorite?: string;
+  booking?: string;
 };
 const key = "partant-auth-journey-v1";
 const destinations = new Set([
   "setup",
   "favorites",
   "bookings",
+  "bookingDetail",
   "account",
   "notifications",
   "messages",
@@ -47,6 +49,12 @@ export function parseJourney(raw: string | null): AuthJourney | null {
       (!j.draft ||
         typeof j.draft.coach !== "string" ||
         typeof j.draft.time !== "string")
+    )
+      return null;
+    if (
+      j.booking !== undefined &&
+      (typeof j.booking !== "string" ||
+        !/^[a-zA-Z0-9_:.\-]{1,100}$/.test(j.booking))
     )
       return null;
     return j;

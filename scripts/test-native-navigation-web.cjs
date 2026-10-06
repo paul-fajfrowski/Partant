@@ -135,18 +135,6 @@ const selected = (label) =>
   await click("Me connecter");
   await click("Votre pratique : Tout");
   await click("Running");
-  await click("Votre objectif : Me remettre en forme");
-  await click("Courir plus longtemps");
-  await click("Continuer");
-  await click("Votre budget maximum par séance : Jusqu’à 80 €");
-  await click("Jusqu’à 40 €");
-  await click("Distance maximale : 10 km");
-  await click("1 km");
-  await click("Continuer");
-  await click("Le lieu qui vous convient : Je suis flexible");
-  await click("En extérieur");
-  await click("Votre prochain moment : Libre");
-  await click("Demain");
   await click("Découvrir mes coachs");
   ok(
     d.body.textContent.includes("On bouge quand ?"),
@@ -159,16 +147,12 @@ const selected = (label) =>
     "Onboarding does not leave active budget/distance/format filters",
   );
   ok(
-    selected("Tout") && selected("Aujourd’hui"),
+    selected("Tout") && selected("Prochainement"),
     "Sport and date start neutral after onboarding",
   );
   const prefs = stored().preferences;
   ok(
-    prefs.sport === "Running" &&
-      prefs.budget === 40 &&
-      prefs.distance === 1 &&
-      prefs.format === "Parc" &&
-      prefs.moment === "Demain",
+    prefs.sport === "Running",
     "Personal preferences retained independently of search",
   );
   await click("Trier");

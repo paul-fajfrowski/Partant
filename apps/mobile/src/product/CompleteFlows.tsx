@@ -153,12 +153,26 @@ export function CompleteFlows(
       />
     );
   }
-  if (screen === "client-history") return <>
-    <H1>Mes séances comme client</H1><P muted>Votre historique reste disponible dans votre compte professionnel.</P>
-    {s.bookings.filter(b => b.clientId === me?.id).sort((a, b) => (b.day + b.time).localeCompare(a.day + a.time)).map(b =>
-      <Setting key={b.id} title={`${dayLabel(b.day, true)} · ${b.time}`} description={`${b.serviceName} · ${allCoaches(s).find(c => c.id === b.coach)?.name ?? "Coach"} · ${b.status === "cancelled" ? "Annulée" : "Passée"}`}
-        onPress={() => showBooking(b.id)} />)}
-  </>;
+  if (screen === "client-history")
+    return (
+      <>
+        <H1>Mes séances comme client</H1>
+        <P muted>
+          Votre historique reste disponible dans votre compte professionnel.
+        </P>
+        {s.bookings
+          .filter((b) => b.clientId === me?.id)
+          .sort((a, b) => (b.day + b.time).localeCompare(a.day + a.time))
+          .map((b) => (
+            <Setting
+              key={b.id}
+              title={`${dayLabel(b.day, true)} · ${b.time}`}
+              description={`${b.serviceName} · ${allCoaches(s).find((c) => c.id === b.coach)?.name ?? "Coach"} · ${b.status === "cancelled" ? "Annulée" : "Passée"}`}
+              onPress={() => showBooking(b.id)}
+            />
+          ))}
+      </>
+    );
   if (screen === "tools")
     return (
       <>
@@ -594,13 +608,28 @@ export function CompleteFlows(
           onChange={setFlag}
         />
         {select("Lieu", "format", ["Tous", ...placeTypes], "Tous")}
-        {!val("coach", focus) && val("format", "Tous") !== "Visio" && <>
-          <AddressPicker label="Secteur de l’alerte" value={val("area", s.preferences.city)}
-            onChange={area => setForm(f => ({ ...f, area }))}
-            onSelect={point => setForm(f => ({ ...f, area: point.label }))} />
-          {field("Rayon autour du secteur (km)", "radius", String(s.preferences.distance), false, true)}
-          <P small muted>Les séances en visio restent accessibles à distance.</P>
-        </>}
+        {!val("coach", focus) && val("format", "Tous") !== "Visio" && (
+          <>
+            <AddressPicker
+              label="Secteur de l’alerte"
+              value={val("area", s.preferences.city)}
+              onChange={(area) => setForm((f) => ({ ...f, area }))}
+              onSelect={(point) =>
+                setForm((f) => ({ ...f, area: point.label }))
+              }
+            />
+            {field(
+              "Rayon autour du secteur (km)",
+              "radius",
+              String(s.preferences.distance),
+              false,
+              true,
+            )}
+            <P small muted>
+              Les séances en visio restent accessibles à distance.
+            </P>
+          </>
+        )}
         <Button
           style={{ marginTop: 20 }}
           onPress={() =>
@@ -622,10 +651,16 @@ export function CompleteFlows(
                 throw Error("Vérifiez les horaires, le budget et les places.");
               let area: AvailabilityAlert["area"];
               if (!val("coach", focus) && val("format", "Tous") !== "Visio") {
-                const radius = Number(val("radius", String(s.preferences.distance)));
-                if (!Number.isFinite(radius) || radius < 1 || radius > 100) throw Error("Choisissez un rayon de 1 à 100 km.");
-                const points = await searchAddresses(val("area", s.preferences.city));
-                if (!points.length) throw Error("Sélectionnez un secteur reconnu.");
+                const radius = Number(
+                  val("radius", String(s.preferences.distance)),
+                );
+                if (!Number.isFinite(radius) || radius < 1 || radius > 100)
+                  throw Error("Choisissez un rayon de 1 à 100 km.");
+                const points = await searchAddresses(
+                  val("area", s.preferences.city),
+                );
+                if (!points.length)
+                  throw Error("Sélectionnez un secteur reconnu.");
                 area = { ...points[0], radius };
               }
               const alert: AvailabilityAlert = {
@@ -644,7 +679,10 @@ export function CompleteFlows(
                 active: true,
                 seen: [],
               };
-              await commitStore(x => ({ ...x, alerts: [...(x.alerts ?? []), alert] }));
+              await commitStore((x) => ({
+                ...x,
+                alerts: [...(x.alerts ?? []), alert],
+              }));
               go("alerts-native");
             })
           }
@@ -675,9 +713,12 @@ export function CompleteFlows(
                 {a.seats} participant(s) · jusqu’à {euro(a.budget)}
                 {a.area ? ` · ${a.area.label} · ${a.area.radius} km` : ""}
               </P>
-              {!a.coach && !a.area && a.format !== "Visio" && <Note>
-                Cette ancienne alerte n’a pas de secteur. Créez une alerte locale pour retrouver des créneaux proches.
-              </Note>}
+              {!a.coach && !a.area && a.format !== "Visio" && (
+                <Note>
+                  Cette ancienne alerte n’a pas de secteur. Créez une alerte
+                  locale pour retrouver des créneaux proches.
+                </Note>
+              )}
               {W.alertMatches(s, a)
                 .slice(0, 6)
                 .map((m) => (
@@ -685,7 +726,9 @@ export function CompleteFlows(
                     key={m.offer.id + m.time}
                     title={`${m.coach.name} · ${m.time}`}
                     description={`${euro(m.price)} au total · ${m.offer.kind}`}
-                    onPress={() => choose(m.coach, m.day, m.time, m.offer, m.format, a.seats)}
+                    onPress={() =>
+                      choose(m.coach, m.day, m.time, m.offer, m.format, a.seats)
+                    }
                   />
                 ))}
               <TextButton
@@ -736,8 +779,16 @@ export function CompleteFlows(
               <P small muted style={{ marginTop: 12 }}>
                 {t.status === "open" ? "En cours de traitement" : t.response}
               </P>
-              {t.application === "approved" && me?.role === "client" && <Button onPress={() => go("become-coach")}>Préparer mon passage coach</Button>}
-              {t.application === "activated" && <P small muted>Compte professionnel activé · historique conservé</P>}
+              {t.application === "approved" && me?.role === "client" && (
+                <Button onPress={() => go("become-coach")}>
+                  Préparer mon passage coach
+                </Button>
+              )}
+              {t.application === "activated" && (
+                <P small muted>
+                  Compte professionnel activé · historique conservé
+                </P>
+              )}
             </Note>
           ))}
         {focus && (
@@ -843,12 +894,29 @@ export function CompleteFlows(
               ))}
           </>
         )}
-        {allCoaches(s).filter(c => (!s.connected || s.teamAccess?.role === "admin") && configFor(s, c.id).suspension?.active).map(c => <View key={c.id}>
-          <H2>{c.name} · profil suspendu</H2>
-          <P muted>{configFor(s, c.id).suspension?.reason}</P>
-          {field("Motif de levée", "lift-" + c.id)}
-          <TextButton onPress={() => update(x => W.liftSuspension(x, c.id, val("lift-" + c.id)), "Suspension levée. Le coach peut republier son profil.")}>Lever la suspension</TextButton>
-        </View>)}
+        {allCoaches(s)
+          .filter(
+            (c) =>
+              (!s.connected || s.teamAccess?.role === "admin") &&
+              configFor(s, c.id).suspension?.active,
+          )
+          .map((c) => (
+            <View key={c.id}>
+              <H2>{c.name} · profil suspendu</H2>
+              <P muted>{configFor(s, c.id).suspension?.reason}</P>
+              {field("Motif de levée", "lift-" + c.id)}
+              <TextButton
+                onPress={() =>
+                  update(
+                    (x) => W.liftSuspension(x, c.id, val("lift-" + c.id)),
+                    "Suspension levée. Le coach peut republier son profil.",
+                  )
+                }
+              >
+                Lever la suspension
+              </TextButton>
+            </View>
+          ))}
         <H2 style={{ marginVertical: 20 }}>Demandes d’assistance</H2>
         {(s.tickets ?? []).map((t) => (
           <View key={t.id}>
@@ -862,13 +930,22 @@ export function CompleteFlows(
                 <Select
                   label="Traitement"
                   value={decision}
-                  items={s.connected && s.teamAccess?.role !== "admin" ? ["Répondre"] : [
-                    "Répondre",
-                    ...(t.body.startsWith("Candidature coach :") ? ["Autoriser le passage coach", "Refuser la candidature"] : []),
-                    ...(t.booking ? ["Rembourser la séance"] : []),
-                    ...(t.review ? ["Masquer l’avis"] : []),
-                    ...(t.coach ? ["Suspendre le profil"] : []),
-                  ]}
+                  items={
+                    s.connected && s.teamAccess?.role !== "admin"
+                      ? ["Répondre"]
+                      : [
+                          "Répondre",
+                          ...(t.body.startsWith("Candidature coach :")
+                            ? [
+                                "Autoriser le passage coach",
+                                "Refuser la candidature",
+                              ]
+                            : []),
+                          ...(t.booking ? ["Rembourser la séance"] : []),
+                          ...(t.review ? ["Masquer l’avis"] : []),
+                          ...(t.coach ? ["Suspendre le profil"] : []),
+                        ]
+                  }
                   onChange={setDecision}
                 />
                 {field("Réponse motivée", "response", "", true)}
@@ -1296,6 +1373,8 @@ export function CompleteFlows(
   }
   if (screen === "checklist-native") {
     const issues = W.publicationIssues(s, active);
+    const steps = setupSteps(s, active),
+      next = steps.find((x) => !x.done && !x.waiting);
     return (
       <>
         <Eyebrow>VOTRE ACTIVITÉ PREND FORME</Eyebrow>
@@ -1303,28 +1382,23 @@ export function CompleteFlows(
           Faisons place{"\n"}à vos prochains clients.
         </H1>
         <P muted>
-          {setupSteps(s, active).filter((x) => x.done).length} / 6 étapes
-          terminées. Les brouillons sont conservés dans votre espace ;
-          enregistrez chaque étape pour l’appliquer.
+          {steps.filter((x) => x.done).length} / {steps.length} étapes
+          terminées. Avancez à votre rythme ; les paramètres enregistrés sont
+          conservés.
         </P>
-        {setupSteps(s, active).find((x) => !x.done) && (
+        {next && (
           <Button
             style={{ marginVertical: 20 }}
-            onPress={() =>
-              go(
-                "config-native",
-                setupSteps(s, active).find((x) => !x.done)!.id,
-              )
-            }
+            onPress={() => go("config-native", next.id)}
           >
-            Continuer : {setupSteps(s, active).find((x) => !x.done)!.title}
+            Continuer : {next.title}
           </Button>
         )}
-        {setupSteps(s, active).map(({ id, title, done }, i) => (
+        {steps.map(({ id, title, done, status }, i) => (
           <Setting
             key={id}
             title={`${i + 1} · ${title}`}
-            description={done ? "Terminé" : "À compléter"}
+            description={status ?? (done ? "Terminé" : "À compléter")}
             onPress={() => go("config-native", id)}
           />
         ))}
@@ -1345,7 +1419,9 @@ export function CompleteFlows(
         >
           {cfg.published
             ? "Voir mon profil public"
-            : "Publier mon profil de démonstration"}
+            : s.connected
+              ? "Publier mon profil"
+              : "Publier mon profil de démonstration"}
         </Button>
       </>
     );

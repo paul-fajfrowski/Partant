@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-06",
+  "scope": "Livraison 38, code partagé RN/Web. Données QA fictives. Aucun nouveau build signé ni test physique.",
+  "unitDOM": {
+    "passed": 47,
+    "total": 47
+  },
+  "browser": {
+    "passed": 12,
+    "total": 12
+  },
+  "responsive": {
+    "states": 20,
+    "widths": [
+      320,
+      390,
+      820,
+      1440
+    ],
+    "violations": 0,
+    "overflow": 0,
+    "pageErrors": 0
+  },
+  "typecheck": "passed",
+  "iOSHermesExport": "passed (development)",
+  "webDevelopmentExport": "passed",
+  "webProductionExport": "passed",
+  "productionIsolation": "PASS production browser: demo URLs and seeded demo account ignored; connected welcome rendered; launchers removed.",
+  "supabase": {
+    "project": "jhhsysjdeyqsuztjtgea",
+    "functions": [
+      {
+        "name": "product-api",
+        "version": 28,
+        "status": "ACTIVE"
+      },
+      {
+        "name": "google-calendar",
+        "version": 23,
+        "status": "ACTIVE"
+      },
+      {
+        "name": "push-dispatch",
+        "version": 16,
+        "status": "ACTIVE"
+      }
+    ]
+  },
+  "testAdjustments": [
+    "Trois étapes onboarding remplacées par pratique et secteur facultatifs.",
+    "Libellé de plage et bouton rendez-vous mis à jour.",
+    "Sélecteur DOM heure cible la radio du dialogue, pas un créneau de résultat sous-jacent."
+  ],
+  "unverified": [
+    "Build signé/gestes iPhone et Android",
+    "OAuth, APNs et Calendar réels sur cette livraison",
+    "Paiement réel, SMTP, charge et restauration complète",
+    "Adoption commerciale"
+  ],
+  "notes": [
+    "Première exécution DOM lancée trop tôt pendant export : index.html momentanément absent. Recette relancée intégralement après export.",
+    "Les premières régressions de navigation ont été corrigées ; résultats conservés ici = sources finales."
+  ]
+}

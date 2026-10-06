@@ -1,6 +1,8 @@
 # Partant — réalisé, reste à faire et reprise du projet
 
-**Mis à jour le 4 octobre 2026 — point d’entrée pour reprendre le projet.**
+**Mis à jour le 6 octobre 2026 — point d’entrée pour reprendre le projet.**
+
+**Dernière livraison :** [corrections produit 38](docs/corrections-produit-38.md). Les dix recommandations P38 de l’[audit du 6 octobre](docs/audit-produit-adoption-2026-10-06.md) ont été appliquées ou conservées selon leur décision : découverte sport/prix/date cohérente, checklist alignée, liens de profils et navigation web, onboarding client court, activation coach guidée, sauvegarde clarifiée et actions quotidiennes rapprochées. Les limites commerciales et la recette physique restent ouvertes ; voir les preuves et la [recette terrain](docs/recette-terrain-38.md).
 
 La [livraison 37](docs/equipe-securisee-37.md) ajoute la double authentification de l’équipe, les rôles vérification/assistance/administration, une file de dossiers paginée côté serveur et leur prise en charge exclusive. La protection est appliquée dans l’API, la transaction d’enregistrement et le stockage des justificatifs. Aucun compte réel habilité : Paul doit toujours désigner les membres.
 
@@ -14,7 +16,7 @@ Lire ce document en premier, puis le [détail des corrections et limites](docs/c
 
 - **Une seule source produit** pour l’app native et la WebApp, avec modes connecté et démonstration. Pas de seconde application à recopier ; le HTML reste une archive.
 - **Les défauts de confidentialité, de stockage de session natif, d’accessibilité web et de navigation des notifications identifiés dans l’audit ont reçu leurs correctifs.** Les changements serveur correspondants sont déployés sur le projet de développement.
-- **Recette de la livraison 37 : voir les résultats consolidés dans son [rapport](docs/equipe-securisee-37.md#vérifications).** Les tests incluent MFA, rôles, attribution concurrente, révocation et stockage privé, en plus des parcours existants. Bundle Hermes exporté ; aucune nouvelle validation physique iPhone annoncée.
+- **Recette courante : voir les preuves de la [livraison 38](docs/corrections-produit-38.md#vérification).** Les contrôles équipe distants restent documentés dans la [livraison 37](docs/equipe-securisee-37.md#vérifications). Les tests incluent MFA, rôles, attribution concurrente, révocation et stockage privé, en plus des parcours existants. Bundle Hermes exporté ; aucune nouvelle validation physique iPhone annoncée.
 - **Le MVP commercial reste ouvert** : habilitation équipe, recette réelle iPhone/agenda/push, paiement, confidentialité opérationnelle et préparation de la distribution.
 - **Six points fonctionnels corrigés :** suspension protégée, rayon domicile vérifié côté serveur, dates ponctuelles publiables, alertes duo au prix total, alertes locales et candidature client vers coach avec décision équipe puis confirmation du client. Le dossier professionnel reste obligatoire.
 - **Première action du collègue :** récupérer `main`, préparer son environnement (section 6), compiler puis exécuter la recette à deux comptes. Ne pas utiliser les anciens dossiers ou binaires comme preuve de mise à jour.

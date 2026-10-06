@@ -68,7 +68,7 @@ async function field(label, value) {
     d.body.textContent.includes("Coaching individuel · 60 min · 50 €"),
     "Assigned offer price visible in schedule",
   );
-  await click("Valider cette plage");
+  await click("Appliquer à la journée");
   await click("Ajouter une plage");
   await field("Début de plage", "14:00");
   await field("Fin de plage", "17:00");
@@ -82,7 +82,7 @@ async function field(label, value) {
   // Editing the hours must preserve the selected offers.
   await field("Fin de plage", "17:30");
   await field("Fin de plage", "17:00");
-  await click("Valider cette plage");
+  await click("Appliquer à la journée");
   await click("Ajouter une plage");
   ok(
     d.querySelector('input[aria-label="Début de plage"]').value === "",
@@ -90,7 +90,7 @@ async function field(label, value) {
   );
   await field("Début de plage", "18:10");
   await field("Fin de plage", "19:10");
-  await click("Valider cette plage");
+  await click("Appliquer à la journée");
   await click("Ajouter une plage");
   await field("Début de plage", "20:00");
   await field("Fin de plage", "21:00");
@@ -106,7 +106,7 @@ async function field(label, value) {
     d.body.textContent.includes("20:00"),
     "Departures follow the duration of each assigned offer",
   );
-  await click("Valider cette plage");
+  await click("Appliquer à la journée");
   await click("Enregistrer les modifications");
   ok(
     stored().settings["0"].departureStep === null &&
@@ -156,7 +156,10 @@ async function field(label, value) {
     ),
     "Search includes exact times configured by coaches",
   );
-  await click("14:00");
+  const timeChoice=[...d.querySelectorAll('[role="radio"]')].find(e=>e.textContent.trim()==="14:00");
+  ok(timeChoice, "Exact time option exists in selector");
+  timeChoice.click();
+  await wait();
   await click("Voir les disponibilités");
   ok(
     d.body.textContent.includes("Thomas Martin") &&

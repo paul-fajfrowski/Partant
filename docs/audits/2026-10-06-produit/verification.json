@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-06",
+  "commit": "87f0a46",
+  "scope": "Audit transversal produit, UX/UI, code, tests locaux. Aucun nouveau test physique, paiement, accès privé serveur ou essai utilisateur réel.",
+  "typecheck": "passed",
+  "webExport": "passed",
+  "unitDom": {
+    "passed": 46,
+    "total": 46
+  },
+  "browser": {
+    "passed": 11,
+    "total": 11,
+    "initialEnvironmentFailure": "Chromium Playwright absent; suites relancées avec Google Chrome déjà installé."
+  },
+  "ui": {
+    "states": 20,
+    "widths": [
+      320,
+      390,
+      820,
+      1440
+    ],
+    "axeViolations": 0,
+    "horizontalOverflows": 0,
+    "pageErrors": 0
+  },
+  "targetedFindings": 5,
+  "nativeSignedBuild": "not run",
+  "remoteAuthStorageApi": "not rerun; prior dated evidence 2026-10-04",
+  "userStudy": "not performed",
+  "productChanges": false
+}

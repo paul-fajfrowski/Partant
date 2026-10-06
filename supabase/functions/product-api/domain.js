@@ -4494,6 +4494,7 @@ exports.cancelExternalSession = exports.addExternalSession = exports.repeatGroup
 exports.copyDay = copyDay;
 exports.availabilityReasons = availabilityReasons;
 exports.setupSteps = setupSteps;
+exports.publicationStatus = publicationStatus;
 const verification_1 = load("verification.ts");
 const commands_1 = load("commands.ts");
 const model_1 = load("model.ts");
@@ -4656,7 +4657,33 @@ function availabilityReasons(s, c, o, day, time) {
 }
 function setupSteps(s, id) {
     const c = (0, model_1.allCoaches)(s).find((c) => c.id === id), cfg = (0, model_1.configFor)(s, id);
+    const approved = !!c && (0, verification_1.canOffer)(cfg.dossier, c, undefined, (0, model_1.today)());
+    const states = cfg.dossier.verification?.practices.map((p) => (0, verification_1.practiceState)(cfg.dossier.verification, p, (0, model_1.today)()));
+    const pending = states?.length
+        ? states.every((status) => status === "pending")
+        : cfg.dossier.status === "pending";
+    const needsCorrection = states?.some((status) => ["correction", "rejected"].includes(status)) ||
+        ["correction", "rejected"].includes(cfg.dossier.status);
+    const expired = states?.includes("expired") || cfg.dossier.status === "expired";
+    const configured = cfg.week.some((d) => d.length > 0) ||
+        Object.entries(cfg.exceptions).some(([day, ranges]) => day >= (0, model_1.today)() && ranges.length > 0);
+    const bookable = (0, workflows_1.hasBookableOpening)(s, id);
     return [
+        {
+            id: "documents",
+            title: "Votre dossier professionnel",
+            done: approved,
+            waiting: !approved && pending,
+            status: approved
+                ? "Au moins une pratique validée"
+                : pending
+                    ? "En cours de vérification"
+                    : needsCorrection
+                        ? "À corriger"
+                        : expired
+                            ? "À renouveler"
+                            : "À compléter",
+        },
         {
             id: "profile",
             title: "Présentez-vous",
@@ -4665,22 +4692,25 @@ function setupSteps(s, id) {
         {
             id: "offers",
             title: "Créez votre offre",
-            done: s.offers.some((o) => o.coach === id && o.active),
+            done: s.offers.some((o) => o.coach === id &&
+                o.active &&
+                (!approved || (!!c && (0, verification_1.canOffer)(cfg.dossier, c, o, (0, model_1.today)())))),
         },
-        {
-            id: "places",
-            title: "Choisissez vos lieux",
-            done: (0, model_1.locationsReady)(s, c),
-        },
+        { id: "places", title: "Choisissez vos lieux", done: (0, model_1.locationsReady)(s, c) },
         {
             id: "schedule",
             title: "Ouvrez votre planning",
-            done: cfg.week.some((d) => d.length > 0),
-        },
-        {
-            id: "documents",
-            title: "Vérifiez votre profil",
-            done: !!c && (0, verification_1.canOffer)(cfg.dossier, c, undefined, (0, model_1.today)()),
+            done: bookable,
+            waiting: !bookable && configured && (!approved || !!cfg.suspension?.active),
+            status: bookable
+                ? "Un départ est réservable"
+                : configured && !approved
+                    ? "Horaires renseignés · validation du dossier attendue"
+                    : configured && cfg.suspension?.active
+                        ? "Horaires conservés · profil suspendu"
+                        : configured
+                            ? "À ajuster · aucun départ réservable"
+                            : "À compléter",
         },
         {
             id: "payout",
@@ -4688,6 +4718,38 @@ function setupSteps(s, id) {
             done: cfg.payoutReady,
         },
     ];
+}
+function publicationStatus(s, id) {
+    const cfg = (0, model_1.configFor)(s, id), steps = setupSteps(s, id), documents = steps[0];
+    if (cfg.suspension?.active)
+        return {
+            title: "Votre profil est suspendu",
+            description: "Contactez l’équipe. Vos rendez-vous existants restent accessibles.",
+        };
+    if (cfg.published)
+        return {
+            title: "Votre profil est en ligne",
+            description: "Vos offres validées et disponibilités sont visibles des clients.",
+        };
+    if (documents.waiting)
+        return {
+            title: "Votre dossier est en cours de vérification",
+            description: "Vous pouvez préparer vos offres et vos horaires en attendant.",
+        };
+    if (!documents.done)
+        return {
+            title: "Votre dossier est à compléter",
+            description: "Commencez par vos justificatifs pour préparer votre mise en ligne.",
+        };
+    if (steps.every((s) => s.done))
+        return {
+            title: "Votre profil est prêt à être publié",
+            description: "Vérifiez votre aperçu, puis ouvrez les réservations.",
+        };
+    return {
+        title: "Préparez votre mise en ligne",
+        description: "Votre dossier est validé. Complétez les dernières étapes.",
+    };
 }
 exports.repeatGroup = (0, commands_1.recorded)("repeatGroup", _repeatGroup);
 exports.addExternalSession = (0, commands_1.recorded)("addExternalSession", _addExternalSession);

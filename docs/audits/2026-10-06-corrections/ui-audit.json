@@ -1,0 +1,202 @@
+[
+  {
+    "role": "client",
+    "width": 320,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "client",
+    "width": 320,
+    "name": "filters",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 320,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 320,
+    "name": "availability",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 320,
+    "name": "editor",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "client",
+    "width": 390,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "client",
+    "width": 390,
+    "name": "filters",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 390,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 390,
+    "name": "availability",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 390,
+    "name": "editor",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "client",
+    "width": 820,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "client",
+    "width": 820,
+    "name": "filters",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 820,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 820,
+    "name": "availability",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 820,
+    "name": "editor",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "client",
+    "width": 1440,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "client",
+    "width": 1440,
+    "name": "filters",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 1440,
+    "name": "home",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 6,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 1440,
+    "name": "availability",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  },
+  {
+    "role": "coach",
+    "width": 1440,
+    "name": "editor",
+    "lang": "fr",
+    "overflow": false,
+    "violations": [],
+    "targetsUnder44": 0,
+    "errors": []
+  }
+]

@@ -1,5 +1,14 @@
-import {TeamSecurity} from "./TeamSecurity";
-import {ConnectedTeamWorkspace} from "./ConnectedTeamWorkspace";
+import { useProductRoutes } from "./useProductRoutes";
+import {
+  productRouteURL,
+  routeViews,
+  routeIsPrivate,
+  ProductRoute,
+} from "./productRoutes";
+import { discoveryMatch, offerDisplayPrice } from "./discovery";
+import { ClientStart } from "./ClientStart";
+import { TeamSecurity } from "./TeamSecurity";
+import { ConnectedTeamWorkspace } from "./ConnectedTeamWorkspace";
 import { cancellationSummary } from "./experience";
 import { BackNavigationProvider, useBackNavigation } from "./BackNavigation";
 import { MobileAgendaAppointments } from "./MobileAgendaAppointments";
@@ -46,14 +55,20 @@ import {
 import { signInSocial, socialProviders } from "../lib/auth";
 import { placeTypes } from "./locations";
 import { AgendaTools } from "./AgendaToolsScreen";
-import { setupSteps } from "./agendaTools";
+import { setupSteps, publicationStatus } from "./agendaTools";
 import { BudgetSlider } from "./BudgetSlider";
 import * as W from "./workflows";
 import { PrivacyLinks, PrivacyScreen } from "./PrivacyScreen";
 import { CompleteFlows, BookingExtras } from "./CompleteFlows";
 import { CoachConfiguration } from "./CoachConfiguration";
 import { exportFile } from "./deviceFiles";
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   BackHandler,
@@ -62,6 +77,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -189,9 +205,11 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
   const coaches = market.coaches.map((c) => {
     if (!live || !sectorPosition) return c;
     const points = Object.values(coachLocations(store, c))
-      .filter(p => p.type !== "Visio")
-      .map(p => ({ coordinates: p.type === "Domicile" ? p.areaCenter : p.coordinates }))
-      .filter(p => p.coordinates);
+      .filter((p) => p.type !== "Visio")
+      .map((p) => ({
+        coordinates: p.type === "Domicile" ? p.areaCenter : p.coordinates,
+      }))
+      .filter((p) => p.coordinates);
     return {
       ...c,
       dist: points.length
@@ -331,6 +349,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
   const [code, setCode] = useState("");
   const [step, setStep] = useState(0);
   const [day, setDay] = useState(today());
+  const [dateExplicit, setDateExplicit] = useState(false);
   const [agendaToolsOpen, setAgendaToolsOpen] = useState(false);
   const [configDirty, setConfigDirty] = useState(false);
   const [selectedRange, setSelectedRange] = useState<RangeSelection | null>(
@@ -495,6 +514,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         setOfferId(journey.offerId);
         setDay(journey.day);
         setFocus(journey.focus);
+        if (journey.booking) setSelectedBooking(journey.booking);
         if (journey.draft)
           setDraft({
             ...journey.draft,
@@ -736,6 +756,22 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
     }
     const destination =
       previous?.screen ?? fallbackScreen(screen, store.account?.role);
+    if (
+      browserBack(screen, {
+        view: destination,
+        ...(destination === "config" ? { section: previous?.config } : {}),
+        ...(destination === "coach"
+          ? { tab: previous?.coachTab ?? "agenda" }
+          : {}),
+        ...(destination === "profile"
+          ? { coach: previous?.coachId, offer: previous?.offerId }
+          : {}),
+        ...(destination === "bookingDetail"
+          ? { booking: previous?.selectedBooking }
+          : {}),
+      })
+    )
+      return;
     setScreen(destination);
     if (!previous && destination === "coach") setCoachTab("agenda");
     if (screen === "code") setCode("");
@@ -787,9 +823,36 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         : [...s.favorites, id],
     }));
   }
+  function unrestrictedMatch(c: Coach) {
+    return discoveryMatch(store, c, {
+      sport: "Tout",
+      query: "",
+      kind: "Tous",
+      format: "Tous",
+      budget: 300,
+      day: today(),
+      flexible: true,
+      hour: "",
+      evening: false,
+    });
+  }
+  function reopenCoach(c: Coach) {
+    resetFilters();
+    const next = unrestrictedMatch(c);
+    setCoachId(c.id);
+    setOfferId(next?.offer.id ?? "");
+    setDay(next?.day ?? today());
+    go("profile");
+  }
   function openProfile(c: Coach) {
     setCoachId(c.id);
-    setOfferId(primary(c)?.id ?? "");
+    const match = discoveries.get(c.id);
+    setOfferId(
+      match?.offer.id ??
+        store.offers.find((o) => o.coach === c.id && o.active)?.id ??
+        "",
+    );
+    if (match) setDay(match.day);
     go("profile");
   }
   function locationAt(c: Coach, o: Offer, day: string, time: string) {
@@ -802,28 +865,37 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
       (f) => f === format || coachLocations(store, c)[f]?.type === format,
     );
   }
+  const discoveryFilter = {
+    sport,
+    query,
+    kind: sessionKind,
+    format,
+    budget,
+    day,
+    flexible: !dateExplicit,
+    hour,
+    evening: period === "evening",
+  };
+  const discoveries = useMemo(
+    () =>
+      new Map(
+        coaches.map((c) => [c.id, discoveryMatch(store, c, discoveryFilter)]),
+      ),
+    [
+      store,
+      sport,
+      query,
+      sessionKind,
+      format,
+      budget,
+      day,
+      dateExplicit,
+      hour,
+      period,
+    ],
+  );
   function primary(c: Coach) {
-    const candidates = store.offers.filter(
-      (o) =>
-        o.coach === c.id &&
-        o.active &&
-        (sessionKind === "Tous" || o.kind === sessionKind),
-    );
-    return (
-      candidates.find(
-        (o) =>
-          o.price <= budget &&
-          matchesLocation(store, c, o, format) &&
-          market
-            .times(c, day, o)
-            .some(
-              (time) =>
-                locationAt(c, o, day, time) &&
-                (period !== "evening" || time >= "18:00") &&
-                (!hour || time === hour),
-            ),
-      ) ?? candidates[0]
-    );
+    return discoveries.get(c.id)?.offer;
   }
   function available(c: Coach, o?: Offer) {
     const selected = o ?? primary(c);
@@ -844,7 +916,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
       [c.sport, ...(c.disciplines ?? []), ...c.tags].includes(pref.sport)
         ? 4
         : 0) +
-      ((primary(c)?.price ?? c.price) <= pref.budget ? 2 : 0) +
+      ((discoveries.get(c.id)?.price ?? c.price) <= pref.budget ? 2 : 0) +
       (pref.format !== "Tous" &&
       matchesLocation(store, c, undefined, pref.format)
         ? 1
@@ -856,28 +928,166 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
     .filter(
       (c) =>
         (live || pref.city.startsWith("Paris") || format === "Visio") &&
-        (sport === "Tout" ||
-          [c.sport, ...(c.disciplines ?? []), ...c.tags].includes(sport)) &&
-        fold([c.name, c.sport, c.area, ...c.tags].join(" ")).includes(
-          fold(query),
-        ) &&
-        (primary(c)?.price ?? c.price) <= budget &&
         (format === "Visio" || (c.dist !== null && c.dist <= distance)) &&
-        matchesLocation(store, c, undefined, format) &&
-        available(c).length,
+        discoveries.has(c.id) &&
+        discoveries.get(c.id),
     )
     .sort((a, b) =>
       sort === "recommended"
         ? preferenceScore(b) - preferenceScore(a) ||
           (a.dist ?? 999) - (b.dist ?? 999)
         : sort === "price"
-          ? (primary(a)?.price ?? a.price) - (primary(b)?.price ?? b.price)
+          ? discoveries.get(a.id)!.price - discoveries.get(b.id)!.price
           : sort === "rating"
             ? parseFloat((b.rating ?? "0").replace(",", ".")) -
               parseFloat((a.rating ?? "0").replace(",", "."))
             : (a.dist ?? 999) - (b.dist ?? 999),
     );
-  function chooseTime(c: Coach, time: string, o?: Offer, selectedDay = day, preferredFormat = format, seats?: number) {
+  const route: ProductRoute | null = routeViews.includes(screen)
+    ? {
+        view: screen,
+        ...(screen === "profile" ? { coach: coachId, offer: offerId } : {}),
+        ...(screen === "bookingDetail" ? { booking: selectedBooking } : {}),
+        ...(screen === "config" ? { section: config } : {}),
+        ...(screen === "coach" ? { tab: coachTab } : {}),
+        ...(["explore", "profile"].includes(screen)
+          ? {
+              date: dateExplicit || screen === "profile" ? day : undefined,
+              flexible: screen === "profile" && !dateExplicit,
+              sport: sport !== "Tout" ? sport : undefined,
+              q: query || undefined,
+              format: format !== "Tous" ? format : undefined,
+              kind: sessionKind !== "Tous" ? sessionKind : undefined,
+              budget: budget < 300 ? budget : undefined,
+              distance: distance < 10 ? distance : undefined,
+              hour: hour || undefined,
+              evening: period === "evening",
+            }
+          : {}),
+      }
+    : null;
+  const browserBack = useProductRoutes({
+    ready:
+      market.ready &&
+      (!live || (market.profileReady && !market.authReturning)) &&
+      (!store.account || routedAccount.current === store.account.id),
+    route,
+    canLeave: () => {
+      if (busy || market.pending > 0) return false;
+      if (localBack?.consume()) return false;
+      if (modal) {
+        setModal("");
+        return false;
+      }
+      return true;
+    },
+    onRoute: (r) => {
+      if (live && market.session && !store.account) return;
+      if (routeIsPrivate(r.view) && !store.account) {
+        requestAuth(["coach", "config"].includes(r.view) ? "account" : r.view, {
+          booking: r.booking,
+        });
+        return;
+      }
+      if (
+        store.account?.role === "coach" &&
+        ["explore", "favorites", "bookings", "account"].includes(r.view)
+      ) {
+        go("coach");
+        return;
+      }
+      if (
+        ["coach", "config"].includes(r.view) &&
+        store.account?.role !== "coach"
+      ) {
+        go("explore");
+        return;
+      }
+      if (r.view === "welcome" && store.account) {
+        go(store.account.role === "coach" ? "coach" : "explore");
+        return;
+      }
+      setModal("");
+      setSelectedRange(null);
+      setDateExplicit(!!r.date && !r.flexible);
+      setDay(r.date ?? today());
+      setSport(r.sport ?? "Tout");
+      setQuery(r.q ?? "");
+      setFormat(r.format ?? "Tous");
+      setSessionKind(r.kind ?? "Tous");
+      setBudget(r.budget ?? 300);
+      setDistance(r.distance ?? 10);
+      setHour(r.hour ?? "");
+      setPeriod(r.evening ? "evening" : "all");
+      if (r.coach) setCoachId(r.coach);
+      setOfferId(r.offer ?? "");
+      if (r.booking) setSelectedBooking(r.booking);
+      if (r.section) setConfig(r.section);
+      if (r.tab) setCoachTab(r.tab);
+      if (r.view === "profile" && r.coach && !r.date) {
+        const target = coaches.find((c) => c.id === r.coach);
+        const next =
+          target &&
+          discoveryMatch(store, target, {
+            sport: r.sport ?? "Tout",
+            query: r.q ?? "",
+            kind: r.kind ?? "Tous",
+            format: r.format ?? "Tous",
+            budget: r.budget ?? 300,
+            day: today(),
+            flexible: true,
+            hour: r.hour ?? "",
+            evening: !!r.evening,
+          });
+        if (next) {
+          setDay(next.day);
+          if (!r.offer) setOfferId(next.offer.id);
+        }
+      }
+      const index = history.current.findLastIndex(
+        (x) =>
+          x.screen === r.view &&
+          (r.view !== "config" || x.config === r.section),
+      );
+      if (index >= 0) history.current = history.current.slice(0, index);
+      else if (rootScreens.includes(r.view)) history.current = [];
+      else if (!history.current.length && r.view === "config")
+        history.current = [
+          {
+            screen: "coach",
+            coachTab: "settings",
+            config: r.section ?? "profile",
+            focus: "",
+            day,
+            coachId,
+            offerId,
+            selectedBooking,
+          },
+        ];
+      setFocus("");
+      setScreen(r.view);
+    },
+  });
+  async function shareCoach() {
+    if (!coach) return;
+    const url = productRouteURL(
+      Platform.OS === "web" ? window.location.href : "partant://open",
+      { view: "profile", coach: coach.id },
+    );
+    if (Platform.OS === "web" && navigator.clipboard) {
+      await navigator.clipboard.writeText(url);
+      setNotice("Lien du profil copié.");
+    } else
+      await Share.share({ message: `${coach.name} sur Partant : ${url}`, url });
+  }
+  function chooseTime(
+    c: Coach,
+    time: string,
+    o?: Offer,
+    selectedDay = day,
+    preferredFormat = format,
+    seats?: number,
+  ) {
     const selected =
       o ??
       store.offers.find(
@@ -909,9 +1119,15 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
     const chosenFormat =
       group?.format ??
       formatsAt(store, c, selected, selectedDay, time).find(
-        (id) => id === preferredFormat || coachLocations(store, c)[id]?.type === preferredFormat,
+        (id) =>
+          id === preferredFormat ||
+          coachLocations(store, c)[id]?.type === preferredFormat,
       ) ??
-      formatsAt(store, c, selected, selectedDay, time)[0] ??
+      formatsAt(store, c, selected, selectedDay, time).sort(
+        (a, b) =>
+          offerDisplayPrice(store, c, selected, a).price -
+          offerDisplayPrice(store, c, selected, b).price,
+      )[0] ??
       "";
     const nextDraft: Booking = {
       id: Crypto.randomUUID(),
@@ -1007,14 +1223,25 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         );
         const cfg = configFor(store, draft.coach);
         if (draft.format === "Domicile") {
-          if (!draft.address.trim()) throw Error("Indiquez votre adresse de rendez-vous.");
+          if (!draft.address.trim())
+            throw Error("Indiquez votre adresse de rendez-vous.");
           const place = cfg.locations?.Domicile;
-          if (!place?.sector) throw Error("Le coach doit préciser sa zone de déplacement.");
+          if (!place?.sector)
+            throw Error("Le coach doit préciser sa zone de déplacement.");
           const [addresses, centers] = await Promise.all([
-            searchAddresses(draft.address), place.areaCenter ? Promise.resolve([place.areaCenter]) : searchAddresses(place.sector),
+            searchAddresses(draft.address),
+            place.areaCenter
+              ? Promise.resolve([place.areaCenter])
+              : searchAddresses(place.sector),
           ]);
-          if (!addresses.length || !centers.length) throw Error("Sélectionnez une adresse reconnue pour vérifier la zone de déplacement.");
-          assertHomeZone(place, draft.address, { [draft.address]: addresses[0], [place.sector]: centers[0] });
+          if (!addresses.length || !centers.length)
+            throw Error(
+              "Sélectionnez une adresse reconnue pour vérifier la zone de déplacement.",
+            );
+          assertHomeZone(place, draft.address, {
+            [draft.address]: addresses[0],
+            [place.sector]: centers[0],
+          });
         }
         setDraft({
           ...draft,
@@ -1082,6 +1309,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
     } else go("explore");
   }
   function resetFilters() {
+    setDateExplicit(false);
     setSessionKind("Tous");
     setSort("recommended");
     setWeek(0);
@@ -1094,7 +1322,12 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
     setHour("");
     setDay(today());
   }
-  function dateStrip(onSelect: (d: string) => void = (next) => setDay(next)) {
+  function dateStrip(
+    onSelect: (d: string) => void = (next) => {
+      setDay(next);
+      setDateExplicit(true);
+    },
+  ) {
     const start = addDays(today(), week * 7);
     return (
       <View style={{ gap: 12 }}>
@@ -1198,8 +1431,11 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
     );
   }
   function card(c: Coach) {
-    const times = available(c);
-    const shown = primary(c);
+    const match = discoveries.get(c.id);
+    const shown =
+      match?.offer ?? store.offers.find((o) => o.coach === c.id && o.active);
+    const times = match?.times ?? [];
+    const cardDay = match?.day ?? day;
     return (
       <View
         key={c.id}
@@ -1270,15 +1506,18 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         </Row>
         <Row between>
           <P muted style={{ fontSize: 14, flex: 1 }}>
-            {c.sport}
+            {shown?.discipline ?? c.sport}
           </P>
           <P bold style={{ fontSize: 20 }}>
-            {euro(shown?.price ?? c.price)}{" "}
+            {match?.variablePrice ? "Dès " : ""}
+            {euro(match?.price ?? shown?.price ?? c.price)}{" "}
             <P small muted>
               /{" "}
               {shown?.kind === "Groupe"
                 ? "pers."
-                : `${shown?.duration ?? 60} min`}
+                : shown?.kind === "Duo"
+                  ? "pour 2"
+                  : `${shown?.duration ?? 60} min`}
             </P>
           </P>
         </Row>
@@ -1290,11 +1529,11 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         <Row style={{ marginTop: 12, marginBottom: 8, gap: 6 }}>
           <Icon name="clock" size={17} />
           <P small style={{ fontSize: 12, fontFamily: t.medium }}>
-            {day === today()
+            {cardDay === today()
               ? "Aujourd’hui"
-              : day === addDays(today(), 1)
+              : cardDay === addDays(today(), 1)
                 ? "Demain"
-                : dayLabel(day, true)}{" "}
+                : dayLabel(cardDay, true)}{" "}
             <P small muted style={{ fontSize: 12 }}>
               · Réservation immédiate
             </P>
@@ -1305,7 +1544,9 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             <Pressable
               accessibilityRole="button"
               key={time}
-              onPress={() => chooseTime(c, time, shown)}
+              onPress={() =>
+                chooseTime(c, time, shown, cardDay, match?.format ?? format)
+              }
               style={styles.slot}
             >
               <P style={{ fontFamily: t.medium, fontSize: 15 }}>{time}</P>
@@ -1325,23 +1566,28 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             {[...new Set(c.formats.map((f) => locationLabel(store, c, f)))]
               .slice(0, 2)
               .join(" · ")}{" "}
-            · Tout compris
+            ·{" "}
+            {match?.format === "Domicile"
+              ? "Déplacement inclus"
+              : "Prix de la séance"}
           </P>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              if (comparison.includes(c.id))
-                setComparison(comparison.filter((x) => x !== c.id));
-              else if (comparison.length < 2)
-                setComparison([...comparison, c.id]);
-              else setNotice("Deux coachs maximum pour comparer.");
-            }}
-            style={{ minHeight: 44, justifyContent: "center" }}
-          >
-            <P small muted style={{ fontSize: 12 }}>
-              {comparison.includes(c.id) ? "✓ Sélectionné" : "+ Comparer"}
-            </P>
-          </Pressable>
+          {webWide && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                if (comparison.includes(c.id))
+                  setComparison(comparison.filter((x) => x !== c.id));
+                else if (comparison.length < 2)
+                  setComparison([...comparison, c.id]);
+                else setNotice("Deux coachs maximum pour comparer.");
+              }}
+              style={{ minHeight: 44, justifyContent: "center" }}
+            >
+              <P small muted style={{ fontSize: 12 }}>
+                {comparison.includes(c.id) ? "✓ Sélectionné" : "+ Comparer"}
+              </P>
+            </Pressable>
+          )}
         </Row>
       </View>
     );
@@ -1771,152 +2017,21 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
   if (screen === "onboarding")
     content = (
       <Section>
-        <Row style={{ gap: 8 }}>
-          {[0, 1, 2].map((i) => (
-            <View
-              key={i}
-              style={{
-                height: 4,
-                borderRadius: 99,
-                flex: 1,
-                backgroundColor: i <= step ? t.ink : "#e9e9e9",
-              }}
-            />
-          ))}
-        </Row>
-        <Eyebrow style={{ marginVertical: 20 }}>
-          {step + 1} / 3 · {["VOS ENVIES", "VOS REPÈRES", "VOTRE MOMENT"][step]}
-        </Eyebrow>
-        {step === 0 ? (
-          <>
-            <H1>Qu’est-ce qui{"\n"}vous met en mouvement ?</H1>
-            <P muted style={{ marginTop: 24, marginBottom: 14 }}>
-              Un point de départ, pas une case.
-            </P>
-            <Select
-              label="Votre pratique"
-              value={pref.sport}
-              items={Object.keys(reference.sportGoals)}
-              onChange={(s) =>
-                setStore((x) => ({
-                  ...x,
-                  preferences: changeSport(x.preferences, s),
-                }))
-              }
-            />
-            <Select
-              label="Votre objectif"
-              value={pref.goal}
-              items={goalsFor(pref.sport)}
-              onChange={(goal) => preference({ goal })}
-            />
-            <P small muted style={{ marginBottom: 14 }}>
-              Des objectifs adaptés à votre pratique.
-            </P>
-            <Select
-              label="Vous en êtes où ?"
-              value={pref.level}
-              items={["Je débute", "Je reprends", "Je pratique régulièrement"]}
-              onChange={(level) => preference({ level })}
-            />
-          </>
-        ) : step === 1 ? (
-          <>
-            <H1>Près de vous.{"\n"}Dans votre budget.</H1>
-            <P muted style={{ marginTop: 24, marginBottom: 14 }}>
-              Vous pourrez tout ajuster ensuite.
-            </P>
-            <P small bold style={{ marginBottom: 8 }}>
-              Votre secteur
-            </P>
-            <Button light icon="pin" onPress={() => setModal("location")}>
-              {pref.city}
-            </Button>
-            <P small muted style={{ marginTop: 8, marginBottom: 18 }}>
-              Commune, arrondissement ou code postal · Île-de-France
-            </P>
-            <Select
-              label="Votre budget maximum par séance"
-              value={String(pref.budget)}
-              items={[40, 50, 60, 80, 150, 300].map((v) => [
-                String(v),
-                `Jusqu’à ${v} €`,
-              ])}
-              onChange={(budget) => preference({ budget: Number(budget) })}
-            />
-            <Select
-              label="Distance maximale"
-              value={String(pref.distance)}
-              items={[1, 2, 5, 10].map((v) => [String(v), `${v} km`])}
-              onChange={(distance) =>
-                preference({ distance: Number(distance) })
-              }
-            />
-            <P small muted>
-              {live
-                ? "Vos préférences pourront évoluer à tout moment."
-                : "Les coachs de démonstration sont à Paris ; ailleurs, essayez la visio."}
-            </P>
-          </>
-        ) : (
-          <>
-            <H1>Et dans votre{"\n"}quotidien ?</H1>
-            <P muted style={{ marginTop: 24, marginBottom: 14 }}>
-              On s’adapte à vous, pas l’inverse.
-            </P>
-            <Select
-              label="Le lieu qui vous convient"
-              value={pref.format}
-              items={[
-                ["Tous", "Je suis flexible"],
-                ["Parc", "En extérieur"],
-                ["Studio", "Au studio"],
-                ["Domicile", "Chez moi"],
-                ["Visio", "En visio"],
-              ]}
-              onChange={(format) => preference({ format })}
-            />
-            <Select
-              label="Votre prochain moment"
-              value={pref.moment}
-              items={["Libre", "Le soir", "Demain"]}
-              onChange={(moment) => preference({ moment })}
-            />
-            <Note>
-              <P bold>Votre point de départ</P>
-              <P>
-                {pref.sport === "Tout" ? "Toutes les pratiques" : pref.sport} ·{" "}
-                {pref.goal}
-                {"\n"}
-                {pref.city} · jusqu’à {pref.budget} €
-              </P>
-            </Note>
-          </>
-        )}
-        <Button
-          icon="arrow"
-          style={{ marginTop: 24 }}
-          onPress={() =>
-            run(async () => {
-              if (step < 2) {
-                setStep(step + 1);
-                return;
-              }
-              resetFilters();
-              go("explore");
-            })
+        <ClientStart
+          sport={pref.sport}
+          city={pref.city}
+          onSport={(s) =>
+            setStore((x) => ({
+              ...x,
+              preferences: changeSport(x.preferences, s),
+            }))
           }
-        >
-          {step === 2 ? "Découvrir mes coachs" : "Continuer"}
-        </Button>
-        <TextButton
-          onPress={() => {
+          onSector={() => setModal("location")}
+          onDone={() => {
             resetFilters();
             go("explore");
           }}
-        >
-          Passer pour le moment
-        </TextButton>
+        />
       </Section>
     );
   if (screen === "explore")
@@ -1963,9 +2078,23 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           >
             <Chip
               dark
-              active={day === today() && period === "all" && !hour}
+              active={!dateExplicit}
+              onPress={() => {
+                setDateExplicit(false);
+                setHour("");
+                setPeriod("all");
+              }}
+            >
+              Prochainement
+            </Chip>
+            <Chip
+              dark
+              active={
+                dateExplicit && day === today() && period === "all" && !hour
+              }
               onPress={() => {
                 setDay(today());
+                setDateExplicit(true);
                 setPeriod("all");
                 setHour("");
               }}
@@ -1974,9 +2103,10 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             </Chip>
             <Chip
               dark
-              active={day === today() && period === "evening"}
+              active={dateExplicit && day === today() && period === "evening"}
               onPress={() => {
                 setDay(today());
+                setDateExplicit(true);
                 setPeriod("evening");
                 setHour("");
               }}
@@ -1985,9 +2115,10 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             </Chip>
             <Chip
               dark
-              active={day === addDays(today(), 1) && !hour}
+              active={dateExplicit && day === addDays(today(), 1) && !hour}
               onPress={() => {
                 setDay(addDays(today(), 1));
+                setDateExplicit(true);
                 setPeriod("all");
                 setHour("");
               }}
@@ -1997,16 +2128,58 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             <Chip
               dark
               icon="calendar"
-              active={!!hour || day > addDays(today(), 1)}
+              active={dateExplicit && (!!hour || day > addDays(today(), 1))}
               onPress={() => setModal("date")}
             >
-              {hour || day > addDays(today(), 1)
+              {dateExplicit && (hour || day > addDays(today(), 1))
                 ? dayLabel(day, true) + (hour ? " · " + hour : "")
                 : "Date & heure"}
             </Chip>
           </ScrollView>
         </View>
         <View style={styles.sheet}>
+          {store.account?.role === "client" &&
+            (() => {
+              const own = store.bookings.filter(
+                (b) =>
+                  b.clientId === store.account!.id && b.status !== "cancelled",
+              );
+              const upcoming = own
+                .filter(
+                  (b) =>
+                    b.status === "confirmed" && instant(b.day, b.time) > now(),
+                )
+                .sort((a, b) =>
+                  (a.day + a.time).localeCompare(b.day + b.time),
+                )[0];
+              const last = own
+                .filter((b) => b.status === "completed")
+                .sort((a, b) =>
+                  (b.day + b.time).localeCompare(a.day + a.time),
+                )[0];
+              return upcoming ? (
+                <View style={{ paddingHorizontal: 24, paddingTop: 12 }}>
+                  <Setting
+                    title="Votre prochaine séance"
+                    description={`${dayLabel(upcoming.day, true)} · ${upcoming.time} · ${upcoming.serviceName}`}
+                    onPress={() => {
+                      setSelectedBooking(upcoming.id);
+                      go("bookingDetail");
+                    }}
+                  />
+                </View>
+              ) : last && coaches.some((c) => c.id === last.coach) ? (
+                <View style={{ paddingHorizontal: 24, paddingTop: 12 }}>
+                  <Setting
+                    title="Retrouver votre coach"
+                    description={coaches.find((c) => c.id === last.coach)!.name}
+                    onPress={() =>
+                      reopenCoach(coaches.find((c) => c.id === last.coach)!)
+                    }
+                  />
+                </View>
+              ) : null;
+            })()}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -2143,7 +2316,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
               </H2>
               <P small style={{ marginTop: 3 }}>
                 {results.length} disponible{results.length === 1 ? "" : "s"} ·{" "}
-                {dayLabel(day, true)}
+                {dateExplicit ? dayLabel(day, true) : "prochains créneaux"}
               </P>
             </View>
             <Row>
@@ -2220,7 +2393,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
                         latitude: p.coordinates!.latitude,
                         longitude: p.coordinates!.longitude,
                         name: c.name,
-                        label: euro(primary(c)?.price ?? c.price),
+                        label: euro(discoveries.get(c.id)?.price ?? c.price),
                       })),
                   )}
                   onSelect={setMapCoach}
@@ -2286,46 +2459,28 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
                   Effacer le texte recherché
                 </Button>
               ) : null}
-              {!query.trim() &&
-                pref.city.startsWith("Paris") &&
+              {dateExplicit &&
                 Array.from({ length: 7 }, (_, i) => addDays(day, i + 1))
                   .map((d) => {
                     const match = coaches.find(
                       (c) =>
-                        (sport === "Tout" ||
-                          [
-                            c.sport,
-                            ...(c.disciplines ?? []),
-                            ...c.tags,
-                          ].includes(sport)) &&
-                        fold(
-                          [c.name, c.sport, c.area, ...c.tags].join(" "),
-                        ).includes(fold(query)) &&
                         (format === "Visio" ||
                           (c.dist !== null && c.dist <= distance)) &&
-                        store.offers.some(
-                          (o) =>
-                            o.coach === c.id &&
-                            o.active &&
-                            o.price <= budget &&
-                            (sessionKind === "Tous" ||
-                              o.kind === sessionKind) &&
-                            matchesLocation(store, c, o, format) &&
-                            market
-                              .times(c, d, o)
-                              .some(
-                                (time) =>
-                                  (!hour || time === hour) &&
-                                  (period !== "evening" || time >= "18:00"),
-                              ),
-                        ),
+                        discoveryMatch(store, c, {
+                          ...discoveryFilter,
+                          day: d,
+                          flexible: false,
+                        }),
                     );
                     return match ? (
                       <Setting
                         key={d}
                         title={dayLabel(d)}
-                        description={`${match.name} · mêmes filtres`}
-                        onPress={() => setDay(d)}
+                        description={`${match.name} · autre date, mêmes critères`}
+                        onPress={() => {
+                          setDay(d);
+                          setDateExplicit(true);
+                        }}
                       />
                     ) : null;
                   })
@@ -2391,7 +2546,11 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
               active={offer?.id === o.id}
               onPress={() => setOfferId(o.id)}
             >
-              {o.name} · {euro(o.price)}
+              {o.name} ·{" "}
+              {offerDisplayPrice(store, coach, o, format).variablePrice
+                ? "dès "
+                : ""}
+              {euro(offerDisplayPrice(store, coach, o, format).price)}
             </Chip>
           ))}
         </ScrollView>
@@ -2457,6 +2616,29 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             )}
           </Row>
           <H1 style={{ marginTop: 16, marginBottom: 6 }}>{coach.name}</H1>
+          <Row wrap>
+            <TextButton onPress={() => run(shareCoach)}>
+              Partager ce profil
+            </TextButton>
+            <TextButton
+              onPress={() => {
+                setComparison((xs) =>
+                  xs.includes(coach.id)
+                    ? xs.filter((id) => id !== coach.id)
+                    : [...xs.slice(-1), coach.id],
+                );
+                setNotice(
+                  comparison.includes(coach.id)
+                    ? "Coach retiré de la comparaison."
+                    : "Coach ajouté. Retrouvez la comparaison dans Explorer.",
+                );
+              }}
+            >
+              {comparison.includes(coach.id)
+                ? "Retirer de la comparaison"
+                : "Comparer ce coach"}
+            </TextButton>
+          </Row>
           <P muted>
             {coach.sport} · {coach.area}
           </P>
@@ -2493,7 +2675,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
                   {next && (
                     <Setting
                       title={`${matching ? "Votre prochain créneau" : "Autre disponibilité"} · ${dayLabel(next.d, true)} à ${next.time}`}
-                      description={`${offer.name} · ${euro(offer.price)}${offer.kind === "Groupe" ? " / personne" : ""}`}
+                      description={`${offer.name} · ${offerDisplayPrice(store, coach, offer, format).variablePrice ? "dès " : ""}${euro(offerDisplayPrice(store, coach, offer, format).price)}${offer.kind === "Groupe" ? " / personne" : ""}`}
                       onPress={() =>
                         chooseTime(coach, next.time, offer, next.d)
                       }
@@ -2534,7 +2716,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
               </>
             }
             <View>
-              <H2>{euro(offer?.price ?? coach.price)}</H2>
+              <H2>{`${offer && offerDisplayPrice(store, coach, offer, format).variablePrice ? "Dès " : ""}${euro(offer ? offerDisplayPrice(store, coach, offer, format).price : coach.price)}`}</H2>
               <P small muted>
                 les {offer?.duration ?? 60} minutes
               </P>
@@ -2544,8 +2726,8 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             <Row>
               <Icon name="check" />
               <P style={{ fontSize: 14, flex: 1 }}>
-                Tous niveaux bienvenus.{"\n"}Première séance adaptée à votre
-                objectif.
+                {offer?.level || "Votre objectif, votre rythme."}
+                {"\n"}Consultez l’approche du coach avant votre séance.
               </P>
             </Row>
           </Note>
@@ -2625,10 +2807,14 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
       <Row style={styles.sticky}>
         <View>
           <P bold style={{ fontSize: 22 }}>
-            {euro(offer?.price ?? coach.price)}
+            {`${offer && offerDisplayPrice(store, coach, offer, format).variablePrice ? "Dès " : ""}${euro(offer ? offerDisplayPrice(store, coach, offer, format).price : coach.price)}`}
           </P>
           <P small muted>
-            la séance
+            {offer?.kind === "Groupe"
+              ? "par personne"
+              : offer?.kind === "Duo"
+                ? "pour deux personnes"
+                : "la séance"}
           </P>
         </View>
         <Button
@@ -2661,12 +2847,14 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             }}
           >
             <H2>
-              {euro(offer?.price ?? coach.price)}{" "}
+              {`${offer && offerDisplayPrice(store, coach, offer, format).variablePrice ? "Dès " : ""}${euro(offer ? offerDisplayPrice(store, coach, offer, format).price : coach.price)}`}{" "}
               <P small>
                 /{" "}
                 {offer?.kind === "Groupe"
                   ? "personne"
-                  : `${offer?.duration ?? 60} min`}
+                  : offer?.kind === "Duo"
+                    ? "2 personnes"
+                    : `${offer?.duration ?? 60} min`}
               </P>
             </H2>
             <P small muted>
@@ -2708,7 +2896,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
               active={draft.offerId === o.id}
               title={o.name}
               description={`${o.kind} · ${o.duration} minutes`}
-              price={euro(o.price)}
+              price={`${offerDisplayPrice(store, coach!, o).variablePrice ? "Dès " : ""}${euro(offerDisplayPrice(store, coach!, o).price)}`}
               onPress={() => chooseOffer(o)}
             />
           ))}
@@ -2747,10 +2935,18 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         ))}
         {draft.format === "Domicile" && (
           <AddressPicker
-            label={live ? "Adresse du rendez-vous" : "Adresse fictive du rendez-vous"}
+            label={
+              live ? "Adresse du rendez-vous" : "Adresse fictive du rendez-vous"
+            }
             value={draft.address}
-            error={addressAttempts && !draft.address.trim() ? "Indiquez l’adresse du rendez-vous." : undefined}
-            focusRequest={addressAttempts && !draft.address.trim() ? addressAttempts : 0}
+            error={
+              addressAttempts && !draft.address.trim()
+                ? "Indiquez l’adresse du rendez-vous."
+                : undefined
+            }
+            focusRequest={
+              addressAttempts && !draft.address.trim() ? addressAttempts : 0
+            }
             onChange={(address) => setDraft({ ...draft, address })}
             onSelect={(point) => setDraft({ ...draft, address: point.label })}
           />
@@ -3151,20 +3347,16 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           ? coaches
               .filter((c) => store.favorites.includes(c.id))
               .map((c) => {
-                let d = today(),
-                  times: string[] = [];
-                for (let i = 0; i < 90; i++) {
-                  d = addDays(today(), i);
-                  times = market.times(c, d);
-                  if (times.length) break;
-                }
+                const next = unrestrictedMatch(c),
+                  d = next?.day ?? today(),
+                  times = next?.times ?? [];
                 return (
                   <View key={c.id} style={styles.card}>
                     <Row>
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel={`Voir le profil de ${c.name}`}
-                        onPress={() => openProfile(c)}
+                        onPress={() => reopenCoach(c)}
                       >
                         <Photo
                           uri={c.photoUri}
@@ -3180,7 +3372,9 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
                         </P>
                         <P small>
                           {c.rating ? `★ ${c.rating} · ` : ""}
-                          {euro(c.price)}
+                          {next
+                            ? `${next.variablePrice ? "Dès " : ""}${euro(next.price)}${next.offer.kind === "Groupe" ? " / personne" : next.offer.kind === "Duo" ? " pour 2" : ""}`
+                            : "Voir les offres"}
                         </P>
                       </View>
                       <IconButton
@@ -3201,7 +3395,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
                           key={time}
                           onPress={() => {
                             setDay(d);
-                            chooseTime(c, time, undefined, d);
+                            chooseTime(c, time, next?.offer, d, next?.format);
                           }}
                         >
                           {time}
@@ -3610,23 +3804,74 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
         </P>
       </Section>
     );
-  if (screen === "become-coach" && W.coachApplicationTicket(store)?.status === "open") {
-    content = <Section><H1>Votre candidature est en cours.</H1><P muted style={{ marginVertical: 20 }}>Votre espace client reste disponible. L’équipe vous répondra dans vos demandes.</P><Button onPress={() => go("support-native", W.coachApplicationTicket(store)!.id)}>Voir ma candidature</Button><TextButton onPress={() => go("account")}>Revenir à mon espace</TextButton></Section>;
+  if (
+    screen === "become-coach" &&
+    W.coachApplicationTicket(store)?.status === "open"
+  ) {
+    content = (
+      <Section>
+        <H1>Votre candidature est en cours.</H1>
+        <P muted style={{ marginVertical: 20 }}>
+          Votre espace client reste disponible. L’équipe vous répondra dans vos
+          demandes.
+        </P>
+        <Button
+          onPress={() =>
+            go("support-native", W.coachApplicationTicket(store)!.id)
+          }
+        >
+          Voir ma candidature
+        </Button>
+        <TextButton onPress={() => go("account")}>
+          Revenir à mon espace
+        </TextButton>
+      </Section>
+    );
   }
-  if (screen === "become-coach" && W.coachApplicationTicket(store)?.application === "approved") {
+  if (
+    screen === "become-coach" &&
+    W.coachApplicationTicket(store)?.application === "approved"
+  ) {
     const application = W.coachApplicationTicket(store)!;
-    content = <Section><Eyebrow>CANDIDATURE ACCEPTÉE</Eyebrow><H1>Votre espace coach vous attend.</H1>
-      <P muted style={{ marginVertical: 20 }}>{application.response}</P>
-      <Note>Vous passez à un compte professionnel, sans bascule vers l’espace client. Vos séances passées et vos échanges restent conservés. Terminez ou annulez vos séances client à venir avant de continuer.</Note>
-      <P style={{ marginVertical: 20 }}>Vous commencerez par vos documents et qualifications. L’équipe devra valider ce dossier avant toute publication.</P>
-      <Button disabled={busy || market.pending > 0} onPress={() => run(async () => {
-        await market.commitStore(s => W.activateCoachRole(s, application.id));
-        history.current = [];
-        setCoachId(store.account!.id);
-        setConfig("documents"); setFocus("documents"); setScreen("config"); setModal("");
-      })}>Confirmer et préparer mon dossier coach</Button>
-      <TextButton onPress={() => go("account")}>Rester client pour le moment</TextButton>
-    </Section>;
+    content = (
+      <Section>
+        <Eyebrow>CANDIDATURE ACCEPTÉE</Eyebrow>
+        <H1>Votre espace coach vous attend.</H1>
+        <P muted style={{ marginVertical: 20 }}>
+          {application.response}
+        </P>
+        <Note>
+          Vous passez à un compte professionnel, sans bascule vers l’espace
+          client. Vos séances passées et vos échanges restent conservés.
+          Terminez ou annulez vos séances client à venir avant de continuer.
+        </Note>
+        <P style={{ marginVertical: 20 }}>
+          Vous commencerez par vos documents et qualifications. L’équipe devra
+          valider ce dossier avant toute publication.
+        </P>
+        <Button
+          disabled={busy || market.pending > 0}
+          onPress={() =>
+            run(async () => {
+              await market.commitStore((s) =>
+                W.activateCoachRole(s, application.id),
+              );
+              history.current = [];
+              setCoachId(store.account!.id);
+              setConfig("documents");
+              setFocus("documents");
+              setScreen("config");
+              setModal("");
+            })
+          }
+        >
+          Confirmer et préparer mon dossier coach
+        </Button>
+        <TextButton onPress={() => go("account")}>
+          Rester client pour le moment
+        </TextButton>
+      </Section>
+    );
   }
   if (screen === "notifications")
     content = (
@@ -3857,49 +4102,21 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           {coachTab === "settings" ? (
             <>
               <Setting
-                title={
-                  configFor(store, activeCoach ?? "0").published
-                    ? "Votre profil est en ligne"
-                    : "Votre profil est en pause"
-                }
+                title={publicationStatus(store, activeCoach ?? "0").title}
                 description={
-                  configFor(store, activeCoach ?? "0").published
-                    ? "Les clients peuvent réserver vos disponibilités"
-                    : "Les nouvelles réservations sont suspendues"
+                  publicationStatus(store, activeCoach ?? "0").description
                 }
-                onPress={() =>
-                  run(async () => {
-                    setStore(W.publish(store, activeCoach ?? "0"));
-                  })
-                }
-                right={
-                  <View
-                    style={{
-                      width: 44,
-                      height: 27,
-                      borderRadius: 99,
-                      backgroundColor: configFor(store, activeCoach ?? "0")
-                        .published
-                        ? t.ink
-                        : "#bbb",
-                      padding: 3,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: 21,
-                        height: 21,
-                        borderRadius: 20,
-                        backgroundColor: "#fff",
-                        alignSelf: configFor(store, activeCoach ?? "0")
-                          .published
-                          ? "flex-end"
-                          : "flex-start",
-                      }}
-                    />
-                  </View>
-                }
+                onPress={() => go("checklist-native")}
               />
+              {configFor(store, activeCoach ?? "0").published && (
+                <TextButton
+                  onPress={() =>
+                    run(() => setStore(W.publish(store, activeCoach ?? "0")))
+                  }
+                >
+                  Mettre mon profil en pause
+                </TextButton>
+              )}
               <Setting
                 title="Ma checklist de mise en ligne"
                 onPress={() => go("checklist-native")}
@@ -3951,16 +4168,27 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
               ))}
               {
                 <>
-                  {configFor(store, activeCoach ?? "0").suspension?.active && <Note>
-                    Profil suspendu · {configFor(store, activeCoach ?? "0").suspension?.reason}. Vos réservations existantes restent accessibles. Contactez l’équipe depuis Aide & mes demandes.
-                  </Note>}
+                  {configFor(store, activeCoach ?? "0").suspension?.active && (
+                    <Note>
+                      Profil suspendu ·{" "}
+                      {configFor(store, activeCoach ?? "0").suspension?.reason}.
+                      Vos réservations existantes restent accessibles. Contactez
+                      l’équipe depuis Aide & mes demandes.
+                    </Note>
+                  )}
                   <Setting
                     title="Mon compte"
                     onPress={() => go("account-native")}
                   />
-                  {store.bookings.some(b => b.clientId === store.account?.id) && <Setting
-                    title="Mes anciennes séances client" description="Historique et conversations conservés"
-                    onPress={() => go("client-history")} /> }
+                  {store.bookings.some(
+                    (b) => b.clientId === store.account?.id,
+                  ) && (
+                    <Setting
+                      title="Mes anciennes séances client"
+                      description="Historique et conversations conservés"
+                      onPress={() => go("client-history")}
+                    />
+                  )}
                   <Setting
                     title="Confidentialité"
                     description="Mes données et mes choix"
@@ -3998,6 +4226,11 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             <>
               <Row between style={{ marginBottom: 14 }}>
                 <H2>Votre agenda</H2>
+              </Row>
+              <Row between wrap style={{ marginBottom: 14 }}>
+                <TextButton onPress={() => go("external-session-native")}>
+                  + Rendez-vous
+                </TextButton>
                 <TextButton
                   onPress={() => {
                     setConfig("blocks");
@@ -4066,9 +4299,6 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
                   />
                 </View>
               )}
-              <TextButton onPress={() => go("external-session-native")}>
-                + Rendez-vous pris directement
-              </TextButton>
               <Setting
                 title="Mes cours en groupe"
                 description="Dates, inscriptions et places disponibles"
@@ -4817,6 +5047,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
             <Button
               onPress={() => {
                 setPeriod("all");
+                setDateExplicit(true);
                 setModal("");
               }}
             >
@@ -4994,7 +5225,9 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
     modalBody = (
       <Row style={{ alignItems: "flex-start", gap: 12 }}>
         {comparison.map((id) => {
-          const c = coaches.find((c) => c.id === id)!;
+          const c = coaches.find((c) => c.id === id);
+          if (!c) return null;
+          const next = discoveries.get(c.id) ?? unrestrictedMatch(c);
           return (
             <View key={id} style={{ flex: 1 }}>
               <Photo
@@ -5004,9 +5237,13 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
                 style={{ borderRadius: 8 }}
               />
               <H2 style={{ fontSize: 18, marginVertical: 12 }}>{c.name}</H2>
-              <P small>{c.sport}</P>
+              <P small>{next?.offer.name ?? c.sport}</P>
               <Rule />
-              <P bold>{euro(c.price)}</P>
+              <P bold>
+                {next
+                  ? `${next.variablePrice ? "Dès " : ""}${euro(next.price)}${next.offer.kind === "Groupe" ? " / personne" : next.offer.kind === "Duo" ? " pour 2" : ""}`
+                  : "Voir les offres"}
+              </P>
               <P small muted>
                 {c.dist !== null ? `${c.dist} km` : c.area}
               </P>
@@ -5251,7 +5488,14 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
       const c = coaches.find((c) => c.id === id);
       if (c) openProfile(c);
     },
-    choose: (c: Coach, d: string, time: string, o: Offer, f?: string, seats?: number) => {
+    choose: (
+      c: Coach,
+      d: string,
+      time: string,
+      o: Offer,
+      f?: string,
+      seats?: number,
+    ) => {
       setDay(d);
       chooseTime(c, time, o, d, f, seats);
     },
@@ -5702,6 +5946,7 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
     if (coachTab === "settings")
       content = (
         <DesktopSettings
+          status={publicationStatus(store, activeCoach ?? "0")}
           published={configFor(store, activeCoach).published}
           onSelect={(section) => go("config-native", section)}
           onChecklist={() => go("checklist-native")}
@@ -5798,10 +6043,46 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
       </>
     );
   if (live && screen === "team") {
-    if (!store.teamAccess) content = <Section><Note>Cet espace est réservé à l’équipe habilitée.</Note></Section>;
-    else if (!store.teamAccess.unlocked) content = <TeamSecurity onVerified={market.refresh} />;
-    else if (store.teamAccess.role === "support" || (store.teamAccess.role === "admin" && webTeamSupport)) content = <Section>{store.teamAccess.role === "admin" && <TextButton onPress={() => setWebTeamSupport(false)}>← Revenir aux dossiers</TextButton>}<CompleteFlows {...flowProps} screen="team" teamSection="support" /></Section>;
-    else content = <ConnectedTeamWorkspace onNavigate={() => requestAnimationFrame(() => scroll.current?.scrollTo({y:0,animated:false}))} canReleaseOthers={store.teamAccess.role === "admin"} onChanged={market.refresh} message={setNotice} onSupport={store.teamAccess.role === "admin" ? () => setWebTeamSupport(true) : undefined} />;
+    if (!store.teamAccess)
+      content = (
+        <Section>
+          <Note>Cet espace est réservé à l’équipe habilitée.</Note>
+        </Section>
+      );
+    else if (!store.teamAccess.unlocked)
+      content = <TeamSecurity onVerified={market.refresh} />;
+    else if (
+      store.teamAccess.role === "support" ||
+      (store.teamAccess.role === "admin" && webTeamSupport)
+    )
+      content = (
+        <Section>
+          {store.teamAccess.role === "admin" && (
+            <TextButton onPress={() => setWebTeamSupport(false)}>
+              ← Revenir aux dossiers
+            </TextButton>
+          )}
+          <CompleteFlows {...flowProps} screen="team" teamSection="support" />
+        </Section>
+      );
+    else
+      content = (
+        <ConnectedTeamWorkspace
+          onNavigate={() =>
+            requestAnimationFrame(() =>
+              scroll.current?.scrollTo({ y: 0, animated: false }),
+            )
+          }
+          canReleaseOthers={store.teamAccess.role === "admin"}
+          onChanged={market.refresh}
+          message={setNotice}
+          onSupport={
+            store.teamAccess.role === "admin"
+              ? () => setWebTeamSupport(true)
+              : undefined
+          }
+        />
+      );
   }
   const entryScreen = [
     "welcome",
@@ -6150,7 +6431,9 @@ function ProductAppContent({ live = false }: { live?: boolean }) {
           userName={store.account?.name}
           accountLabel={!store.account ? "Se connecter" : undefined}
           staff={!!(store.staff || store.teamAccess)}
-          teamLabel={store.teamAccess?.role === "support" ? "Assistance" : undefined}
+          teamLabel={
+            store.teamAccess?.role === "support" ? "Assistance" : undefined
+          }
           unreadCounts={{ messages: unreadMessages, notifications: unread }}
           navigationDisabled={
             authTransition || busy || (live && market.pending > 0)
