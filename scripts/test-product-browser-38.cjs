@@ -5,7 +5,7 @@ const {chromium}=require(process.env.PARTANT_QA_PLAYWRIGHT||'../tools/qa/node_mo
 const base=process.env.PARTANT_QA_URL||'http://127.0.0.1:8081',out=process.env.PARTANT_QA_SCREENSHOTS||'work/product38/screens';fs.mkdirSync(out,{recursive:true});
 let checks=0;const ok=(v,l)=>{assert.ok(v,l);checks++};
 (async()=>{
- const b=await chromium.launch({headless:true,executablePath:process.env.PARTANT_QA_CHROME||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
+ const b=await chromium.launch({headless:true,executablePath:process.env.PARTANT_QA_CHROME});
  try {
   for(const width of [390,1440]) {
    const seed=W.loginDemo(M.newPreviewStore(),'alex@example.test','','client',false),day=M.addDays(M.today(),1);
