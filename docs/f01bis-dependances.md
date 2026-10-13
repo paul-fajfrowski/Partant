@@ -42,3 +42,5 @@ La validation physique iPhone demeure ouverte dans F01 : accès à l'équipe App
 Les premiers runs push et PR sur `eb7b9d1` passent les contrôles de dépendances, TypeScript, les exports et les 48 suites métier/DOM, puis 11 suites navigateur sur 12. `test-product-browser-38.cjs` s'arrête avant le parcours : il force le chemin de Chrome macOS, absent du runner Ubuntu. Les étapes d'accessibilité et d'export production ne sont alors pas exécutées. La réussite locale ne couvre pas cette différence de plateforme.
 
 Le test utilise désormais le Chromium installé par Playwright par défaut. L'override explicite `PARTANT_QA_CHROME` reste disponible. Les assertions, délais et contrôles du workflow sont conservés ; aucun test n'est ignoré et aucun échec n'est neutralisé.
+
+La CI Linux complète sur `427ba9a` passe pour les événements push et PR : 48 suites métier/DOM, 12 suites navigateur, 20 états UI sans débordement/violation axe/erreur détectés et contrôle de production réussi. Les [preuves du run de PR](https://github.com/paul-fajfrowski/Partant/actions/runs/38425856626) sont disponibles dans GitHub et copiées localement dans `work/f01bis-ci/verified/`.
