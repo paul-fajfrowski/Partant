@@ -23,7 +23,7 @@ Si les règles métier changent, régénérer le domaine serveur et maintenir `p
 | --- | --- | --- | --- | --- |
 | F01 | Préparer l'environnement et le build iPhone | `feature/01-environnement-recette` | Accès Mac, signature Apple et iPhone | Web connecté prêt ; installation iPhone bloquée |
 | F01 bis | Corriger les nouveaux avis de dépendances | `feature/01bis-dependances` | Diagnostic du contrôle de sécurité F01 | Correctif PR 1 validé par la CI Linux |
-| F02 | Valider connexion et sessions | `feature/02-auth-sessions` | Web connecté prêt ; signature/appareil pour le volet iPhone | Prochaine étape autorisée ; commencer par le web |
+| F02 | Valider connexion et sessions | `feature/02-auth-sessions` | Web connecté prêt ; signature/appareil pour le volet iPhone | [Recette web et corrections](f02-auth-sessions.md) réalisées ; iPhone, coach et reprise réelle de réservation ouverts |
 | F03 | Valider l'équipe et les dossiers | `feature/03-equipe-dossiers` | F02, opérateur désigné par Paul | À faire |
 | F04 | Valider la configuration et la publication coach | `feature/04-activation-coach` | F03, dossier coach validé | À faire |
 | F05 | Valider découverte, prix et navigation client | `feature/05-decouverte-client` | F04, offres et ouvertures réalistes | À faire |

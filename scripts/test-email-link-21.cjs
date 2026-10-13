@@ -1,5 +1,9 @@
 const path = require("node:path");
-const callback = process.argv[2] === "callback";
+const resume = process.argv[2] === "resume";
+const callback = process.argv[2] === "callback" || resume;
+if (resume) process.env.PARTANT_QA_STORAGE = JSON.stringify({
+  "partant-auth-journey-v1": { screen: "account", focus: "", coachId: "0", offerId: "", day: "2026-10-13", expires: Date.now() + 30 * 60 * 1000 },
+});
 process.env.PARTANT_QA_URL =
   "http://127.0.0.1:8081/?data=connected" +
   (callback ? "&code=email-callback-fixture" : "");
@@ -14,16 +18,17 @@ if (callback) w.localStorage.setItem('sb-jhhsysjdeyqsuztjtgea-auth-token-code-ve
 const has = (text) => d.body.textContent.includes(text);
 (async () => {
   if (callback) {
-    for (let i = 0; i < 60 && !has("On bouge quand ?"); i++) await wait();
+    const target = resume ? "Bonjour, Alex" : "On bouge quand ?";
+    for (let i = 0; i < 60 && !has(target); i++) await wait();
     ok(
-      has("On bouge quand ?"),
-      "Email PKCE callback opens authenticated discovery",
+      has(target),
+      "Email PKCE callback opens expected authenticated destination",
     );
     ok(
       !new URL(w.location.href).searchParams.has("code"),
       "Callback code removed from browser URL",
     );
-    await click("Mon espace");
+    if (!resume) await click("Mon espace");
     ok(has("Bonjour, Alex"), "Callback loaded actual customer account");
   } else {
     await click("Créer mon compte");
