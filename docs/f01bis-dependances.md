@@ -36,3 +36,9 @@ Les preuves détaillées restent locales dans `work/f01bis/`, ignoré par Git. L
 Le correctif change les dépendances et leur recette, sans modifier les écrans, les règles métier ou les fonctions serveur. Aucun déploiement Supabase n'est requis. Les réglages iOS locaux et le checksum CocoaPods dépendant du chemin de la machine sont exclus du lot.
 
 La validation physique iPhone demeure ouverte dans F01 : accès à l'équipe Apple de Paul, signature et appareil. Aucun nouveau build signé ou test physique n'est revendiqué pour F01 bis.
+
+## Correction du lancement navigateur dans GitHub Actions
+
+Les premiers runs push et PR sur `eb7b9d1` passent les contrôles de dépendances, TypeScript, les exports et les 48 suites métier/DOM, puis 11 suites navigateur sur 12. `test-product-browser-38.cjs` s'arrête avant le parcours : il force le chemin de Chrome macOS, absent du runner Ubuntu. Les étapes d'accessibilité et d'export production ne sont alors pas exécutées. La réussite locale ne couvre pas cette différence de plateforme.
+
+Le test utilise désormais le Chromium installé par Playwright par défaut. L'override explicite `PARTANT_QA_CHROME` reste disponible. Les assertions, délais et contrôles du workflow sont conservés ; aucun test n'est ignoré et aucun échec n'est neutralisé.
