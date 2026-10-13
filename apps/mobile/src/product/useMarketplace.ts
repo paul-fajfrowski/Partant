@@ -377,13 +377,22 @@ export function useMarketplace(live: boolean) {
   }, [store, ready]);
   useEffect(() => {
     if (!live) return;
+    let alive = true;
+    let authChanged = false;
     supabase.auth.getSession().then(({ data, error }) => {
-      if (error) setError(error.message);
-      if (!signingOut.current) setSession(data.session);
+      if (!alive) return;
+      // An auth event is newer than the session read started at mount.
+      if (!authChanged) {
+        if (error) setError(error.message);
+        if (!signingOut.current) setSession(data.session);
+      }
       setReady(true);
     });
     const { data } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (!alive) return;
+      authChanged = true;
       if (!signingOut.current || !s) setSession(s);
+      setReady(true);
     });
     if (Platform.OS === "web")
       completeAuth(window.location.href)
@@ -399,6 +408,7 @@ export function useMarketplace(live: boolean) {
       completeAuth(url).catch((e) => setError(e.message)),
     );
     return () => {
+      alive = false;
       data.subscription.unsubscribe();
       link.remove();
     };

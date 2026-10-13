@@ -38,6 +38,8 @@ export function errorMessage(error: unknown) {
     error instanceof Error
       ? error.message
       : ((error as any)?.message ?? "Une erreur est survenue.");
+  if (raw === "Signups not allowed for otp")
+    return "Aucun compte ne correspond à cette adresse. Choisissez « Créer mon compte » ou utilisez une connexion Google ou Apple disponible. Aucun e-mail n’a été envoyé.";
   return (
     Object.entries(messages).find(([key]) => raw.includes(key))?.[1] ??
     (raw.includes("exclusion constraint")

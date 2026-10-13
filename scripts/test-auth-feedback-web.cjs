@@ -20,7 +20,9 @@ global.fetch = async (url) => {
   if (path.includes('/auth/v1/otp')) {
     sends++;
     await new Promise(r => setTimeout(r, 200));
-    return mode === 'success' ? response({}) : response({ code: 'over_email_send_rate_limit', msg: 'email rate limit exceeded' }, 429);
+    return mode === 'success' ? response({}) : mode === 'missing-account'
+      ? response({ code: 'otp_disabled', msg: 'Signups not allowed for otp' }, 422)
+      : response({ code: 'over_email_send_rate_limit', msg: 'email rate limit exceeded' }, 429);
   }
   throw Error('Unexpected request in controlled test');
 };
@@ -40,6 +42,13 @@ const { d, wait, click, input, ok } = H;
     ok(sends === 1, 'Rapid double click sends only one request');
     if(mode === 'success') {
       ok(d.body.textContent.includes('Votre lien vous attend.'), 'Successful send reaches link instructions');
+    } else if(mode === 'missing-account') {
+      ok(d.querySelector('[role="alert"]')?.textContent.includes('Créer mon compte'), 'Unknown account gives a French signup recovery path');
+      ok(!d.body.textContent.includes('Votre lien vous attend.'), 'Unknown account never claims an email was sent');
+      ok(!d.body.textContent.includes('Signups not allowed'), 'Provider internals are not shown');
+      await click('Retour');
+      await click('Créer mon compte');
+      ok(!!d.querySelector('input[aria-label="Votre prénom et nom"]'), 'Signup is reachable after login refusal');
     } else {
       ok(d.querySelector('[role="alert"]')?.textContent.includes('Aucun nouvel e-mail'), 'Persistent French error after quota failure');
       ok(!d.body.textContent.includes('Votre lien vous attend.'), 'Failed send never claims link sent');

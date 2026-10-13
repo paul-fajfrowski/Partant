@@ -67,7 +67,7 @@ async function until(f, ms = 2500) {
         ? "Votre dossier coach."
         : "Réglages"
       : process.env.PARTANT_QA_NEW === "1"
-        ? "VOS ENVIES"
+        ? "Votre sport."
         : "Explorer";
   await until(
     () =>

@@ -26,6 +26,11 @@ const initial = { ...M.initialStore, connected: true, account: null };
 const user = { id: "qa-user", email: "qa@example.test" };
 const account = { ...user, role: "client", name: "Camille" };
 const authenticated = { ...initial, account };
+const otherUser = { id: "qa-other-user", email: "other@example.test" };
+const otherAuthenticated = {
+  ...initial,
+  account: { ...otherUser, role: "coach", name: "Coach QA" },
+};
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 let count = 0;
 function ok(v, m) {
@@ -36,11 +41,12 @@ async function until(f) {
   for (let i = 0; i < 100 && !f(); i++) await wait(10);
   ok(f(), "State settled");
 }
-async function scenario(os) {
+async function scenario(os, delayedStartup = false) {
   let hook,
     listener,
     resolveGuest,
     resolvePrivate,
+    resolveStartup,
     privateCalls = 0,
     registrations = 0,
     fail = false,
@@ -60,17 +66,24 @@ async function scenario(os) {
           });
         }
         privateCalls++;
+        const snapshot =
+          body.scope === otherUser.id ? otherAuthenticated : authenticated;
         if (fail) return { error: { message: "offline" } };
         if (hold)
           return new Promise((r) => {
             resolvePrivate = () =>
-              r({ data: { store: authenticated, version: 2 } });
+              r({ data: { store: snapshot, version: 2 } });
           });
-        return { data: { store: authenticated, version: 3 } };
+        return { data: { store: snapshot, version: 3 } };
       },
     },
     auth: {
-      getSession: async () => ({ data: { session: null } }),
+      getSession: async () =>
+        delayedStartup
+          ? new Promise((resolve) => {
+              resolveStartup = () => resolve({ data: { session: null } });
+            })
+          : { data: { session: null } },
       onAuthStateChange: (fn) => {
         listener = fn;
         return { data: { subscription: { unsubscribe() {} } } };
@@ -156,8 +169,15 @@ async function scenario(os) {
     return null;
   }
   root.render(React.createElement(Test));
-  await until(() => resolveGuest);
-  listener("SIGNED_IN", { user });
+  if (delayedStartup) {
+    await until(() => listener && resolveStartup);
+    listener("SIGNED_IN", { user });
+    await wait(30);
+    resolveStartup();
+  } else {
+    await until(() => resolveGuest);
+    listener("SIGNED_IN", { user });
+  }
   await until(() => privateCalls === 1);
   ok(!hook.profileReady, os + ": do not expose account before server read");
   resolvePrivate();
@@ -166,12 +186,17 @@ async function scenario(os) {
     hook.store.account?.id === user.id,
     os + ": private profile did not wait for guest",
   );
-  resolveGuest();
+  resolveGuest?.();
   await wait(30);
   ok(
     hook.store.account?.id === user.id,
     os + ": stale guest snapshot discarded",
   );
+  if (delayedStartup)
+    ok(
+      hook.session?.user.id === user.id,
+      os + ": late startup session cannot overwrite a newer auth event",
+    );
   fail = true;
   hold = false;
   await assert.rejects(hook.refresh(), /offline/);
@@ -200,11 +225,41 @@ async function scenario(os) {
     privateCalls === before && registrations === 2,
     os + ": OTP uses one registration request and no preliminary fetch",
   );
+  hold = true;
+  const oldProfile = hook.refresh();
+  await until(() => privateCalls === before + 1);
+  const releaseOldProfile = resolvePrivate;
+  hold = false;
+  listener("SIGNED_IN", { user: otherUser });
+  await until(
+    () => hook.profileReady && hook.store.account?.id === otherUser.id,
+  );
+  releaseOldProfile();
+  await oldProfile;
+  await wait(30);
+  ok(
+    hook.store.account?.role === "coach" && hook.store.account?.name === "Coach QA",
+    os + ": old client profile cannot overwrite new coach account",
+  );
+  hold = true;
+  const oldCoachProfile = hook.refresh();
+  const releaseOldCoachProfile = resolvePrivate;
+  await hook.signOut();
+  await wait(30);
+  releaseOldCoachProfile();
+  await oldCoachProfile;
+  await wait(30);
+  ok(
+    !hook.session && !hook.store.account,
+    os + ": old private response cannot restore account after logout",
+  );
   root.unmount();
 }
 (async () => {
   await scenario("ios");
   await scenario("web");
+  await scenario("ios", true);
+  await scenario("web", true);
   dom.window.close();
   console.log(
     `PASS ${count} auth concurrency/recovery checks (iOS + web adapters).`,
