@@ -44,5 +44,6 @@
   "test-hardening-36",
   "test-team-access-37",
   "test-team-ui-37",
-  "test-product-38"
+  "test-product-38",
+  "test-dependency-security-f01"
 ]
