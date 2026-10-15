@@ -23,6 +23,7 @@ const coach = {
     id: "00000000-0000-4000-8000-000000000027",
     email: "team26@example.test",
     staff: true,
+    teamRole: "reviewer",
   },
   other = {
     id: "00000000-0000-4000-8000-000000000028",
@@ -118,6 +119,14 @@ rejects(
       "outdated",
     ),
   "Stale review refused",
+);
+rejects(
+  () => command(
+    { ...team, teamRole: "support" }, "reviewPractice", coach.id,
+    "Running", "approved", "Support must not decide",
+    V.proofFingerprint(current(), "Running"),
+  ),
+  "Support cannot decide a practice even with unlocked team access",
 );
 command(
   team,
@@ -360,6 +369,39 @@ ok(
       M.today(),
     ),
   "Removed activity loses authorization",
+);
+const changedForRejection = current();
+changedForRejection.context = "Recette fictive : nouvelle portée à réexaminer";
+command(coach, "saveVerification", coach.id, changedForRejection, ["Running"]);
+const rejectedFingerprint = V.proofFingerprint(current(), "Running");
+rejects(
+  () => command(team, "reviewPractice", coach.id, "Running", "rejected", "  ", rejectedFingerprint),
+  "Rejection requires an explicit reason",
+);
+const rejectionReason = "Recette fictive : qualification hors du périmètre demandé";
+command(team, "reviewPractice", coach.id, "Running", "rejected", rejectionReason, rejectedFingerprint);
+const rejectedReview = current().reviews.Running;
+ok(
+  V.practiceState(current(), "Running", M.today()) === "rejected" &&
+    !V.canOffer(cfg().dossier, person(), active, M.today()),
+  "Rejected practice cannot open new reservations",
+);
+ok(
+  rejectedReview.by === team.id && rejectedReview.reason === rejectionReason &&
+    rejectedReview.fingerprint === rejectedFingerprint && Number.isFinite(Date.parse(rejectedReview.at)),
+  "Rejection retains reviewer, reason, current evidence fingerprint and timestamp",
+);
+ok(
+  cfg().dossier.history.at(-1).practice === "Running" &&
+    cfg().dossier.history.at(-1).status === "rejected" &&
+    cfg().dossier.history.at(-1).by === team.id,
+  "Rejection is recorded in the practice history",
+);
+command(coach, "saveVerification", coach.id, current(), ["Running"]);
+ok(
+  V.practiceState(current(), "Running", M.today()) === "pending" &&
+    cfg().dossier.history.some((event) => event.status === "rejected" && event.reason === rejectionReason),
+  "Resubmission needs a fresh decision and preserves the prior rejection",
 );
 const trainee = { ...current(), professionalStatus: "trainee" };
 ok(
