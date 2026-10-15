@@ -18,7 +18,14 @@ async function until(fn){for(let i=0;i<65;i++){if(fn())return;await wait();}thro
  await click('Suivant');await until(()=>has('Coach test 12'));ok(control.lastPage===1,'Next page fetched on server');
  await click('Précédent');await until(()=>has('Coach test 1'));await click('Coach test 1');await until(()=>has('Prendre en charge'));
  await click('Prendre en charge');await until(()=>has('Libérer le dossier'));ok(control.claimed,'Explicit dossier assignment');
- await click('Décision pour cette pratique : Valider la pratique');await click('Demander un complément');input('Motif et éléments vérifiés','Merci de préciser les publics accompagnés.');await click('Enregistrer la décision');await until(()=>has('Réponse perdue après enregistrement de test.'));
+ await click('Décision pour cette pratique : Valider la pratique');await click('Demander un complément');input('Motif et éléments vérifiés','Merci de préciser les publics accompagnés.');
+ const detailCalls=control.detailCalls;control.conflictNext=true;
+ await click('Enregistrer la décision');await until(()=>has('Le dossier a changé. Vérifiez les pièces actualisées.'));
+ ok(control.detailCalls===detailCalls+1&&has('Pièces actualisées après conflit 1'),'Conflict reloads the selected dossier with current evidence');
+ ok(!control.decided&&!has('Décision enregistrée.'),'Conflict never confirms an unrecorded decision');
+ ok(d.querySelector('[aria-label="Motif et éléments vérifiés"]').value.includes('publics'),'Decision reason survives a revision conflict');
+ await click('Enregistrer la décision');await until(()=>has('Réponse perdue après enregistrement de test.'));
+ ok(control.decisionFingerprints[0]!==control.conflictAttempt.fingerprint&&control.decisionRequests[0]!==control.conflictAttempt.requestId,'Changed evidence gets a current fingerprint and a new decision identity');
  ok(d.querySelector('[aria-label="Motif et éléments vérifiés"]').value.includes('publics'),'Decision reason retained after lost acknowledgement');
  await click('Enregistrer la décision');await until(()=>has('Décision enregistrée.'));ok(control.decisionRequests.length===2&&new Set(control.decisionRequests).size===1,'Retry reuses request identity after lost acknowledgement');
  await click('Libérer le dossier');await until(()=>has('Prendre en charge'));ok(!control.claimed,'Dossier released');

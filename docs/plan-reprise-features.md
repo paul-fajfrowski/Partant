@@ -24,7 +24,7 @@ Si les règles métier changent, régénérer le domaine serveur et maintenir `p
 | F01 | Préparer l'environnement et le build iPhone | `feature/01-environnement-recette` | Accès Mac, signature Apple et iPhone | Web connecté prêt ; installation iPhone bloquée |
 | F01 bis | Corriger les nouveaux avis de dépendances | `feature/01bis-dependances` | Diagnostic du contrôle de sécurité F01 | Correctif PR 1 validé par la CI Linux |
 | F02 | Valider connexion et sessions | `feature/02-auth-sessions` | Web connecté prêt ; signature/appareil pour le volet iPhone | [Recette web et corrections](f02-auth-sessions.md) réalisées ; iPhone, coach et reprise réelle de réservation ouverts |
-| F03 | Valider l'équipe et les dossiers | `feature/03-equipe-dossiers` | F02, opérateur désigné par Paul | À faire |
+| F03 | Valider l'équipe et les dossiers | `feature/03-equipe-dossiers` | F02, opérateur désigné par Paul | [Recette partielle](f03-equipe-dossiers.md) : deux reviewers désignés/habilités, MFA du premier et complément réels ; second accès bloqué par quota e-mail, cycle complet et sécurité restants |
 | F04 | Valider la configuration et la publication coach | `feature/04-activation-coach` | F03, dossier coach validé | À faire |
 | F05 | Valider découverte, prix et navigation client | `feature/05-decouverte-client` | F04, offres et ouvertures réalistes | À faire |
 | F06 | Valider les réservations entre appareils | `feature/06-reservations` | F05, deux comptes et second client pour concurrence | À faire |
@@ -70,6 +70,8 @@ Le propriétaire autorise la reprise F02 dans une nouvelle conversation. La rece
 - Rejouer dépôt → demande de correction → nouvelle soumission → validation/refus par pratique, avec acteur, motif et preuves. Tester expiration des pièces et nouvelle discipline sans validation héritée.
 
 **Critère de fin :** un opérateur désigné traite le dossier ; le coach voit les décisions et reste incapable de s'auto-valider. Les fixtures techniques sont isolées et nettoyées.
+
+Reprise du 15 octobre : les trois comptes explicitement désignés sont confirmés et ont leur profil. Le premier reviewer a configuré personnellement sa MFA ; une demande de complément motivée est enregistrée sur le dossier autorisé, avec acteur et empreinte. Le second reviewer attend la levée du quota d'e-mails pour sa connexion/MFA. Les nouveaux contrôles de conflit et de refus passent avec les fixtures ; ils ne remplacent pas la concurrence réelle, la resoumission coach et les contrôles Auth/API/Storage restant à exécuter. F03 reste ouverte et aucun lot suivant n'est commencé. Voir le [bilan F03](f03-equipe-dossiers.md).
 
 ## F04 Valider la configuration et la publication coach
 

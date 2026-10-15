@@ -1,5 +1,5 @@
 const base=require('./auth-connected-19.cjs');
-const control=exports.control={unlocked:false,enrolled:false,claimed:false,listCalls:0,lastPage:0,fail:false,verify:false,decisionRequests:[],decided:false};
+const control=exports.control={unlocked:false,enrolled:false,claimed:false,listCalls:0,detailCalls:0,lastPage:0,fail:false,verify:false,decisionRequests:[],decided:false,conflictNext:false,conflictAttempt:null,proofRevision:0,decisionFingerprints:[]};
 const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json'}});
 const factor={id:'11111111-1111-4111-8111-111111111111',factor_type:'totp',status:'verified',friendly_name:'Partant'};
 exports.fetch=async(input,init={})=>{
@@ -13,7 +13,9 @@ exports.fetch=async(input,init={})=>{
  const r=await base.fetch(input,init);if(!url.includes('/functions/v1/product-api'))return r;
  const result=await r.json();if(!result.store.account)return reply(result);
  if(body.commands?.some(c=>c.name==='reviewPractice')){
+  if(control.conflictNext){control.conflictNext=false;control.proofRevision++;control.conflictAttempt={requestId:body.requestId,fingerprint:body.commands[0].args[4]};return reply({error:'Le dossier a changé. Vérifiez les pièces actualisées.'},409);}
   control.decisionRequests.push(body.requestId);
+  control.decisionFingerprints.push(body.commands[0].args[4]);
   control.decided=true;
   if(control.decisionRequests.length===1)return reply({error:'Réponse perdue après enregistrement de test.'},503);
   if(new Set(control.decisionRequests).size!==1)return reply({error:'Idempotence perdue'},400);
@@ -26,9 +28,11 @@ exports.fetch=async(input,init={})=>{
   if(body.team.action==='list'){control.listCalls++;control.lastPage=body.team.page;const matches=items.filter(x=>x.name.toLowerCase().includes(body.team.query.toLowerCase()));return reply({items:matches.slice(body.team.page*10,body.team.page*10+10),page:body.team.page,total:matches.length});}
   if(body.team.action==='claim'){control.claimed=true;return reply({changed:true});}
   if(body.team.action==='release'){control.claimed=false;return reply({changed:true});}
+  control.detailCalls++;
   const template=store.extraCoaches[0],cfg=store.settings[template.id];
   store.extraCoaches=[{...template,id:body.team.coach,name:items.find(i=>i.id===body.team.coach).name}];const V=require('../../apps/mobile/src/product/verification.ts'),M=require('../../apps/mobile/src/product/model.ts');
   const v=V.toVerification(cfg.dossier,template,M.today());
+  if(control.proofRevision)v.context='Pièces actualisées après conflit '+control.proofRevision;
   for(const p of v.practices)v.reviews[p]={status:control.decided?'correction':'pending',fingerprint:V.proofFingerprint(v,p),reason:'Test',at:new Date().toISOString()};
   store.settings={[body.team.coach]:{...cfg,dossier:{...cfg.dossier,verification:v,status:control.decided?'correction':'pending'}}};
  }
